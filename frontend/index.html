@@ -365,10 +365,16 @@
     <div class="flex items-center gap-2 px-4 py-3 border-t border-line" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
       <select id="moreFormats" class="mr-auto h-8 max-w-[44%] sm:max-w-none border border-line rounded-md bg-white px-2 text-[12.5px] text-ink2" aria-label="Download another format">
         <option value="">Other formats…</option>
-        <option value="glb">.GLB · colours (viewers, web, AR)</option>
-        <option value="stl">.STL · one file per colour (.zip)</option>
-        <option value="obj">.OBJ · colours (.zip)</option>
-        <option value="objtex">.OBJ · photo texture (.zip)</option>
+        <optgroup label="Glaze colours">
+          <option value="glb">.GLB · colours (viewers, web, AR)</option>
+          <option value="stl">.STL · one file per colour (.zip)</option>
+          <option value="obj">.OBJ · colours (.zip)</option>
+        </optgroup>
+        <optgroup label="Photo texture">
+          <option value="3mftex">.3MF · photo (prints in colours)</option>
+          <option value="glbtex">.GLB · photo</option>
+          <option value="objtex">.OBJ · photo (.zip)</option>
+        </optgroup>
       </select>
       <button id="tweakBtn" class="btn btn-ghost">Tweak</button>
       <button id="downloadBtn" class="btn btn-primary">Download .3MF</button>
@@ -1213,7 +1219,8 @@ function saveBlob(buf, name, type) {
 $('downloadBtn').onclick = () => { if (S.model && S.model.buf) saveBlob(S.model.buf, `mixotile_${Math.round(S.model.size)}mm.3mf`, 'model/3mf'); };
 // other formats: re-run the engine with the same settings (≈ 10 s) and save the result
 const FORMAT_FILES = { glb: ['glb', 'model/gltf-binary'], stl: ['stl.zip', 'application/zip'],
-                       obj: ['obj.zip', 'application/zip'], objtex: ['textured.obj.zip', 'application/zip'] };
+                       obj: ['obj.zip', 'application/zip'], objtex: ['textured.obj.zip', 'application/zip'],
+                       '3mftex': ['textured.3mf', 'model/3mf'], glbtex: ['textured.glb', 'model/gltf-binary'] };
 $('moreFormats').onchange = async (e) => {
   const fmt = e.target.value; e.target.value = '';
   if (!FORMAT_FILES[fmt]) return;

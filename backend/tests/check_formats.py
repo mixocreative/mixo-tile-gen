@@ -86,5 +86,30 @@ for fmt in ("stl", "obj", "objtex"):
         else:
             ok &= len(re.findall(r"^newmtl ", mtl, re.M)) == len(objs)
     print(line, flush=True)
+# textured 3MF: per-corner tex2coord must be the vertex's top-down position; the slicer part
+# table (extruders) must still be there, so it prints in glaze colours
+t = time.time()
+data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="3mftex"))
+z = zipfile.ZipFile(io.BytesIO(data)); x = z.read("3D/3dmodel.model").decode()
+v = np.array(re.findall(r'<vertex x="([^"]+)" y="([^"]+)" z="([^"]+)"', x), float)
+uv = np.array(re.findall(r'<m:tex2coord u="([^"]+)" v="([^"]+)"', x), float)
+tt = np.array(re.findall(r'<triangle v1="(\d+)" v2="(\d+)" v3="(\d+)" pid="\d+" p1="(\d+)" p2="(\d+)" p3="(\d+)"', x), int)
+err = max(float(np.abs(uv[tt[:, 3 + k]] - np.clip(v[tt[:, k], :2] / 150.0, 0, 1)).max()) for k in range(3))
+has_tex = "3D/Textures/texture.jpg" in z.namelist() and "3D/_rels/3dmodel.model.rels" in z.namelist()
+has_cfg = "extruder" in z.read("Metadata/Slic3r_PE_model.config").decode()
+print(f"3mftex  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  textured tris={len(tt)}  corner-UV error {err:.5f}  texture={has_tex} extruders={has_cfg}", flush=True)
+ok &= err < 2e-3 and has_tex and has_cfg and len(tt) > 0          # 3 decimals on vertices
+
+# textured GLB: loads, colour bodies carry UVs + an image, the pad keeps a plain colour
+import trimesh
+t = time.time()
+data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="glbtex"))
+sc = trimesh.load(io.BytesIO(data), file_type="glb")
+geoms = list(sc.geometry.items())
+tex = [n for n, g in geoms if getattr(g.visual, "kind", "") == "texture" and g.visual.uv is not None]
+pad_plain = all(getattr(g.visual, "kind", "") != "texture" for n, g in geoms if "pad" in n)
+print(f"glbtex  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  textured bodies {len(tex)}/{len(geoms)}  pad plain={pad_plain}", flush=True)
+ok &= len(tex) == len(geoms) - 1 and pad_plain
+
 print("ALL OK" if ok else "FAILED")
 sys.exit(0 if ok else 1)

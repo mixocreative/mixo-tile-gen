@@ -934,20 +934,26 @@ def _xml_escape(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
-def write_3mf(parts) -> bytes:
+def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
     """Single multi-part object, laid out the way PrusaSlicer (and its forks OrcaSlicer /
     Bambu Studio) store one: all parts' triangles in ONE <object> mesh, and
     Metadata/Slic3r_PE_model.config naming each part's triangle range + its extruder.
     (A core-spec <components> object is NOT enough — PrusaSlicer splits it into loose objects.)
     Every triangle also carries its colour (basematerials p1) so generic 3MF viewers show colours.
+    texture = RGB photo of the flattened tile: the colour bodies instead reference it through the
+    3MF Materials extension (texture2dgroup, top-down u = x/size, v = y/size) so viewers show the
+    photo; the slicer part table / extruders are unchanged, so it still prints in glaze colours.
+    The backing pad keeps its plain colour (its sides would streak).
 
 """
     obj_id, mat_id = 1, 2
     out = io.StringIO()
     w = out.write
+    tex_id, grp_id = 3, 4
     w('<?xml version="1.0" encoding="UTF-8"?>\n'
       '<model unit="millimeter" xml:lang="en-US" '
       'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
+      'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" '
       'xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n'
       '<metadata name="slic3rpe:Version3mf">1</metadata>\n'
       '<metadata name="Title">MixoTile relief</metadata>\n'
@@ -957,16 +963,32 @@ def write_3mf(parts) -> bytes:
     for name, rgb, _, _ in parts:
         w('<base name="%s" displaycolor="#%02X%02X%02XFF"/>\n' % (_xml_escape(name), *map(int, rgb)))
     w('</basematerials>\n')
+    textured = [texture is not None and "pad" not in name for name, _, _, _ in parts]
+    if texture is not None:
+        w(f'<m:texture2d id="{tex_id}" path="/3D/Textures/texture.jpg" contenttype="image/jpeg" '
+          'tilestyleu="clamp" tilestylev="clamp"/>\n'
+          f'<m:texture2dgroup id="{grp_id}" texid="{tex_id}">\n')
+        for (_, _, v, _), t in zip(parts, textured):
+            if t:
+                uv = np.clip(np.asarray(v, np.float64)[:, :2] / size_mm, 0.0, 1.0)
+                w(('<m:tex2coord u="%.5f" v="%.5f"/>\n' * len(uv)) % tuple(uv.ravel().tolist()))
+        w('</m:texture2dgroup>\n')
     w(f'<object id="{obj_id}" type="model" name="MixoTile relief" pid="{mat_id}" pindex="0">\n'
       '<mesh>\n<vertices>\n')
     # one big %-format per array is ~10x faster than a per-row generator; 3 decimals = 1 um
     for _, _, v, _ in parts:
         w(('<vertex x="%.3f" y="%.3f" z="%.3f"/>\n' * len(v)) % tuple(v.ravel().tolist()))
     w('</vertices>\n<triangles>\n')
-    ranges, v_off, t_off = [], 0, 0
-    for i, (_, _, v, f) in enumerate(parts):
-        tri = np.column_stack([f + v_off, np.full(len(f), i, np.int64)])
-        w(('<triangle v1="%d" v2="%d" v3="%d" p1="%d"/>\n' * len(f)) % tuple(tri.ravel().tolist()))
+    ranges, v_off, t_off, uv_off = [], 0, 0, 0
+    for i, ((_, _, v, f), t) in enumerate(zip(parts, textured)):
+        if t:      # property per corner = that vertex's tex2coord (numbered over textured parts only)
+            tri = np.column_stack([f + v_off, f + uv_off])
+            w(('<triangle v1="%d" v2="%d" v3="%d" pid="' + str(grp_id) + '" p1="%d" p2="%d" p3="%d"/>\n') * len(f)
+              % tuple(tri.ravel().tolist()))
+            uv_off += len(v)
+        else:
+            tri = np.column_stack([f + v_off, np.full(len(f), i, np.int64)])
+            w(('<triangle v1="%d" v2="%d" v3="%d" p1="%d"/>\n' * len(f)) % tuple(tri.ravel().tolist()))
         ranges.append((t_off, t_off + len(f) - 1))
         v_off += len(v)
         t_off += len(f)
@@ -991,22 +1013,41 @@ def write_3mf(parts) -> bytes:
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-        z.writestr("[Content_Types].xml", _CT)
+        z.writestr("[Content_Types].xml", _CT if texture is None else _CT.replace(
+            "</Types>", '<Default Extension="jpg" ContentType="image/jpeg"/></Types>'))
         z.writestr("_rels/.rels", _RELS)
         z.writestr("3D/3dmodel.model", out.getvalue())
+        if texture is not None:
+            ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 90])
+            z.writestr("3D/Textures/texture.jpg", jpg.tobytes())
+            z.writestr("3D/_rels/3dmodel.model.rels",
+                       '<?xml version="1.0" encoding="UTF-8"?>\n'
+                       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                       '<Relationship Target="/3D/Textures/texture.jpg" Id="tex0" '
+                       'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dtexture"/></Relationships>')
         z.writestr("Metadata/Slic3r_PE_model.config", cfg.getvalue())
     return buf.getvalue()
 
 
-def write_glb(parts) -> bytes:
-    """glTF is Y-up and in metres: rotate Z-up mm -> Y-up m."""
+def write_glb(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
+    """glTF is Y-up and in metres: rotate Z-up mm -> Y-up m. texture = flattened photo: colour
+    bodies get it top-down (u = x/size, v = y/size); the pad keeps its plain colour."""
     import trimesh
 
     scene = trimesh.Scene()
+    img = None
+    if texture is not None:
+        from PIL import Image
+        img = Image.fromarray(np.ascontiguousarray(texture))
     for name, rgb, v, f in parts:
         vv = np.column_stack([v[:, 0], v[:, 2], -v[:, 1]]) / 1000.0
         mesh = trimesh.Trimesh(vv, f, process=False)
-        mesh.visual = trimesh.visual.ColorVisuals(mesh, face_colors=[*map(int, rgb), 255])
+        if img is not None and "pad" not in name:
+            uv = np.clip(np.asarray(v, np.float64)[:, :2] / size_mm, 0.0, 1.0)
+            mat = trimesh.visual.material.PBRMaterial(baseColorTexture=img, metallicFactor=0.0, roughnessFactor=0.5)
+            mesh.visual = trimesh.visual.TextureVisuals(uv=uv, material=mat)
+        else:
+            mesh.visual = trimesh.visual.ColorVisuals(mesh, face_colors=[*map(int, rgb), 255])
         scene.add_geometry(mesh, geom_name=name, node_name=name)
     return scene.export(file_type="glb")
 
@@ -1123,7 +1164,9 @@ def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150
 # format -> (file extension, media type)
 EXPORT_FORMATS = {
     "3mf": ("3mf", "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"),
+    "3mftex": ("textured.3mf", "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"),
     "glb": ("glb", "model/gltf-binary"),
+    "glbtex": ("textured.glb", "model/gltf-binary"),
     "stl": ("stl.zip", "application/zip"),
     "obj": ("obj.zip", "application/zip"),
     "objtex": ("textured.obj.zip", "application/zip"),
@@ -1131,10 +1174,10 @@ EXPORT_FORMATS = {
 
 
 def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
-    if fmt == "3mf":
-        return write_3mf(parts)
-    if fmt == "glb":
-        return write_glb(parts)
+    if fmt in ("3mf", "3mftex"):
+        return write_3mf(parts, texture if fmt == "3mftex" else None, size_mm)
+    if fmt in ("glb", "glbtex"):
+        return write_glb(parts, texture if fmt == "glbtex" else None, size_mm)
     if fmt == "stl":
         return write_stl_zip(parts)
     if fmt in ("obj", "objtex"):
@@ -1161,12 +1204,13 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     # photo texture = the same warp as the geometry (inset, symmetry), projected top-down:
     # 2048 px for the textured OBJ, 1024 px for the browser preview's "Photo" view
     texture = preview_tex = None
-    if cfg.output_format == "objtex" or on_parts:
-        texture = warp_tile(rgb, corners, 2048 if cfg.output_format == "objtex" else 1024, corners_scale, inset=0.015)
+    want_tex = cfg.output_format.endswith("tex")
+    if want_tex or on_parts:
+        texture = warp_tile(rgb, corners, 2048 if want_tex else 1024, corners_scale, inset=0.015)
         if sym not in ("off", "none"):     # same symmetry group the geometry used
             texture, _ = symmetrise(texture, sym)
         preview_tex = texture if texture.shape[0] <= 1024 else cv2.resize(texture, (1024, 1024), interpolation=cv2.INTER_AREA)
-        if cfg.output_format != "objtex":
+        if not want_tex:
             texture = None
     report(0.04, "Finding the glaze colours")
 

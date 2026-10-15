@@ -38,12 +38,14 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 5. **Generate.** A real progress bar shows the server's actual stages. The 3D preview opens as soon as the shape is ready, while the printable file finishes.
 6. **Download** a `.3MF`. It's one object with one named part per colour, each pre-assigned its own extruder; it opens in PrusaSlicer, OrcaSlicer and Bambu Studio. **Other formats** (menu next to the button; each takes about 10 s more):
 
-   | Format | What you get | Use it for |
-   |---|---|---|
-   | `.GLB` | One file, colours included | Web viewers, AR, quick sharing |
-   | `.STL` (zip) | One STL per colour, all lined up | Any slicer: load them together, one filament each |
-   | `.OBJ` (zip) | OBJ + MTL, one object per colour with its glaze colour | Blender, CAD, rendering |
-   | `.OBJ` photo texture (zip) | OBJ + MTL + `texture.jpg`: your photo projected straight down onto the relief, lined up exactly (the backing pad keeps a plain colour) | Realistic renders, games, AR |
+   Every format comes in two looks: **glaze colours** (one flat colour per part, exactly what prints) or **photo texture** (your photo projected straight down onto the relief, lined up exactly; the backing pad keeps a plain colour because its sides would show streaks). The 3D preview has the same **Colours | Photo** switch.
+
+   | Format | Glaze colours | Photo texture | Use it for |
+   |---|---|---|---|
+   | `.3MF` | ✓ (the main download) | ✓ `.textured.3mf`: viewers show the photo, slicers still print it in glaze colours | 3D printing |
+   | `.GLB` | ✓ | ✓ `.textured.glb` | Web viewers, AR, quick sharing |
+   | `.OBJ` (zip) | ✓ OBJ + MTL, one object per colour | ✓ OBJ + MTL + `texture.jpg` | Blender, CAD, rendering, games |
+   | `.STL` (zip) | ✓ one STL per colour, all lined up | (STL can't hold colour or texture) | Any slicer: load them together, one filament each |
 
    STEP isn't offered: it's a format for exact CAD surfaces, and a relief of about a million triangles turns into a huge STEP that CAD programs choke on. Import the STL or OBJ instead.
 
@@ -114,7 +116,14 @@ The app has two halves:
 | **Website** (front end) | The page you see in the browser. | GitHub Pages (free), or your own computer |
 | **Engine** (back end, Python) | Turns the photo into the 3D file. | **Your own computer** (free), or **Google Cloud Run** (online all the time) |
 
-Pick one:
+**Every way works with or without the web page.** With the page you click through the steps; without it you use the `mixo` command (see [Without the web page](#without-the-web-page-command-line)), which is handy for batches. Every way has the same features: all download formats, glaze colours or photo texture, and the AI is only an optional helper for finding the tile's corners (without it, you place them yourself).
+
+| | With the web page | Without the web page |
+|---|---|---|
+| **Online** (nothing to install) | https://mixocreative.github.io/mixo-tile-gen/ | `mixo photo.jpg --server <engine address>` |
+| **On your computer** (pure Python, works offline after setup) | double-click `start-windows.bat` (or `./start-mac-linux.sh`) | `mixo photo.jpg` |
+
+Pick where the engine runs:
 
 | | Cost | Works when your computer is off? | Phone? | Difficulty |
 |---|---|---|---|---|
@@ -316,16 +325,53 @@ Free accounts get `402 Payment Required` when creating a Docker Space. With **PR
 4. Add the variable `ALLOWED_ORIGINS` = your website (Settings → Variables and secrets).
 5. Your engine address is `https://YOUR-HF-NAME-SPACE-NAME.hf.space`.
 
+### Without the web page (command line)
+
+`mixo` makes the same models from the command line: one photo, or a whole folder at once. The files are the same as the website's.
+
+**1. Install Python** and **download the app** (Option A, steps 1 and 2).
+
+**2. Open a terminal in the app folder.** Windows: open the folder, click the address bar, type `cmd` and press Enter. Mac: right-click the folder → **New Terminal at Folder**.
+
+**3. Find your tile's four corners** (in photo pixels). The easiest way is to open the photo in Paint (Windows) or Preview (Mac) and hover over each glaze corner: the position shows at the bottom of the window. Go top-left, top-right, bottom-right, bottom-left. Without corners, `mixo` uses the centred square of the photo.
+
+**4. Run it.** On Mac/Linux, write `./mixo.sh` instead of `mixo`:
+```bash
+mixo my-tile.jpg --corners "510,564 2616,534 2514,2508 594,2478"
+```
+The first run sets itself up (3–10 minutes, same as Option A). After that, a tile takes about 10 s and the file lands next to the photo: `my-tile.3mf`.
+
+**More examples:**
+```bash
+mixo my-tile.jpg --corners "…" --format 3mftex          # 3MF with the photo as a texture
+mixo my-tile.jpg --corners "…" --format objtex --out tile.zip
+mixo my-tile.jpg --corners "…" --set tile_size_mm=100 --set pad_thickness_mm=8
+mixo a.jpg b.jpg c.jpg --corners-json corners.json --out models   # many photos at once
+mixo my-tile.jpg --corners "…" --server https://mixo-tile-gen-616971929665.asia-east1.run.app   # use the online engine
+```
+- `--format`: `3mf` (default), `3mftex`, `glb`, `glbtex`, `obj`, `objtex`, `stl`.
+- `--corners-json`: a file like `{"a": [[x,y],[x,y],[x,y],[x,y]], "b": …}`, keyed by photo name without `.jpg`.
+- `--set`: any setting from [Default settings](#default-settings-150-mm-tile), with the names listed under [API](#api).
+- `--server`: send the photo to an engine instead of using this computer (your own Cloud Run address, or a local one like `http://localhost:8088`).
+
+**Without `mixo`**, any tool that can send a form works, e.g. `curl`:
+```bash
+curl -F image=@my-tile.jpg -F 'corners=[[510,564],[2616,534],[2514,2508],[594,2478]]' \
+     -F output_format=3mftex -o my-tile.textured.3mf https://YOUR-ENGINE/process-tile
+```
+(An engine only answers browsers from the websites in its `ALLOWED_ORIGINS`; command-line tools like these aren't affected.)
+
 ## API
 
 - `GET /health` returns `{"status":"ok"}`.
 - `POST /process-tile` takes `multipart/form-data`:
   - **Required:** `image`.
-  - **Optional:** `corners` (JSON `[[x,y]×4]`), `swatches` (JSON hex list), plus any setting above, using the names in `TileConfig`: `tile_size_mm`, `pad_thickness_mm`, `relief_height_mm`, `fillet_radius_mm`, `dome_height_mm`, `groove_floor_mm`, `clearance_mm`, `outline_height_mm`, `outline_width_mm`, `num_colors`, `mesh_resolution_mm`, `symmetry`, `output_format` (`3mf` | `glb` | `stl` = zip, one STL per colour | `obj` = zip, OBJ+MTL colours | `objtex` = zip, OBJ+MTL+texture.jpg).
+  - **Optional:** `corners` (JSON `[[x,y]×4]`), `swatches` (JSON hex list), plus any setting above, using the names in `TileConfig`: `tile_size_mm`, `pad_thickness_mm`, `relief_height_mm`, `fillet_radius_mm`, `dome_height_mm`, `groove_floor_mm`, `clearance_mm`, `outline_height_mm`, `outline_width_mm`, `num_colors`, `mesh_resolution_mm`, `symmetry`, `output_format` (`3mf` | `3mftex` = 3MF with the photo as a texture, still prints in glaze colours | `glb` | `glbtex` | `stl` = zip, one STL per colour | `obj` = zip, OBJ+MTL colours | `objtex` = zip, OBJ+MTL+texture.jpg).
 - `stream=false` (default) returns the model bytes, plus stats in the `X-MixoTile-Stats` header.
 - `stream=true` returns a single streamed response, used by the app:
   - JSON lines: `{"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}`.
   - Then `{"type":"preview","layout":[…],"bytes":N}` followed by N bytes of preview mesh (float32 positions and uint32 indices per part).
+  - Then `{"type":"texture","bytes":T}` followed by T bytes of JPEG: the top-down photo for the preview's Photo view (u = x/size, v = y/size).
   - Then `{"type":"done","bytes":M}` followed by M bytes of model, or `{"type":"error",…}`.
 
 ## Tests and verification
@@ -344,7 +390,8 @@ python tests/lines_sheet.py                    # visual sheet: photo | outlines 
 
 ## Known limits
 
-- **Auto-outline:** the AI can lock onto the wooden frame or the motif on framed museum tiles. Drag the corners, or use Square crop.
+- **Auto-outline:** the AI only suggests the corners. On framed tiles it sometimes grabs a sliver of the wooden frame (seen on IMG_9255 and IMG_9343 in the tests). Always check the four corners and drag any that are off.
+- **Low-contrast tiles:** a white motif on a pale background (the heron, IMG_9391) can merge into one colour. Picking the colours yourself with the eyedropper (heron white and the pale-blue water) may keep them apart.
 - **Glossy, painterly glazes** can still split into small patches. Examples: the shiny rose leaves and the lion's mane.
 - **Stickers** on the glaze (e.g. "61", "75") become relief. The glare/sticker inpaint is implemented but off by default, because it also erased real white glaze.
 
