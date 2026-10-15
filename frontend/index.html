@@ -376,10 +376,11 @@
             <p id="swatchEmpty" class="hint mt-1"></p>
           </div>
           <div class="flex flex-wrap gap-2 mt-3">
+            <button id="addPick" type="button" class="btn btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4zM14.5 7.5L5 17l-1 4 4-1 9.5-9.5"/></svg><span data-i18n="s3.pick">Pick from photo</span></button>
             <button id="restoreBtn" type="button" class="btn btn-ghost"><span aria-hidden="true">↺</span><span data-i18n="s3.restore">Restore suggested</span></button>
           </div>
           <p id="pickNote" class="hidden text-[12px] text-ink mt-2 font-medium" role="status"></p>
-          <p id="addHint" class="hint mt-2" data-i18n="s3.addHint">Tap a swatch to change its colour (its area stays the same). − merges that colour's area into the closest colour. Restore suggested: the app splits the tile again and drops your colour changes.</p>
+          <p id="addHint" class="hint mt-2" data-i18n="s3.addHint">Pick from photo: tap the tile to add a colour the split missed; it stays pinned 📌 when you change the number of colours. Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: splits the tile again and drops picks and colour changes.</p>
           <div class="flex items-center justify-between gap-3 mt-3">
             <div class="flex items-center gap-1.5"><button id="nMinus" type="button" class="btn btn-ghost !px-3 text-[16px]" aria-label="Fewer colours" data-i18n-aria="s3.fewer">−</button><div class="field w-36"><label for="numColors" data-i18n="s3.max">Colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div><button id="nPlus" type="button" class="btn btn-ghost !px-3 text-[16px]" aria-label="More colours" data-i18n-aria="s3.more">+</button></div>
             <button id="clearSwatches" class="btn-text btn" data-i18n="s3.clear">Clear</button>
@@ -574,7 +575,8 @@ const D = {
     's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour',
     's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Colours', 's3.fewer': 'Fewer colours', 's3.more': 'More colours', 's3.clear': 'Clear',
     's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
-    's3.addHint': 'Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: the app splits the tile again and drops your colour changes.',
+    's3.addHint': 'Pick from photo: tap the tile to add a colour the split missed; it stays pinned 📌 when you change the number of colours. Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: splits the tile again and drops picks and colour changes.',
+    'sw.pinned': 'Picked from the photo (pinned)',
     'sw.replace': 'Replace colour {n} (its area stays the same)', 'sw.orig': 'Back to the photo colour',
     's3.maxD': 'How many colours the tile is split into; the app finds them in the photo. + splits into one more, − on a swatch merges its area into the closest colour. Tap a swatch to change its colour.', 'c.countShape': '{n} shape colours · the photo decides how it looks',
     'c.empty': 'No colours yet — tap Suggest, or tap the tile to pick up to {k} of your own.', 'c.max12': 'Maximum 12 colours.', 'c.needPal': 'Pick colours (or tap Suggest) to see the mapped preview.',
@@ -649,7 +651,8 @@ const D = {
     's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色',
     's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '顏色數', 's3.fewer': '減少顏色', 's3.more': '增加顏色', 's3.clear': '清除',
     's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
-    's3.addHint': '點色票可更換它的顏色（區域不變）。− 會把該顏色的區域併入最接近的顏色。還原建議色：程式重新分色，並放棄你的顏色修改。',
+    's3.addHint': '從照片挑色：點磚面，加入自動分色漏掉的顏色；改變顏色數時它會固定保留 📌。點色票可更換它的顏色（區域不變）。− 會把該顏色的區域併入最接近的顏色。還原建議色：重新分色，並放棄挑選的顏色與顏色修改。',
+    'sw.pinned': '從照片挑選（已固定）',
     'sw.replace': '替換第 {n} 個顏色（區域不變）', 'sw.orig': '還原為照片中的顏色',
     's3.maxD': '磚面要分成幾種顏色；程式會從照片中自動找出。+ 多分一種；色票上的 − 會把該區域併入最接近的顏色。點色票可更換顏色。', 'c.countShape': '{n} 種形狀顏色・外觀由照片決定',
     'c.empty': '還沒有顏色，請點「自動建議」，或點磚面自行挑選（最多 {k} 種）。', 'c.max12': '最多 12 種顏色。', 'c.needPal': '請先挑選顏色（或按「自動建議」）才能看對應預覽。',
@@ -830,7 +833,7 @@ async function loadFileInner(file, { detect = true } = {}) {
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
-  S.manualPalette = false; S.swatches = []; S.paint = []; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
+  S.manualPalette = false; S.swatches = []; S.paint = []; S.pinned = []; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
   scheduleSuggest();
   warmBackend();
   if (detect && S.aiState !== 'failed') autoDetect(undefined, true);
@@ -1176,7 +1179,10 @@ function renderEmpty() { $('swatchEmpty').textContent = t('c.empty', { k: $('num
 // A swatch = an AREA (found with the picked / suggested colour, never changes when recoloured) plus its
 // paint. Tapping a swatch only replaces the paint (S.paint[i]); the engine gets it as `paint`.
 const paintOf = (i) => S.paint?.[i] || S.swatches[i];
-function syncPaint() { S.paint = (S.paint || []).slice(0, S.swatches.length); while (S.paint.length < S.swatches.length) S.paint.push(null); }
+function syncPaint() {
+  S.paint = (S.paint || []).slice(0, S.swatches.length); while (S.paint.length < S.swatches.length) S.paint.push(null);
+  S.pinned = (S.pinned || []).slice(0, S.swatches.length); while (S.pinned.length < S.swatches.length) S.pinned.push(false);
+}
 function renderSwatches() {
   const box = $('swatches'); box.innerHTML = '';
   syncPaint();
@@ -1189,7 +1195,7 @@ function renderSwatches() {
     inp.oninput = () => { takeManual(); S.paint[i] = fromHex(inp.value); d.style.background = inp.value; hex.textContent = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
     inp.onchange = () => renderSwatches();
     const x = document.createElement('button'); x.className = 'x'; x.textContent = '−'; x.setAttribute('aria-label', t('sw.remove', { n: i + 1 }));
-    x.onclick = (ev) => { ev.stopPropagation(); if (S.swatches.length <= 2) return; takeManual(); S.swatches.splice(i, 1); S.paint.splice(i, 1); $('numColors').value = S.swatches.length; renderSwatches(); renderFlat(); };
+    x.onclick = (ev) => { ev.stopPropagation(); if (S.swatches.length <= 2) return; takeManual(); S.swatches.splice(i, 1); S.paint.splice(i, 1); S.pinned.splice(i, 1); $('numColors').value = S.swatches.length; renderSwatches(); renderFlat(); };
     d.append(inp, x);
     if (replaced) {                       // small dot = the photo's colour; tap it to go back
       const o = document.createElement('button'); o.type = 'button'; o.textContent = '↺';
@@ -1197,6 +1203,11 @@ function renderSwatches() {
       o.style.cssText = `position:absolute;left:2px;bottom:2px;width:15px;height:15px;border-radius:50%;font-size:9px;line-height:14px;color:#fff;background:${toHex(c)};border:1px solid #fff;box-shadow:0 0 0 1px #0003;z-index:2`;
       o.onclick = (ev) => { ev.stopPropagation(); S.paint[i] = null; renderSwatches(); renderFlat(); };
       d.appendChild(o);
+    }
+    if (S.pinned[i]) {
+      const pin = document.createElement('span'); pin.textContent = '📌'; pin.title = t('sw.pinned'); pin.setAttribute('aria-label', t('sw.pinned'));
+      pin.style.cssText = 'position:absolute;left:1px;top:-1px;font-size:10px;line-height:1;z-index:2;pointer-events:none';
+      d.appendChild(pin);
     }
     chip.append(d, hex); box.appendChild(chip);
   });
@@ -1243,8 +1254,28 @@ function setView(v) {
   if (v === 'mapped' && !S.swatches.length) { showError(t('c.needPal')); v = 'photo'; }
   S.view = v; renderFlat(); updateModeButtons();
 }
-$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; S.paint = []; renderSwatches(); setView(viewForMode()); };
-$('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; S.paint = []; runSuggest(); };
+$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; S.paint = []; S.pinned = []; renderSwatches(); setView(viewForMode()); };
+$('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; S.paint = []; S.pinned = S.swatches.map(() => false); runSuggest(); };
+// pick from photo: tapping the picture adds that colour as a pinned area (count + 1)
+function pickAt(e) {
+  if (!S.flat) return;
+  const [u, v] = flatCoords(e), c = sampleAt(u, v).map(Math.round), L = srgbToLab(c);
+  syncPaint();
+  const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 6; });
+  if (dup >= 0) { flashSwatch(dup); return; }
+  if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
+  S.swatches.push(c); S.paint.push(null); S.pinned.push(true);
+  $('numColors').value = S.swatches.length; saveSettings();
+  renderSwatches(); S.view = 'photo'; renderFlat(); updateModeButtons();
+  clearTimeout(S.pickBackT); S.pickBackT = setTimeout(() => { S.view = viewForMode(); renderFlat(); updateModeButtons(); }, 2000);
+}
+$('flatCanvas').addEventListener('click', pickAt);
+$('addPick').onclick = () => {
+  setView('photo');
+  const cv = $('flatCanvas'); cv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  cv.classList.remove('flash'); void cv.offsetWidth; cv.classList.add('flash');
+  showNote(t('s3.pickNow'));
+};
 // number of colours = how many areas the tile is split into (found automatically in the photo)
 function setCount(n) {
   n = Math.max(2, Math.min(12, n | 0));
@@ -1285,11 +1316,13 @@ $('numColors').addEventListener('input', renderEmpty);
 $('numColors').addEventListener('change', () => setCount(+$('numColors').value));
 
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
-function suggestPalette(k) {   // k-means (Lab) on a fixed 70×70 pixel grid: same photo -> same palette
+function suggestPalette(k, fixed = []) {   // k-means (Lab) on a fixed 70×70 grid: same photo -> same palette.
+  // `fixed` = pinned picks (sRGB): kept as centres that never move; only the other k − fixed colours are found.
   const d = S.flat.data, pts = [], N = 70, step = FLAT / N, rnd = mulberry32(12345);
   for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) { const i = (Math.floor((gy + 0.5) * step) * FLAT + Math.floor((gx + 0.5) * step)) * 4; pts.push([d[i], d[i + 1], d[i + 2]]); }
   const lab = pts.map(srgbToLab);
-  let cent = [lab[Math.floor(rnd() * lab.length)]];       // k-means++ seeding
+  const nf = fixed.length;
+  let cent = nf ? fixed.map(srgbToLab) : [lab[Math.floor(rnd() * lab.length)]];       // k-means++ seeding
   while (cent.length < k) {
     const dist = lab.map((p) => Math.min(...cent.map((c) => (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2 + (c[2] - p[2]) ** 2)));
     let r = rnd() * dist.reduce((a, b) => a + b, 0), j = 0; while ((r -= dist[j]) > 0 && j < dist.length - 1) j++;
@@ -1298,22 +1331,30 @@ function suggestPalette(k) {   // k-means (Lab) on a fixed 70×70 pixel grid: sa
   let assign = new Array(lab.length).fill(0);
   for (let it = 0; it < 15; it++) {
     assign = lab.map((p) => { let b = 0, bd = Infinity; cent.forEach((c, j) => { const dd = (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2 + (c[2] - p[2]) ** 2; if (dd < bd) { bd = dd; b = j; } }); return b; });
-    cent = cent.map((c, j) => { const m = lab.filter((_, i) => assign[i] === j); return m.length ? [0, 1, 2].map((q) => m.reduce((a, p) => a + p[q], 0) / m.length) : c; });
+    cent = cent.map((c, j) => { if (j < nf) return c; const m = lab.filter((_, i) => assign[i] === j); return m.length ? [0, 1, 2].map((q) => m.reduce((a, p) => a + p[q], 0) / m.length) : c; });
   }
-  return cent.map((c, j) => {           // report as mean sRGB of members (avoids Lab->RGB code)
+  return cent.map((c, j) => {           // report as mean sRGB of members (avoids Lab->RGB code); pins as picked
+    if (j < nf) return { L: c[0], rgb: fixed[j].map(Math.round), pin: true };
     const m = pts.filter((_, i) => assign[i] === j); if (!m.length) return null;
-    return { L: c[0], rgb: [0, 1, 2].map((q) => Math.round(m.reduce((a, p) => a + p[q], 0) / m.length)) };
-  }).filter(Boolean).sort((a, b) => b.L - a.L).map((x) => x.rgb);
+    return { L: c[0], rgb: [0, 1, 2].map((q) => Math.round(m.reduce((a, p) => a + p[q], 0) / m.length)), pin: false };
+  }).filter(Boolean).sort((a, b) => b.L - a.L);
 }
 function runSuggest(keepPaint = false) {
   if (!S.flat) return;
-  const oldSw = S.swatches || [], oldPaint = S.paint || [];
-  S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0))); S.paint = [];
-  if (keepPaint && oldPaint.some(Boolean)) {         // carry each changed colour to the nearest new area
+  syncPaint();
+  const oldSw = S.swatches || [], oldPaint = S.paint || [], oldPin = S.pinned || [];
+  const pins = oldSw.filter((_, i) => oldPin[i]), pinPaint = oldPaint.filter((_, i) => oldPin[i]);
+  const k = Math.min(12, Math.max(2, pins.length, +$('numColors').value | 0));
+  $('numColors').value = k;
+  const res = suggestPalette(k, pins);
+  S.swatches = res.map((x) => x.rgb); S.pinned = res.map((x) => x.pin); S.paint = [];
+  if (pins.length || (keepPaint && oldPaint.some(Boolean))) {   // pins keep their own colour change; others the nearest
     const L = oldSw.map(srgbToLab);
-    S.paint = S.swatches.map((c) => {
+    S.paint = S.swatches.map((c, ni) => {
+      if (S.pinned[ni]) { const pi = pins.findIndex((q) => q[0] === c[0] && q[1] === c[1] && q[2] === c[2]); return pi >= 0 ? pinPaint[pi] : null; }
+      if (!keepPaint) return null;
       const l = srgbToLab(c); let best = -1, bd = 400;
-      L.forEach((q, j) => { const d = (q[0] - l[0]) ** 2 + (q[1] - l[1]) ** 2 + (q[2] - l[2]) ** 2; if (oldPaint[j] && d < bd) { bd = d; best = j; } });
+      L.forEach((q, j) => { const d = (q[0] - l[0]) ** 2 + (q[1] - l[1]) ** 2 + (q[2] - l[2]) ** 2; if (oldPaint[j] && !oldPin[j] && d < bd) { bd = d; best = j; } });
       return best >= 0 ? oldPaint[best] : null;
     });
   }
