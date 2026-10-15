@@ -3,7 +3,7 @@
 Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, optional `.GLB`) ready for multi-material 3D printing.
 
 **Live app:** https://mixocreative.github.io/tw-tile-gen/
-**Backend:** Python on Google Cloud Run (free tier). The URL is set in `frontend/index.html` (`DEFAULT_API`).
+**Backend:** Python engine on Hugging Face Spaces (free, no card). It's Google Cloud Run-ready too; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
 ![16 real tiles: photo vs generated relief](docs/results/compare_01.jpg)
 
@@ -50,8 +50,8 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 | Setting | Default | Meaning |
 |---|---|---|
 | Tile width | 150 mm | Historic 6-inch majolica size. Changing it re-tunes the relief settings below in proportion. |
-| Max height cap | width ÷ 10 | Never taller than this. |
-| Backing pad | 3.0 mm | Base slab. |
+| Max relief height | width ÷ 10 | The relief above the base never exceeds this. |
+| Backing pad | 15 mm | Solid base slab. |
 | Edge depth | 3.0 mm | How far each colour rolls down into its seams. |
 | Edge roll width | 6.0 mm | Seam to full height. Wider gives a softer valley. |
 | Top crown | 1.0 mm | Gentle dome; leveler on bigger areas. |
@@ -61,7 +61,7 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 | Max colours | 8 | Auto picks 3 up to this. |
 | Mesh smoothness | 0.16 mm | Finer than this runs out of memory on a 2 GiB Cloud Run instance, so the server enforces it. |
 
-A 150 mm tile is about 7 mm tall and about 0.9–1.6 M triangles; the `.3MF` is 9–15 MB.
+A 150 mm tile is about 19 mm tall (15 mm base plus about 4 mm relief) and about 0.9–1.6 M triangles; the `.3MF` is 9–15 MB.
 
 ## Performance
 
@@ -71,42 +71,137 @@ All numbers were measured under exact Cloud Run limits (2 vCPU, 2 GiB, no swap) 
 - **In the app, warm server:** the 3D preview is on screen in about 7 s and the download is ready in about 8.5 s. The page never freezes for more than about 1 s.
 - **Cold start:** the free tier sleeps when idle, so the first request after a quiet spell adds roughly 20–40 s. To hide this, the app wakes the server as soon as a photo is loaded, and the progress bar says so if it's still waking.
 
-## Run locally
+## Set it up yourself: step-by-step guide (no experience needed)
 
-Needs Docker and Python 3.
+The app has two halves:
 
+| Half | What it is | Where it runs | Cost |
+|---|---|---|---|
+| **Website** (front end) | The page you open in a browser. | GitHub Pages (`github.io`) | Free |
+| **Engine** (back end, Python) | Turns the photo into the 3D file. | **Hugging Face** *or* **Google Cloud** *or* **your own computer** | Free (Google needs a card on file) |
+
+The website only *talks to* an engine. You set up one engine, then **connect** the website to it.
+
+> **Just want to use it?** Open https://mixocreative.github.io/tw-tile-gen/ and skip this whole section.
+
+---
+
+### Option A: Hugging Face (free, no credit card, recommended)
+
+You only need a web browser.
+
+1. **Create a free account** at https://huggingface.co/join and confirm your email.
+2. **Get the engine files.** On https://github.com/mixocreative/tw-tile-gen click the green **Code** button, then **Download ZIP**. Unzip it. You need 4 files from the `backend` folder:
+   - `Dockerfile`
+   - `main.py`
+   - `tile_processor.py`
+   - `requirements.txt`
+3. **Create the Space.** Go to https://huggingface.co/new-space:
+   - **Space name:** `tw-tile-gen`
+   - **License:** your choice
+   - **Select the Space SDK:** **Docker**, then **Blank**
+   - **Hardware:** *CPU basic · free*
+   - **Visibility:** **Public**. The website needs to reach it.
+   - Click **Create Space**.
+4. **Upload the files.** In your new Space, open **Files**, then **+ Add file → Upload files**. Drag in the 4 files from step 2 and click **Commit changes to main**.
+5. **Tell it which port to use.** Still in **Files**, click `README.md`, then **Edit**. In the block between the two `---` lines at the top, add this line, then click **Commit changes**:
+   ```
+   app_port: 8080
+   ```
+6. **Allow your website to talk to it.** Go to **Settings → Variables and secrets → New variable**:
+   - **Name:** `ALLOWED_ORIGINS`
+   - **Value:** `https://mixocreative.github.io`. If you made your own website copy (Option D), use `https://YOUR-GITHUB-NAME.github.io`.
+   - Save. The Space rebuilds by itself.
+7. **Wait for "Running".** The status badge next to the name goes *Building → Running*. The first build takes about 5–10 minutes.
+8. **Find your engine address.** It's `https://YOUR-HF-NAME-tw-tile-gen.hf.space`, in lower case. To test it, open `https://YOUR-HF-NAME-tw-tile-gen.hf.space/health`. You should see `{"status":"ok", …}`.
+9. **Connect the website.** See [Connect the website to your engine](#connect-the-website-to-your-engine) below.
+
+> **Note:** a free Space goes to sleep after about 2 days with no visitors. The next visitor wakes it up, which takes about 1 minute; the progress bar says "Waking up the server".
+
+---
+
+### Option B: Google Cloud Run
+
+You need a Google account, and Google requires a credit card on file even for its free tier. Normal use of this app stays within the free tier, but check your billing page now and then.
+
+1. **Create a project.** Open https://console.cloud.google.com, click the project picker at the top, choose **New Project**, name it `tw-tile-gen`, and click **Create**.
+2. **Turn on billing.** Go to **☰ Menu → Billing** and link a billing account (card) to the project. Optionally, under **Budgets & alerts**, set a budget of US$1 so Google emails you if anything is ever charged.
+3. **Open Cloud Shell.** Click the **>_** icon at the top right of the console. A terminal opens in your browser, so nothing needs installing.
+4. **Paste these lines** into Cloud Shell, one block at a time. Press **Enter** after each, and click **Authorize** if asked.
+   ```bash
+   git clone https://github.com/mixocreative/tw-tile-gen.git
+   cd tw-tile-gen
+   gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+   ```
+   ```bash
+   gcloud run deploy tw-tile-gen --source backend --region asia-east1 \
+     --allow-unauthenticated --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 \
+     --min-instances 0 --max-instances 3 \
+     --set-env-vars ALLOWED_ORIGINS=https://mixocreative.github.io
+   ```
+   If it asks *"Allow unauthenticated invocations?"*, answer **y**. If it asks to create an Artifact Registry repository, answer **y**.
+5. **Copy the address.** After 5–10 minutes the last line shows `Service URL: https://tw-tile-gen-xxxxx.asia-east1.run.app`. Open it with `/health` added on the end; you should see `{"status":"ok", …}`.
+6. **Connect the website.** See the next section.
+
+`asia-east1` is Taiwan. Pick a region near your users. `--memory 2Gi` is required; the engine needs it.
+
+---
+
+### Option C: on your own computer
+
+**The easy way, with Docker:**
+1. Install **Docker Desktop** (https://www.docker.com/products/docker-desktop/) and start it.
+2. Download the project ZIP (Option A, step 2) and unzip it.
+3. Open a terminal *inside the unzipped folder*. On Windows: open the folder, then right-click → **Open in Terminal**. On macOS: right-click the folder → **New Terminal at Folder**. Then run:
+   ```bash
+   docker build -t tw-tile-gen backend
+   docker run --rm -p 8088:8080 tw-tile-gen
+   ```
+   Leave that window open; it is the engine.
+4. In a **second** terminal, in the same folder, start the website:
+   ```bash
+   python -m http.server 8790 --directory frontend
+   ```
+5. Open **http://localhost:8790/?api=http://localhost:8088**. The engine is connected automatically.
+
+**Without Docker (Python only):** install Python 3.11 or newer from https://www.python.org/downloads/ and tick **"Add Python to PATH"**. Then:
 ```bash
 cd backend
-docker build -t tw-tile-gen .
-docker run --rm -p 8088:8080 -m 2g --memory-swap 2g --cpus 2 \
-  -e ALLOWED_ORIGINS="http://localhost:8790" tw-tile-gen
-
-cd ../frontend
-python -m http.server 8790
-# open http://localhost:8790/?api=http://localhost:8088
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --port 8088
 ```
+Then do steps 4 and 5 above.
 
-Without Docker, Python 3.11+ also works: `pip install -r backend/requirements.txt`, then from `backend/` run `uvicorn main:app --port 8088`.
+---
 
-## Deploy
+### Connect the website to your engine
 
-### Backend → Google Cloud Run
+**Way 1, for yourself (no coding):**
+1. Open the website (https://mixocreative.github.io/tw-tile-gen/, or your own copy).
+2. Click the pill at the **top right** that says *Backend: …*.
+3. Paste your engine address, e.g. `https://YOUR-HF-NAME-tw-tile-gen.hf.space`, with no `/health` on the end.
+4. Click **Save & test**. The dot turns green and says *Backend: ready*. Your browser remembers the address.
 
-```bash
-gcloud auth login
-gcloud config set project <your-project>          # billing must be enabled (free tier still requires it)
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-gcloud run deploy tw-tile-gen --source backend --region asia-east1 \
-  --allow-unauthenticated --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 \
-  --min-instances 0 --max-instances 3 \
-  --set-env-vars ALLOWED_ORIGINS=https://<github-user>.github.io
-```
+**Way 2, a link to share:** add `?api=` and your engine address to the website link, e.g.
+`https://mixocreative.github.io/tw-tile-gen/?api=https://YOUR-HF-NAME-tw-tile-gen.hf.space`
 
-`--concurrency 1` means each request gets the whole instance; the work is CPU- and memory-heavy. Set `DEFAULT_API` in `frontend/index.html` to the service URL the deploy prints. Users can also paste a URL in the header pill, or pass `?api=` in the link.
+**Way 3, make it the default for everyone (your own copy):** in `frontend/index.html`, find `const DEFAULT_API = '…';` and put your engine address between the quotes. Then commit; your website updates in about a minute.
 
-### Frontend → GitHub Pages
+**If the dot is red ("unreachable"):**
+- Check the address works on its own with `/health` added.
+- Check the engine's `ALLOWED_ORIGINS` exactly matches your website's address: `https://NAME.github.io`, with no path and no trailing `/`.
+- A sleeping Hugging Face Space takes about a minute to wake. Try again.
 
-`.github/workflows/pages.yml` publishes `frontend/` on every push to `main`. One-time setup: **Settings → Pages → Source: GitHub Actions**.
+---
+
+### Option D: your own copy of the website (GitHub Pages)
+
+1. Create a free account at https://github.com/signup.
+2. Open https://github.com/mixocreative/tw-tile-gen and click **Fork**, then **Create fork**.
+3. In your fork, go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**.
+4. Go to the **Actions** tab, click **Deploy frontend to GitHub Pages**, then **Run workflow**.
+5. After about a minute your website is at `https://YOUR-GITHUB-NAME.github.io/tw-tile-gen/`.
+6. Connect it to your engine (previous section). Remember the engine's `ALLOWED_ORIGINS` must be `https://YOUR-GITHUB-NAME.github.io`.
 
 ## API
 

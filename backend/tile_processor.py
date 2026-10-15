@@ -49,7 +49,7 @@ BODY_WORKERS = int(os.environ.get("MIXOTILE_BODY_WORKERS", 1))     # measured: 2
 @dataclass
 class TileConfig:
     tile_size_mm: float = 150.0
-    pad_thickness_mm: float = 3.0    # thin base, most of the height goes to the pattern
+    pad_thickness_mm: float = 15.0   # solid ceramic-like base slab (owner default); relief sits on top
     relief_height_mm: float = 3.0    # edge depth: how far each colour rolls down from its top to the seam
     fillet_radius_mm: float = 6.0    # edge-roll width: seam -> full height (wider = softer valley)
     dome_height_mm: float = 1.0      # gentle crown on top of each patch (leveler on bigger patches)

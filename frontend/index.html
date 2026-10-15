@@ -90,6 +90,17 @@
   .cropper-point { background-color: #f2c94c; width: 10px; height: 10px; opacity: 1; }
   .cropper-line { background-color: #f2c94c; }
   details > summary { list-style: none; cursor: pointer; }
+  /* backend settings pop-over: anchored to the pill on desktop, a full-width sheet on phones */
+  .api-pop { position: absolute; right: 0; margin-top: .5rem; z-index: 30; width: min(92vw, 380px); }
+  @media (max-width: 640px) { .api-pop { left: 0; right: auto; width: calc(100vw - 32px); } }   /* pill wraps to the left edge on phones */
+  /* touch screens: every control at least ~44 px tall so it is easy to hit with a finger */
+  @media (pointer: coarse) {
+    .btn, .seg button, details > summary, #sampleBtn, #glbBtn, #apiBox > summary { min-height: 44px; }
+    #sampleBtn, #glbBtn, details > summary { display: inline-flex; align-items: center; }
+    .field input[type=number], .field select, #apiUrl { min-height: 44px; font-size: 16px; }   /* 16 px: iOS won't zoom on focus */
+    input[type=checkbox] { width: 22px; height: 22px; }
+    .swatch .x { width: 1.6rem; height: 1.6rem; line-height: 1.6rem; }
+  }
   details > summary::-webkit-details-marker { display: none; }
 </style>
 </head>
@@ -109,7 +120,7 @@
       <span id="apiDot" class="w-2.5 h-2.5 rounded-full bg-gray-400" aria-hidden="true"></span>
       <span id="apiLabel">Backend: checking…</span>
     </summary>
-    <div class="absolute right-0 mt-2 z-30 card p-4 w-[min(92vw,380px)]">
+    <div class="api-pop card p-4">
       <label for="apiUrl" class="text-xs text-clay">Cloud Run service URL</label>
       <input id="apiUrl" type="url" placeholder="https://mixotile-xxxxx-de.a.run.app" class="w-full mt-1 border border-[#d9cbaa] rounded-lg px-3 py-2 font-mono text-sm bg-white">
       <div class="flex gap-2 mt-3">
@@ -212,8 +223,8 @@
     <div class="flex items-center gap-3 mb-4"><span class="step-badge">4</span><h2 id="h4s" class="font-display text-xl font-semibold">Physical proportions</h2></div>
     <form id="settingsForm" class="grid grid-cols-2 md:grid-cols-4 gap-4" onsubmit="return false">
       <div class="field"><label for="tileSize">Tile width / length</label><div class="unit" data-unit="mm"><input id="tileSize" type="number" min="20" max="400" step="0.5" value="150.0"></div></div>
-      <div class="field"><label for="maxH">Max height cap <span class="text-[11px]">(width ÷ 10)</span></label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
-      <div class="field"><label for="padThick">Backing pad thickness</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="3.0"></div></div>
+      <div class="field"><label for="maxH">Max relief height <span class="text-[11px]">(above the base, width ÷ 10)</span></label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
+      <div class="field"><label for="padThick">Backing pad thickness</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="15.0"></div></div>
       <div class="field"><label for="domeH">Top crown <span class="text-[11px]">(gentle)</span></label><div class="unit" data-unit="mm"><input id="domeH" type="number" min="0" max="20" step="0.1" value="1.0"></div></div>
       <div class="field"><label for="reliefH">Edge depth <span class="text-[11px]">(top → seam)</span></label><div class="unit" data-unit="mm"><input id="reliefH" type="number" min="0.1" max="40" step="0.1" value="3.0"></div></div>
       <div class="field"><label for="clearance">Clearance between colours <span class="text-[11px]">(0 = flush)</span></label><div class="unit" data-unit="mm"><input id="clearance" type="number" min="0" max="2" step="0.05" value="0"></div></div>
@@ -236,7 +247,7 @@
         <label class="flex items-center gap-2 text-sm self-end pb-2"><input id="edgeSeam" type="checkbox" class="w-4 h-4 accent-[#23408e]"> Groove along tile edge</label>
       </div>
     </details>
-    <p id="scaleNote" class="hidden text-xs text-cobalt mt-3">↳ Relief re-tuned for this tile size (never taller than width ÷ 10). Edit any field to override.</p>
+    <p id="scaleNote" class="hidden text-xs text-cobalt mt-3">↳ Relief re-tuned for this tile size (relief never taller than width ÷ 10). Edit any field to override.</p>
     <p class="text-sm text-clay mt-4" id="heightEcho"></p>
     <div class="mt-5 flex flex-wrap gap-3 items-center">
       <button id="generateBtn" class="btn btn-peach text-base px-6 py-3.5 font-semibold">🧱 Generate 3D relief</button>
@@ -785,13 +796,13 @@ function updateHeightEcho() {
 [...settingIds, 'numColors'].forEach((id) => $(id).addEventListener('input', renderTiers));
 
 // Relief scales with the tile: edge depth 2 % of the width, roll width 4 %, crown 0.7 % — a real
-// tile's glaze only rolls a few mm into its seams. Max height (width ÷ 10) is a cap: if pad + floor +
+// tile's glaze only rolls a few mm into its seams. Max relief height (width ÷ 10, above the base) is a cap: if floor +
 // relief would exceed it, the relief is scaled down to fit. Any field can be overridden afterwards.
 function splitHeight() {
   const r2 = (x) => Math.round(x * 100) / 100, layer = (x) => Math.max(0.2, Math.round(x / 0.2) * 0.2);
   const size = +$('tileSize').value;
   let depth = 0.02 * size, crown = 0.0067 * size;
-  const budget = Math.max(0.6, +$('maxH').value - +$('padThick').value - +$('grooveFloor').value);
+  const budget = Math.max(0.6, +$('maxH').value - +$('grooveFloor').value);      // the cap applies to the relief above the base
   const k = Math.min(1, budget / (depth + crown)); depth *= k; crown *= k;
   $('reliefH').value = r2(layer(depth));                                         // whole 0.2 mm layers
   $('domeH').value = r2(crown);
@@ -802,14 +813,14 @@ $('tileSize').addEventListener('change', () => {
   const size = parseFloat($('tileSize').value); if (!Number.isFinite(size) || size < 20) return;
   const s = size / 150, e = Math.sqrt(s), r2 = (x) => Math.round(x * 100) / 100;
   $('maxH').value = r2(size / 10);
-  $('padThick').value = r2(Math.max(1.2, 3.0 * e));
+  $('padThick').value = r2(Math.max(1.2, 15.0 * e));
   $('grooveFloor').value = r2(Math.max(0.2, Math.round((0.4 * e) / 0.2) * 0.2));
   $('cornerR').value = r2(Math.max(0.5, 2.0 * s));
   $('meshRes').value = r2(Math.max(0.05, Math.min(0.16, 0.16 * s)));
   $('scaleNote').classList.remove('hidden');
   splitHeight();
 });
-['maxH', 'padThick', 'grooveFloor'].forEach((id) => $(id).addEventListener('change', splitHeight));
+['maxH', 'grooveFloor'].forEach((id) => $(id).addEventListener('change', splitHeight));
 function readSettings() {
   const v = Object.fromEntries(settingIds.map((id) => [id, parseFloat($(id).value)]));
   for (const id of settingIds) {

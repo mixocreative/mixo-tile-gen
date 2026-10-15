@@ -20,7 +20,8 @@ COPY main.py tile_processor.py ./
 # Fail the build early if a native dependency can't load.
 RUN python -c "import cv2, sklearn, skimage.measure, scipy.sparse, fast_simplification, trimesh, tile_processor; print('deps ok')"
 
-RUN useradd --create-home --uid 10001 app
+# uid 1000: Hugging Face Spaces runs containers as user 1000 (also fine on Cloud Run)
+RUN useradd --create-home --uid 1000 app
 USER app
 
 EXPOSE 8080

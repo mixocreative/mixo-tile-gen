@@ -92,7 +92,7 @@ async def process_tile(
     corners: str | None = Form(None, description="JSON [[x,y]x4] in image pixels (TL,TR,BR,BL; any order accepted)"),
     swatches: str | None = Form(None, description='JSON [[r,g,b],...] or ["#rrggbb",...]; empty → k-means'),
     tile_size_mm: float = Form(150.0),
-    pad_thickness_mm: float = Form(3.0),
+    pad_thickness_mm: float = Form(15.0),
     relief_height_mm: float = Form(3.0, description="edge depth: top of each colour down to its seams"),
     fillet_radius_mm: float = Form(6.0, description="edge-roll width (wider = softer valley)"),
     dome_height_mm: float = Form(1.0, description="gentle crown on top (leveler on bigger patches)"),
