@@ -98,7 +98,7 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 ## 4. Status log (newest first)
 
 - **2026-10-15, ship round (published):**
-  - Repo https://github.com/mixocreative/tw-tile-gen (public), Pages live at https://mixocreative.github.io/tw-tile-gen/.
+  - Repo https://github.com/mixocreative/mixo-tile-gen (public), Pages live at https://mixocreative.github.io/mixo-tile-gen/.
   - **UI redesign** via Stitch (project 11051604963556458741, `.stitch/DESIGN.md`): warm monochrome palette (ink #1c1a17 → paper #faf8f5), Geist + Geist Mono, compact 32 px controls (38/44 px on touch), hairline numbered sections, phone bottom step nav. Owner rule: everything monochrome **except the original coloured tile logo/favicon**. All original element IDs kept.
   - Defaults changed: backing pad **15 mm** (max-relief cap = width/10 applies above the base only), smoothing **1.2** (app and backend in sync).
   - Streaming `/process-tile?stream=true`: NDJSON progress → binary preview mesh → 3MF bytes; preview opens before the file is ready.

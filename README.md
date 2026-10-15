@@ -2,7 +2,7 @@
 
 Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, optional `.GLB`) ready for multi-material 3D printing.
 
-**Live app:** https://mixocreative.github.io/tw-tile-gen/
+**Live app:** https://mixocreative.github.io/mixo-tile-gen/
 **Backend:** Python engine on Hugging Face Spaces (free, no card). It's Google Cloud Run-ready too; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
 ![16 real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
@@ -99,7 +99,7 @@ The app has two halves:
 
 The website only *talks to* an engine. You set up one engine, then **connect** the website to it.
 
-> **Just want to use it?** Open https://mixocreative.github.io/tw-tile-gen/ and skip this whole section.
+> **Just want to use it?** Open https://mixocreative.github.io/mixo-tile-gen/ and skip this whole section.
 
 ---
 
@@ -108,7 +108,7 @@ The website only *talks to* an engine. You set up one engine, then **connect** t
 You only need a web browser.
 
 1. **Create a free account** at https://huggingface.co/join and confirm your email.
-2. **Get the engine files.** On https://github.com/mixocreative/tw-tile-gen click the green **Code** button, then **Download ZIP**. Unzip it. You need 4 files from the `backend` folder:
+2. **Get the engine files.** On https://github.com/mixocreative/mixo-tile-gen click the green **Code** button, then **Download ZIP**. Unzip it. You need 4 files from the `backend` folder:
    - `Dockerfile`
    - `main.py`
    - `tile_processor.py`
@@ -146,8 +146,8 @@ You need a Google account, and Google requires a credit card on file even for it
 3. **Open Cloud Shell.** Click the **>_** icon at the top right of the console. A terminal opens in your browser, so nothing needs installing.
 4. **Paste these lines** into Cloud Shell, one block at a time. Press **Enter** after each, and click **Authorize** if asked.
    ```bash
-   git clone https://github.com/mixocreative/tw-tile-gen.git
-   cd tw-tile-gen
+   git clone https://github.com/mixocreative/mixo-tile-gen.git
+   cd mixo-tile-gen
    gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
    ```
    ```bash
@@ -194,13 +194,13 @@ Then do steps 4 and 5 above.
 ### Connect the website to your engine
 
 **Way 1, for yourself (no coding):**
-1. Open the website (https://mixocreative.github.io/tw-tile-gen/, or your own copy).
+1. Open the website (https://mixocreative.github.io/mixo-tile-gen/, or your own copy).
 2. Click the pill at the **top right** that says *Backend: …*.
 3. Paste your engine address, e.g. `https://YOUR-HF-NAME-tw-tile-gen.hf.space`, with no `/health` on the end.
 4. Click **Save & test**. The dot turns green and says *Backend: ready*. Your browser remembers the address.
 
 **Way 2, a link to share:** add `?api=` and your engine address to the website link, e.g.
-`https://mixocreative.github.io/tw-tile-gen/?api=https://YOUR-HF-NAME-tw-tile-gen.hf.space`
+`https://mixocreative.github.io/mixo-tile-gen/?api=https://YOUR-HF-NAME-tw-tile-gen.hf.space`
 
 **Way 3, make it the default for everyone (your own copy):** in `frontend/index.html`, find `const DEFAULT_API = '…';` and put your engine address between the quotes. Then commit; your website updates in about a minute.
 
@@ -214,10 +214,10 @@ Then do steps 4 and 5 above.
 ### Option D: your own copy of the website (GitHub Pages)
 
 1. Create a free account at https://github.com/signup.
-2. Open https://github.com/mixocreative/tw-tile-gen and click **Fork**, then **Create fork**.
+2. Open https://github.com/mixocreative/mixo-tile-gen and click **Fork**, then **Create fork**.
 3. In your fork, go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**.
 4. Go to the **Actions** tab, click **Deploy frontend to GitHub Pages**, then **Run workflow**.
-5. After about a minute your website is at `https://YOUR-GITHUB-NAME.github.io/tw-tile-gen/`.
+5. After about a minute your website is at `https://YOUR-GITHUB-NAME.github.io/mixo-tile-gen/`.
 6. Connect it to your engine (previous section). Remember the engine's `ALLOWED_ORIGINS` must be `https://YOUR-GITHUB-NAME.github.io`.
 
 ## API
