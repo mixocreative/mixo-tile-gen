@@ -5,9 +5,26 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 **Live app:** https://mixocreative.github.io/tw-tile-gen/
 **Backend:** Python engine on Hugging Face Spaces (free, no card). It's Google Cloud Run-ready too; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
-![16 real tiles: photo vs generated relief](docs/results/compare_01.jpg)
+![16 real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
 
 ---
+
+## Why you'll love it
+
+**Point your phone at a tile. Get a 3D-printable copy in about 10 seconds.** There's nothing to install, no account, and it's free.
+
+- **📸 Snap it, done.** Take a photo of any tile: in a museum, on an old house, at a flea market. Crooked angles are fine; the app straightens them for you.
+- **🤖 It finds the tile for you.** Google's on-device AI outlines the tile in your browser, and your photo never leaves your phone for that step. You can nudge the four corners with your finger if you want it perfect.
+- **🎨 It understands colours.** It works out the glaze colours by itself: up to 8 by default, or pick your own with a tap. Shadows and shine on the glaze don't fool it into inventing extra colours.
+- **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
+- **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw, so you can print it in several colours in one go. Want a tiny gap so the pieces snap together? Set the **clearance**.
+- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes, then download the `.3MF` (or `.GLB`).
+- **⏱️ Fast and honest.** A real progress bar shows what's actually happening ("Carving colour 3 of 8…"), with time left. It's usually about 10 seconds.
+- **🛠️ Make it yours.** Every setting is a simple number in millimetres. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing). Change the base thickness, how high the colours rise, how round the edges are, how strong the outlines are, the gaps between pieces, the colour count, the mesh smoothness and more.
+- **📱 Works on your phone.** It's designed for phones first: big enough to tap, small enough to stay out of the way.
+- **🆓 Free and open.** The website runs on GitHub Pages and the engine on a free Hugging Face Space. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
+
+**Fun ideas:** coasters 🍵 · fridge magnets 🧲 · a wall of your neighbourhood's tiles 🏘️ · gifts from a trip to Taiwan 🎁 · restoring a missing tile in an old floor 🔧 · class projects about Taiwanese heritage 🏫
 
 ## What it does
 

@@ -102,7 +102,7 @@ async def process_tile(
     mesh_resolution_mm: float = Form(0.16),
     num_colors: int = Form(8, description="max colours; auto-k picks 3..this"),
     px_per_mm: float = Form(4.0),
-    smoothing_mm: float = Form(0.5),
+    smoothing_mm: float = Form(1.2),
     min_feature_mm2: float = Form(2.0),
     merge_delta_e: float = Form(12.0, description="merge shading bands of one glaze (0 = off)"),
     bead_height_mm: float = Form(1.2, description="printable minimum height for thin strokes"),

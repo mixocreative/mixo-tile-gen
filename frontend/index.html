@@ -3,29 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MixoTile · 花磚 3D Relief</title>
+<title>tw-tile-gen · 花磚 3D relief</title>
 <meta name="description" content="Turn a photo of a Taiwanese majolica tile into a watertight multi-colour 3D relief (.3MF) — free, in your browser.">
-<meta name="theme-color" content="#23408e">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23f3ecdc'/%3E%3Crect x='5' y='5' width='54' height='54' rx='6' fill='none' stroke='%2323408e' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='13' fill='%23e58e73'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23f2c94c'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#faf8f5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23fffaf0'/%3E%3Crect x='5' y='5' width='54' height='54' rx='6' fill='none' stroke='%2323408e' stroke-width='5'/%3E%3Cg fill='%233a8a5c'%3E%3Cellipse cx='16' cy='16' rx='7' ry='3.2' transform='rotate(45 16 16)'/%3E%3Cellipse cx='48' cy='48' rx='7' ry='3.2' transform='rotate(45 48 48)'/%3E%3Cellipse cx='48' cy='16' rx='7' ry='3.2' transform='rotate(-45 48 16)'/%3E%3Cellipse cx='16' cy='48' rx='7' ry='3.2' transform='rotate(-45 16 48)'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='13' fill='%23e58e73'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23f2c94c'/%3E%3C/svg%3E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
+  // Warm monochrome (Stitch "Majolica Relief Studio"): warm black -> warm greys -> warm off-white.
+  // Legacy colour names (clay, cobalt, ink, peach…) are kept as aliases so classes the app script
+  // generates at runtime pick up the new palette too.
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          glaze: '#f3ecdc', bisque: '#e9dfc7', cobalt: { DEFAULT: '#23408e', deep: '#182d66', soft: '#dfe5f3' },
-          peach: '#e58e73', jade: '#3a8a5c', ochre: '#f2c94c', ink: '#1f2430', clay: '#8a6f55',
+          ink: '#1c1a17', ink2: '#3a3631', mute: '#77706a', faint: '#b8b1a8', line: '#e6e1da', soft: '#f2efea', paper: '#faf8f5',
+          clay: '#77706a', cobalt: { DEFAULT: '#1c1a17', deep: '#1c1a17', soft: '#f2efea' }, peach: '#1c1a17', glaze: '#faf8f5', bisque: '#e6e1da',
         },
         fontFamily: {
-          display: ['Fraunces', 'Noto Sans TC', 'serif'],
-          sans: ['"Noto Sans TC"', 'system-ui', 'sans-serif'],
-          mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+          sans: ['Geist', '"Noto Sans TC"', 'system-ui', 'sans-serif'],
+          display: ['Geist', '"Noto Sans TC"', 'system-ui', 'sans-serif'],
+          mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
         },
       },
     },
@@ -42,259 +45,308 @@
 </script>
 
 <style>
-  :root { color-scheme: light; }
-  body {
-    background-color: #f3ecdc;
-    /* faint quatrefoil tile lattice */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Cg fill='none' stroke='%2323408e' stroke-opacity='.07' stroke-width='1.5'%3E%3Crect x='.75' y='.75' width='86.5' height='86.5'/%3E%3Ccircle cx='44' cy='26' r='18'/%3E%3Ccircle cx='44' cy='62' r='18'/%3E%3Ccircle cx='26' cy='44' r='18'/%3E%3Ccircle cx='62' cy='44' r='18'/%3E%3C/g%3E%3C/svg%3E");
+  :root {
+    color-scheme: light;
+    --ink: #1c1a17; --ink2: #3a3631; --mute: #77706a; --faint: #b8b1a8; --line: #e6e1da; --line2: #d6cfc6;
+    --soft: #f2efea; --paper: #faf8f5; --white: #ffffff;
+    --r: 6px; --h: 32px;
   }
-  .card { background: rgba(255, 252, 245, .92); border: 1px solid #e2d6bb; border-radius: 18px; box-shadow: 0 1px 0 #fff inset, 0 10px 30px -18px rgba(31, 36, 48, .35); }
-  .step-badge { width: 2rem; height: 2rem; border-radius: 9999px; display: inline-grid; place-items: center; font-family: Fraunces, serif; font-weight: 700; background: #23408e; color: #f3ecdc; flex: none; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 12px; padding: .7rem 1.05rem; font-weight: 500; transition: transform .12s, background-color .15s, box-shadow .15s; user-select: none; }
-  .btn:active { transform: translateY(1px); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
-  .btn-primary { background: #23408e; color: #fff; box-shadow: 0 6px 16px -8px #23408e; }
-  .btn-primary:hover:not(:disabled) { background: #182d66; }
-  .btn-ghost { background: #fff; color: #1f2430; border: 1px solid #d9cbaa; }
-  .btn-ghost:hover:not(:disabled) { background: #faf5ea; }
-  .btn-peach { background: #e58e73; color: #1f2430; }
-  .btn-peach:hover:not(:disabled) { background: #dc7a5d; }
-  .seg { display: inline-flex; background: #e9dfc7; border-radius: 12px; padding: 4px; }
-  .seg button { padding: .45rem .85rem; border-radius: 9px; font-size: .875rem; color: #5b5144; }
-  .seg button[aria-pressed="true"] { background: #fff; color: #23408e; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-  .field label { display: block; font-size: .8rem; color: #5b5144; margin-bottom: .3rem; }
-  .field input[type=number] { width: 100%; border: 1px solid #d9cbaa; background: #fff; border-radius: 10px; padding: .55rem .7rem; font-family: "IBM Plex Mono", monospace; font-size: .95rem; }
-  .field input:focus, .seg button:focus-visible, .btn:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px; }
-  .unit { position: relative; }
-  .unit::after { content: attr(data-unit); position: absolute; right: .7rem; top: 50%; transform: translateY(-50%); font-size: .75rem; color: #8a7a62; pointer-events: none; font-family: "IBM Plex Mono", monospace; }
-  /* overflow visible + rounding on the canvas: a handle sitting on a photo corner must stay visible and grabbable */
-  .stage { position: relative; touch-action: none; user-select: none; background: #2a2620; border-radius: 14px; overflow: visible; }
-  .stage canvas.src { display: block; width: 100%; height: auto; border-radius: 14px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.45; letter-spacing: -0.005em; }
+  .mono { font-family: "Geist Mono", ui-monospace, monospace; letter-spacing: 0; }
+
+  /* section = hairline-ruled block, no cards */
+  .sec { padding: 20px 0 24px; }
+  .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--line2); }
+  .sec-h h2 { font: 500 12px/1 "Geist Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .sec-h .meta { font: 400 11px/1 "Geist Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: 10px; }
+  .hint { color: var(--mute); font-size: 12px; }
+
+  /* buttons: compact */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: var(--h); padding: 0 12px; border-radius: var(--r);
+         font: 500 13px/1 Geist, sans-serif; white-space: nowrap; border: 1px solid transparent; transition: background-color .12s, border-color .12s, color .12s; user-select: none; cursor: pointer; }
+  .btn svg { width: 15px; height: 15px; flex: none; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary, .btn-peach { background: var(--ink); color: var(--paper); }
+  .btn-primary:hover:not(:disabled), .btn-peach:hover:not(:disabled) { background: var(--ink2); }
+  .btn-ghost { background: var(--white); color: var(--ink); border-color: var(--line2); }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--faint); background: var(--soft); }
+  .btn-text { height: auto; padding: 4px 2px; background: none; color: var(--mute); font: 400 12px/1.2 "Geist Mono", monospace; }
+  .btn-text:hover { color: var(--ink); }
+  .btn-lg { height: 44px; font-size: 14px; padding: 0 18px; }
+  .link { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); font: 400 12px/1.2 "Geist Mono", monospace; }
+
+  /* segmented control */
+  .seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r); padding: 2px; }
+  .seg button { height: 26px; padding: 0 10px; border-radius: 4px; font: 400 12px/1 "Geist Mono", monospace; color: var(--mute); }
+  .seg button[aria-pressed="true"] { background: var(--white); color: var(--ink); box-shadow: 0 0 0 1px var(--line2); }
+
+  /* inline-label numeric field:  [ Label        150 mm ] */
+  .field { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 9px; background: var(--white); border: 1px solid var(--line2); border-radius: var(--r); }
+  .field:focus-within { border-color: var(--ink); }
+  .field label { flex: 1; min-width: 0; font: 400 11.5px/1.2 "Geist Mono", monospace; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field label small { display: none; }
+  .field .unit { display: flex; align-items: center; gap: 4px; }
+  .field .unit::after { content: attr(data-unit); font: 400 11px/1 "Geist Mono", monospace; color: var(--mute); }
+  .field input[type=number], .field select { width: 5.2ch; text-align: right; background: transparent; border: 0; outline: 0; padding: 0;
+         font: 500 13px/1 "Geist Mono", monospace; color: var(--ink); -moz-appearance: textfield; }
+  .field select { width: auto; text-align: left; }
+  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .btn:focus-visible, .seg button:focus-visible, .link:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  /* corner editor */
+  .stage { position: relative; touch-action: none; user-select: none; background: #2a2723; border-radius: 8px; overflow: visible; }
+  .stage canvas.src { display: block; width: 100%; height: auto; border-radius: 8px; }
   .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; }
-  .handle { cursor: grab; }
-  .handle:active { cursor: grabbing; }
-  #loupe { position: absolute; z-index: 2; top: 10px; left: 10px; width: 132px; height: 132px; border-radius: 9999px; border: 3px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,.45); pointer-events: none; display: none; background: #000; }
-  #flatCanvas { cursor: crosshair; image-rendering: auto; }
-  .swatch { position: relative; width: 3rem; height: 3rem; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 0 0 1px #cdbf9f, 0 4px 10px -6px rgba(0,0,0,.4); overflow: hidden; }
+  .handle { cursor: grab; } .handle:active { cursor: grabbing; }
+  #loupe { position: absolute; z-index: 2; top: 10px; left: 10px; width: 120px; height: 120px; border-radius: 9999px; border: 2px solid #fff; box-shadow: 0 4px 14px rgba(0,0,0,.35); pointer-events: none; display: none; background: #000; }
+  #flatCanvas { cursor: crosshair; }
+  .swatch { position: relative; width: 34px; height: 34px; border-radius: 8px; box-shadow: 0 0 0 1px var(--line2); overflow: hidden; }
   .swatch input[type=color] { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); border: 0; padding: 0; cursor: pointer; background: none; }
-  .swatch .x { position: absolute; top: -2px; right: -2px; width: 1.15rem; height: 1.15rem; border-radius: 9999px; background: #1f2430; color: #fff; font-size: .7rem; line-height: 1.15rem; text-align: center; opacity: .85; }
-  .spinner { width: 54px; height: 54px; border-radius: 9999px; border: 5px solid #dfe5f3; border-top-color: #23408e; animation: spin .9s linear infinite; }
+  .swatch .x { position: absolute; top: 1px; right: 1px; width: 14px; height: 14px; border-radius: 9999px; background: var(--ink); color: #fff; font-size: 9px; line-height: 14px; text-align: center; }
+  .spinner { width: 14px; height: 14px; border-radius: 9999px; border: 2px solid var(--line2); border-top-color: var(--ink); animation: spin .8s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .tile-spin { animation: tilt 2.4s ease-in-out infinite; }
-  @keyframes tilt { 0%,100% { transform: perspective(300px) rotateX(0) rotateY(0); } 50% { transform: perspective(300px) rotateX(35deg) rotateY(-25deg); } }
-  .flash { animation: flash 1.2s ease-out; }
-  @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(242,201,76,.9); } 100% { box-shadow: 0 0 0 18px rgba(242,201,76,0); } }
-  @media (prefers-reduced-motion: reduce) { .tile-spin, .flash, .spinner { animation: none; } }
-  .cropper-view-box, .cropper-face { border-radius: 0; }
-  .cropper-view-box { outline: 2px solid #f2c94c; outline-color: rgba(242,201,76,.9); }
-  .cropper-point { background-color: #f2c94c; width: 10px; height: 10px; opacity: 1; }
-  .cropper-line { background-color: #f2c94c; }
+  .flash { animation: flash 1s ease-out; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(28,26,23,.35); } 100% { box-shadow: 0 0 0 12px rgba(28,26,23,0); } }
+  @media (prefers-reduced-motion: reduce) { .flash, .spinner { animation: none; } }
+  .cropper-view-box { outline: 2px solid #fff; outline-color: rgba(255,255,255,.95); }
+  .cropper-point { background-color: #fff; width: 9px; height: 9px; opacity: 1; }
+  .cropper-line { background-color: #fff; }
   details > summary { list-style: none; cursor: pointer; }
-  /* backend settings pop-over: anchored to the pill on desktop, a full-width sheet on phones */
-  .api-pop { position: absolute; right: 0; margin-top: .5rem; z-index: 30; width: min(92vw, 380px); }
-  @media (max-width: 640px) { .api-pop { left: 0; right: auto; width: calc(100vw - 32px); } }   /* pill wraps to the left edge on phones */
-  /* touch screens: every control at least ~44 px tall so it is easy to hit with a finger */
-  @media (pointer: coarse) {
-    .btn, .seg button, details > summary, #sampleBtn, #glbBtn, #apiBox > summary { min-height: 44px; }
-    #sampleBtn, #glbBtn, details > summary { display: inline-flex; align-items: center; }
-    .field input[type=number], .field select, #apiUrl { min-height: 44px; font-size: 16px; }   /* 16 px: iOS won't zoom on focus */
-    input[type=checkbox] { width: 22px; height: 22px; }
-    .swatch .x { width: 1.6rem; height: 1.6rem; line-height: 1.6rem; }
-  }
   details > summary::-webkit-details-marker { display: none; }
+  details[open] .chev { transform: rotate(90deg); }
+
+  /* engine pop-over */
+  .api-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(92vw, 360px); padding: 12px; }
+  @media (max-width: 640px) { .api-pop { right: -4px; width: calc(100vw - 24px); } }
+
+  /* narrow screens: label on top, value + unit below (no truncated labels) */
+  @media (max-width: 640px) {
+    .field { height: auto !important; flex-wrap: wrap; row-gap: 1px; padding: 6px 9px; }
+    .field label, .field > span { flex: 0 0 100%; font-size: 10.5px; }
+    .field .unit, .field > input, .field > select { margin-left: auto; }
+  }
+  /* phone: bottom step bar + touch sizes (still compact) */
+  #stepNav a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font: 400 10px/1 "Geist Mono", monospace; letter-spacing: .06em; color: var(--mute); }
+  #stepNav a svg { width: 18px; height: 18px; }
+  @media (pointer: coarse) {
+    :root { --h: 38px; }
+    .seg button { height: 32px; }
+    .field { height: 42px; }
+    .field input[type=number], .field select, #apiUrl { font-size: 16px; }   /* 16 px: iOS won't zoom on focus */
+    .btn-text, .link, details > summary { min-height: 32px; display: inline-flex; align-items: center; }
+    input[type=checkbox] { width: 20px; height: 20px; }
+    .swatch { width: 40px; height: 40px; }
+    .swatch .x { width: 18px; height: 18px; line-height: 18px; }
+  }
 </style>
 </head>
 
-<body class="font-sans text-ink antialiased min-h-screen">
+<body class="font-sans antialiased min-h-screen">
 <!-- ================================================================ header -->
-<header class="max-w-6xl mx-auto px-4 pt-6 pb-2 flex flex-wrap items-center gap-3 justify-between">
-  <div class="flex items-center gap-3">
-    <svg width="44" height="44" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#fffaf0"/><rect x="5" y="5" width="54" height="54" rx="6" fill="none" stroke="#23408e" stroke-width="5"/><g fill="#3a8a5c"><ellipse cx="16" cy="16" rx="7" ry="3.2" transform="rotate(45 16 16)"/><ellipse cx="48" cy="48" rx="7" ry="3.2" transform="rotate(45 48 48)"/><ellipse cx="48" cy="16" rx="7" ry="3.2" transform="rotate(-45 48 16)"/><ellipse cx="16" cy="48" rx="7" ry="3.2" transform="rotate(-45 16 48)"/></g><circle cx="32" cy="32" r="13" fill="#e58e73"/><circle cx="32" cy="32" r="5" fill="#f2c94c"/></svg>
-    <div>
-      <h1 class="font-display text-2xl sm:text-3xl font-bold leading-none text-cobalt-deep">MixoTile <span class="font-sans font-bold text-peach">花磚</span></h1>
-      <p class="text-sm text-clay mt-1">Majolica tile photo → printable multi-colour 3D relief</p>
+<header class="sticky top-0 z-40 bg-paper/90 backdrop-blur border-b border-line">
+  <div class="max-w-[1100px] mx-auto px-4 h-12 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2 min-w-0">
+      <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#fffaf0"/><rect x="5" y="5" width="54" height="54" rx="6" fill="none" stroke="#23408e" stroke-width="5"/><g fill="#3a8a5c"><ellipse cx="16" cy="16" rx="7" ry="3.2" transform="rotate(45 16 16)"/><ellipse cx="48" cy="48" rx="7" ry="3.2" transform="rotate(45 48 48)"/><ellipse cx="48" cy="16" rx="7" ry="3.2" transform="rotate(-45 48 16)"/><ellipse cx="16" cy="48" rx="7" ry="3.2" transform="rotate(-45 16 48)"/></g><circle cx="32" cy="32" r="13" fill="#e58e73"/><circle cx="32" cy="32" r="5" fill="#f2c94c"/></svg>
+      <h1 class="font-semibold text-[15px] tracking-tight whitespace-nowrap">tw-tile-gen</h1>
+      <span class="text-[11px] px-1.5 py-0.5 rounded border border-line text-mute" style="font-family:'Noto Sans TC',sans-serif">花磚</span>
     </div>
-  </div>
-  <details class="relative" id="apiBox">
-    <summary class="flex items-center gap-2 text-sm bg-white/80 border border-[#e2d6bb] rounded-full pl-2 pr-3 py-1.5">
-      <span id="apiDot" class="w-2.5 h-2.5 rounded-full bg-gray-400" aria-hidden="true"></span>
-      <span id="apiLabel">Backend: checking…</span>
-    </summary>
-    <div class="api-pop card p-4">
-      <label for="apiUrl" class="text-xs text-clay">Cloud Run service URL</label>
-      <input id="apiUrl" type="url" placeholder="https://mixotile-xxxxx-de.a.run.app" class="w-full mt-1 border border-[#d9cbaa] rounded-lg px-3 py-2 font-mono text-sm bg-white">
-      <div class="flex gap-2 mt-3">
-        <button id="apiSave" class="btn btn-primary text-sm py-2">Save &amp; test</button>
-        <span class="text-xs text-clay self-center">Saved in this browser. <code>?api=</code> also works.</span>
+    <details class="relative" id="apiBox">
+      <summary class="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-white mono text-[11px] uppercase tracking-wider text-ink2">
+        <span id="apiDot" class="w-1.5 h-1.5 rounded-full bg-gray-400" aria-hidden="true"></span>
+        <span id="apiLabel">Engine: checking…</span>
+      </summary>
+      <div class="api-pop card">
+        <label for="apiUrl" class="mono text-[11px] uppercase tracking-wider text-mute">Engine URL</label>
+        <input id="apiUrl" type="url" placeholder="https://name-tw-tile-gen.hf.space" class="w-full mt-1.5 h-9 border border-line rounded-md px-2.5 mono text-[12px] bg-white outline-none focus:border-ink">
+        <div class="flex items-center gap-2 mt-2.5">
+          <button id="apiSave" class="btn btn-primary">Save &amp; test</button>
+          <span class="hint">Saved in this browser · <code class="mono">?api=</code> works too</span>
+        </div>
       </div>
-    </div>
-  </details>
+    </details>
+  </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-4 pb-24 space-y-5">
+<main class="max-w-[1100px] mx-auto px-4 pb-28 sm:pb-16">
 
   <!-- ============================================================ 1. capture -->
-  <section class="card p-5 sm:p-6" id="step1" aria-labelledby="h1s">
-    <div class="flex items-center gap-3 mb-4"><span class="step-badge">1</span><h2 id="h1s" class="font-display text-xl font-semibold">Capture the tile</h2></div>
-    <div class="grid sm:grid-cols-2 gap-3">
-      <label class="btn btn-primary text-base py-4 cursor-pointer">
-        <span aria-hidden="true">📸</span> Snap Tile Photo
+  <section class="sec" id="step1" aria-labelledby="h1s">
+    <div class="sec-h"><h2 id="h1s">01 Capture</h2><span class="meta">Photo of one tile</span></div>
+    <div class="grid grid-cols-2 gap-2 max-w-md">
+      <label class="btn btn-primary btn-lg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        Take photo
         <input id="camInput" type="file" accept="image/*" capture="environment" class="sr-only">
       </label>
-      <label class="btn btn-ghost text-base py-4 cursor-pointer">
-        <span aria-hidden="true">📂</span> Upload Image
+      <label class="btn btn-ghost btn-lg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+        Upload
         <input id="fileInput" type="file" accept="image/*" class="sr-only">
       </label>
     </div>
-    <p class="text-sm text-clay mt-3">Tip: shoot in soft, even light, fill most of the frame, avoid glare on the glaze. Angled shots are fine — perspective gets flattened next.</p>
-    <button id="sampleBtn" class="text-sm underline text-cobalt mt-2">No tile handy? Try a sample</button>
+    <div class="flex items-center justify-between gap-3 mt-2.5 max-w-md">
+      <p class="hint">Even light, no glare. Angled shots are fine.</p>
+      <button id="sampleBtn" class="link shrink-0">Try a sample</button>
+    </div>
   </section>
 
   <!-- ============================================================ 2. outline -->
-  <section class="card p-5 sm:p-6 hidden" id="step2" aria-labelledby="h2s">
-    <div class="flex flex-wrap items-center gap-3 justify-between mb-4">
-      <div class="flex items-center gap-3"><span class="step-badge">2</span><h2 id="h2s" class="font-display text-xl font-semibold">Outline &amp; flatten</h2></div>
-      <div class="seg" role="group" aria-label="Outline mode">
-        <button id="modeCorners" aria-pressed="true">◇ 4-corner perspective</button>
-        <button id="modeCrop" aria-pressed="false">▢ Square crop</button>
-      </div>
-    </div>
-    <div id="aiStatus" class="text-sm mb-3 flex items-center gap-2 text-clay" role="status" aria-live="polite"></div>
-
-    <div class="grid lg:grid-cols-[1fr_320px] gap-5">
+  <section class="sec hidden" id="step2" aria-labelledby="h2s">
+    <div class="sec-h"><h2 id="h2s">02 Outline</h2><span class="meta">Flatten to 1:1</span></div>
+    <div class="grid lg:grid-cols-[1fr_260px] gap-5">
       <div>
-        <!-- 4-corner editor -->
         <div id="cornerStage" class="stage">
           <canvas id="srcView" class="src"></canvas>
           <svg id="overlay" preserveAspectRatio="none" aria-label="Drag the four corner handles onto the tile corners"></svg>
           <canvas id="loupe" width="132" height="132"></canvas>
         </div>
-        <!-- Cropper.js fallback -->
-        <div id="cropStage" class="hidden rounded-[14px] overflow-hidden bg-[#2a2620]" style="max-height:70vh">
+        <div id="cropStage" class="hidden rounded-lg overflow-hidden bg-[#2a2723]" style="max-height:70vh">
           <img id="cropImg" alt="Tile photo for square cropping" class="block max-w-full">
         </div>
-        <div class="flex flex-wrap gap-2 mt-3" id="cornerTools">
-          <button id="tapDetectBtn" class="btn btn-ghost text-sm py-2">🎯 Tap tile to auto-detect</button>
-          <button id="autoBtn" class="btn btn-ghost text-sm py-2">✨ Auto-detect again</button>
-          <button id="resetCornersBtn" class="btn btn-ghost text-sm py-2">↺ Reset corners</button>
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <div class="seg" role="group" aria-label="Outline mode">
+            <button id="modeCorners" aria-pressed="true">4-corner</button>
+            <button id="modeCrop" aria-pressed="false">Square crop</button>
+          </div>
+          <div class="flex items-center gap-3" id="cornerTools">
+            <button id="tapDetectBtn" class="btn-text btn">Tap to detect</button>
+            <span class="text-faint">·</span>
+            <button id="autoBtn" class="btn-text btn">Detect again</button>
+            <span class="text-faint">·</span>
+            <button id="resetCornersBtn" class="btn-text btn">Reset</button>
+          </div>
         </div>
+        <div id="aiStatus" class="mono text-[11.5px] text-mute mt-2 flex items-center gap-2" role="status" aria-live="polite"></div>
       </div>
-      <div>
-        <p class="text-xs uppercase tracking-wider text-clay mb-2">Flattened 1:1 preview</p>
-        <canvas id="warpThumb" width="320" height="320" class="w-full aspect-square rounded-xl border border-[#e2d6bb] bg-white"></canvas>
-        <p class="text-sm text-clay mt-2" id="outlineHint">Drag the yellow handles onto the four glazed corners. A magnifier appears while you drag.</p>
+      <div class="flex lg:block items-center gap-3">
+        <canvas id="warpThumb" width="320" height="320" class="w-20 lg:w-full aspect-square rounded-md border border-line bg-white shrink-0"></canvas>
+        <div class="lg:mt-2">
+          <p class="mono text-[11px] uppercase tracking-wider text-ink">Rectified 1:1</p>
+          <p class="hint mt-0.5" id="outlineHint">Drag the handles onto the four glazed corners.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ============================================================ 3. colours -->
-  <section class="card p-5 sm:p-6 hidden" id="step3" aria-labelledby="h3s">
-    <div class="flex flex-wrap items-center gap-3 justify-between mb-4">
-      <div class="flex items-center gap-3"><span class="step-badge">3</span><h2 id="h3s" class="font-display text-xl font-semibold">Pick glaze colours</h2></div>
-      <div class="seg" role="group" aria-label="Preview">
-        <button id="viewPhoto" aria-pressed="true">Photo</button>
-        <button id="viewMapped" aria-pressed="false">Mapped</button>
-      </div>
-    </div>
-    <div class="grid lg:grid-cols-[minmax(0,560px)_1fr] gap-6">
+  <section class="sec hidden" id="step3" aria-labelledby="h3s">
+    <div class="sec-h"><h2 id="h3s">03 Colours</h2><span class="meta">Tap glazes to pick</span></div>
+    <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5">
       <div class="relative">
-        <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-xl border border-[#e2d6bb] bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette."></canvas>
-        <div id="hoverChip" class="hidden absolute pointer-events-none px-2 py-1 rounded-md text-xs font-mono bg-ink text-white shadow-lg"></div>
+        <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette."></canvas>
+        <div id="hoverChip" class="hidden absolute pointer-events-none px-1.5 py-0.5 rounded text-[11px] mono bg-ink text-white"></div>
       </div>
       <div>
-        <p class="text-sm text-clay">🖌️ <b>Eyedropper:</b> tap each glaze colour on the tile. Every colour becomes its own glaze cushion: it swells up from the seams, so the borders between colours are the lowest points. Tap a swatch to fine-tune, ✕ to remove.</p>
-        <div id="swatches" class="flex flex-wrap gap-3 mt-4 min-h-[3.25rem]" aria-live="polite"></div>
-        <p id="swatchEmpty" class="text-sm text-clay italic mt-1">No swatches yet — the server will pick the colours automatically (up to <b id="kEcho">8</b>).</p>
-        <div class="flex flex-wrap items-end gap-3 mt-5">
-          <div class="field w-28">
-            <label for="numColors">Max colours (auto)</label>
-            <input id="numColors" type="number" min="2" max="12" step="1" value="8">
+        <div class="flex items-center justify-between gap-2">
+          <span class="hint">Preview</span>
+          <div class="seg" role="group" aria-label="Preview">
+            <button id="viewPhoto" aria-pressed="true">Photo</button>
+            <button id="viewMapped" aria-pressed="false">Mapped</button>
           </div>
-          <button id="suggestBtn" class="btn btn-ghost text-sm py-2">✨ Suggest palette</button>
-          <button id="clearSwatches" class="btn btn-ghost text-sm py-2">Clear</button>
         </div>
-        <div id="tierList" class="mt-5 text-sm"></div>
+        <div class="card p-3 mt-3">
+          <div class="flex items-center justify-between mono text-[11px] uppercase tracking-wider text-mute"><span>Glaze palette</span><span>Tap swatch to edit</span></div>
+          <div id="swatches" class="flex flex-wrap gap-2 mt-2.5 min-h-[34px]" aria-live="polite"></div>
+          <p id="swatchEmpty" class="hint mt-1">Auto — up to <b id="kEcho" class="mono font-medium text-ink">8</b> colours. Or tap the tile to pick your own.</p>
+        </div>
+        <div class="flex items-center justify-between gap-3 mt-3">
+          <div class="field w-40"><label for="numColors">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
+          <div class="flex items-center gap-3">
+            <button id="suggestBtn" class="link">Suggest</button>
+            <button id="clearSwatches" class="btn-text btn">Clear</button>
+          </div>
+        </div>
+        <div id="tierList" class="mt-3"></div>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================ 4. settings -->
-  <section class="card p-5 sm:p-6 hidden" id="step4" aria-labelledby="h4s">
-    <div class="flex items-center gap-3 mb-4"><span class="step-badge">4</span><h2 id="h4s" class="font-display text-xl font-semibold">Physical proportions</h2></div>
-    <form id="settingsForm" class="grid grid-cols-2 md:grid-cols-4 gap-4" onsubmit="return false">
-      <div class="field"><label for="tileSize">Tile width / length</label><div class="unit" data-unit="mm"><input id="tileSize" type="number" min="20" max="400" step="0.5" value="150.0"></div></div>
-      <div class="field"><label for="maxH">Max relief height <span class="text-[11px]">(above the base, width ÷ 10)</span></label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
-      <div class="field"><label for="padThick">Backing pad thickness</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="15.0"></div></div>
-      <div class="field"><label for="domeH">Top crown <span class="text-[11px]">(gentle)</span></label><div class="unit" data-unit="mm"><input id="domeH" type="number" min="0" max="20" step="0.1" value="1.0"></div></div>
-      <div class="field"><label for="reliefH">Edge depth <span class="text-[11px]">(top → seam)</span></label><div class="unit" data-unit="mm"><input id="reliefH" type="number" min="0.1" max="40" step="0.1" value="3.0"></div></div>
-      <div class="field"><label for="clearance">Clearance between colours <span class="text-[11px]">(0 = flush)</span></label><div class="unit" data-unit="mm"><input id="clearance" type="number" min="0" max="2" step="0.05" value="0"></div></div>
-      <div class="field"><label for="fillet">Edge roll width</label><div class="unit" data-unit="mm"><input id="fillet" type="number" min="0.5" max="60" step="0.5" value="6.0"></div></div>
+  <!-- ============================================================ 4. size -->
+  <section class="sec hidden" id="step4" aria-labelledby="h4s">
+    <div class="sec-h"><h2 id="h4s">04 Size</h2><span class="meta">Dimensions · mm</span></div>
+    <form id="settingsForm" class="grid grid-cols-2 lg:grid-cols-4 gap-2" onsubmit="return false">
+      <div class="field"><label for="tileSize">Tile width</label><div class="unit" data-unit="mm"><input id="tileSize" type="number" min="20" max="400" step="0.5" value="150.0"></div></div>
+      <div class="field"><label for="maxH" title="Max relief above the base (width ÷ 10)">Max relief</label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
+      <div class="field"><label for="padThick">Base</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="15.0"></div></div>
+      <div class="field"><label for="domeH" title="Gentle crown on top of each colour">Crown</label><div class="unit" data-unit="mm"><input id="domeH" type="number" min="0" max="20" step="0.1" value="1.0"></div></div>
+      <div class="field"><label for="reliefH" title="How far each colour rolls down into its seams">Edge depth</label><div class="unit" data-unit="mm"><input id="reliefH" type="number" min="0.1" max="40" step="0.1" value="3.0"></div></div>
+      <div class="field"><label for="clearance" title="Gap between colour pieces (0 = flush)">Clearance</label><div class="unit" data-unit="mm"><input id="clearance" type="number" min="0" max="2" step="0.05" value="0"></div></div>
+      <div class="field col-span-2 lg:col-span-1"><label for="fillet" title="Seam to full height">Edge roll</label><div class="unit" data-unit="mm"><input id="fillet" type="number" min="0.5" max="60" step="0.5" value="6.0"></div></div>
+      <div class="field col-span-2 lg:col-span-1"><label for="outlineH" title="Raised tube-lining ridge (0 = off)">Outlines</label><div class="unit" data-unit="mm"><input id="outlineH" type="number" min="0" max="3" step="0.1" value="0.8"></div></div>
     </form>
-    <details class="mt-4">
-      <summary class="text-sm text-cobalt font-medium">⚙️ Advanced</summary>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-        <div class="field"><label for="pxPerMm">Detail resolution</label><div class="unit" data-unit="px/mm"><input id="pxPerMm" type="number" min="1" max="6" step="0.5" value="4"></div></div>
-        <div class="field"><label for="smoothing">Edge smoothing</label><div class="unit" data-unit="mm"><input id="smoothing" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="minFeature">Drop specks below</label><div class="unit" data-unit="mm²"><input id="minFeature" type="number" min="0" max="100" step="0.5" value="2.0"></div></div>
-        <div class="field"><label for="grooveFloor">Groove floor (under seams)</label><div class="unit" data-unit="mm"><input id="grooveFloor" type="number" min="0.1" max="5" step="0.05" value="0.4"></div></div>
-        <div class="field"><label for="cornerR">Tile corner radius</label><div class="unit" data-unit="mm"><input id="cornerR" type="number" min="0" max="20" step="0.5" value="2.0"></div></div>
-        <div class="field"><label for="meshRes">Mesh smoothness</label><div class="unit" data-unit="mm"><input id="meshRes" type="number" min="0.05" max="1" step="0.01" value="0.16"></div></div>
-        <div class="field"><label for="mergeDE">Merge shading bands <span class="text-[11px]">(ΔE, 0 = off)</span></label><div class="unit" data-unit="ΔE"><input id="mergeDE" type="number" min="0" max="50" step="1" value="12"></div></div>
-        <div class="field"><label for="beadH">Thin-line min height</label><div class="unit" data-unit="mm"><input id="beadH" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="outlineH">Raised outlines <span class="text-[11px]">(tube-lining, 0 = off)</span></label><div class="unit" data-unit="mm"><input id="outlineH" type="number" min="0" max="3" step="0.1" value="0.8"></div></div>
+    <details class="mt-3">
+      <summary class="mono text-[11.5px] text-ink2 flex items-center gap-1.5"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>Advanced</summary>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2.5">
+        <div class="field"><label for="pxPerMm">Detail</label><div class="unit" data-unit="px/mm"><input id="pxPerMm" type="number" min="1" max="6" step="0.5" value="4"></div></div>
+        <div class="field"><label for="smoothing">Smoothing</label><div class="unit" data-unit="mm"><input id="smoothing" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
+        <div class="field"><label for="minFeature">Min speck</label><div class="unit" data-unit="mm²"><input id="minFeature" type="number" min="0" max="100" step="0.5" value="2.0"></div></div>
+        <div class="field"><label for="grooveFloor">Groove floor</label><div class="unit" data-unit="mm"><input id="grooveFloor" type="number" min="0.1" max="5" step="0.05" value="0.4"></div></div>
+        <div class="field"><label for="cornerR">Corner radius</label><div class="unit" data-unit="mm"><input id="cornerR" type="number" min="0" max="20" step="0.5" value="2.0"></div></div>
+        <div class="field"><label for="meshRes">Mesh grid</label><div class="unit" data-unit="mm"><input id="meshRes" type="number" min="0.05" max="1" step="0.01" value="0.16"></div></div>
+        <div class="field"><label for="mergeDE">Merge shades</label><div class="unit" data-unit="ΔE"><input id="mergeDE" type="number" min="0" max="50" step="1" value="12"></div></div>
+        <div class="field"><label for="beadH">Thin-line min</label><div class="unit" data-unit="mm"><input id="beadH" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
         <div class="field"><label for="outlineW">Outline width</label><div class="unit" data-unit="mm"><input id="outlineW" type="number" min="0.4" max="4" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="symmetry">Symmetry clean-up</label><select id="symmetry" class="w-full border border-[#d9cbaa] bg-white rounded-[10px] px-2 py-[0.55rem] text-sm"><option value="off" selected>Off</option><option value="auto">Auto-detect</option><option value="d4">8-fold</option><option value="c4">4-fold</option></select></div>
-        <label class="flex items-center gap-2 text-sm self-end pb-2"><input id="edgeSeam" type="checkbox" class="w-4 h-4 accent-[#23408e]"> Groove along tile edge</label>
+        <div class="field"><label for="symmetry">Symmetry</label><select id="symmetry"><option value="off" selected>Off</option><option value="auto">Auto</option><option value="d4">8-fold</option><option value="c4">4-fold</option></select></div>
+        <label class="field cursor-pointer col-span-2 lg:col-span-1"><span class="flex-1 mono text-[11.5px] text-mute">Groove along edge</span><input id="edgeSeam" type="checkbox" class="w-4 h-4 accent-[#1c1a17]"></label>
       </div>
     </details>
-    <p id="scaleNote" class="hidden text-xs text-cobalt mt-3">↳ Relief re-tuned for this tile size (relief never taller than width ÷ 10). Edit any field to override.</p>
-    <p class="text-sm text-clay mt-4" id="heightEcho"></p>
-    <div class="mt-5 flex flex-wrap gap-3 items-center">
-      <button id="generateBtn" class="btn btn-peach text-base px-6 py-3.5 font-semibold">🧱 Generate 3D relief</button>
-      <span class="text-xs text-clay">Usually ~10 s. If the free server was asleep, add ~20–40 s the first time.</span>
-    </div>
-    <div id="errorBox" class="hidden mt-4 rounded-xl border border-red-300 bg-red-50 text-red-800 text-sm p-3" role="alert"></div>
+    <p id="scaleNote" class="hidden hint mt-3">Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.</p>
+    <p class="mono text-[11.5px] text-mute mt-3 px-3 py-2 rounded-md bg-soft border border-line" id="heightEcho"></p>
+    <button id="generateBtn" class="btn btn-peach btn-lg w-full mt-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+      Generate 3D relief
+    </button>
+    <p class="hint mono text-center mt-2 text-[11px]">Usually ~10 s · first run after idle ~30–60 s · outputs .3MF</p>
+    <div id="errorBox" class="hidden mt-3 rounded-md border border-[#e3b8b0] bg-[#fbf1ef] text-[#7a2a1e] text-[12.5px] p-2.5" role="alert"></div>
   </section>
 
-  <footer class="text-center text-xs text-clay pt-4">
-    Built for Taiwan's 花磚 heritage · 100% free · photos are processed in memory and never stored.
+  <footer class="hint mono text-[11px] text-center pt-6 border-t border-line">
+    Built for Taiwan's 花磚 heritage · free · photos are processed in memory, never stored
   </footer>
 </main>
 
+<!-- phone step bar (shown after a photo is loaded) -->
+<nav id="stepNav" class="hidden sm:!hidden fixed bottom-0 inset-x-0 z-30 bg-paper/95 backdrop-blur border-t border-line grid grid-cols-4" aria-label="Steps" style="padding-bottom: env(safe-area-inset-bottom)">
+  <a href="#step1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>01 CAPTURE</a>
+  <a href="#step2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>02 OUTLINE</a>
+  <a href="#step3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="14" cy="9" r="1.2"/><circle cx="15.5" cy="13.5" r="1.2"/></svg>03 COLOURS</a>
+  <a href="#step4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>04 SIZE</a>
+</nav>
+
 <!-- ================================================================ loading -->
-<div id="loading" class="hidden fixed inset-0 z-[60] bg-ink/60 backdrop-blur-sm grid place-items-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="loadTitle">
-  <div class="card p-7 text-center max-w-sm w-full">
-    <svg class="tile-spin mx-auto" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="6" fill="#fffaf0" stroke="#23408e" stroke-width="5"/><circle cx="32" cy="32" r="13" fill="#e58e73"/><circle cx="32" cy="32" r="5" fill="#f2c94c"/></svg>
-    <p id="loadTitle" class="font-display text-lg font-semibold mt-4">Carving your tile…</p>
-    <p id="loadMsg" class="text-sm text-clay mt-1" aria-live="polite">Uploading photo</p>
-    <div class="mt-4 h-2.5 w-full rounded-full bg-[#e9dfc7] overflow-hidden" role="progressbar" aria-labelledby="loadMsg" aria-valuemin="0" aria-valuemax="100" id="loadBarWrap" aria-valuenow="0">
-      <div id="loadBar" class="h-full rounded-full bg-cobalt" style="width:0%;transition:width .45s ease"></div>
+<div id="loading" class="hidden fixed inset-0 z-[60] bg-ink/40 backdrop-blur-[2px] grid place-items-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="loadTitle">
+  <div class="card p-5 w-full max-w-[320px]">
+    <div class="flex items-center gap-2"><span class="spinner"></span><p id="loadTitle" class="font-medium text-[14px]">Carving your tile</p></div>
+    <p id="loadMsg" class="mono text-[11.5px] text-mute mt-2" aria-live="polite">Uploading photo</p>
+    <div class="mt-3 h-1 w-full rounded-full bg-line overflow-hidden" role="progressbar" aria-labelledby="loadMsg" aria-valuemin="0" aria-valuemax="100" id="loadBarWrap" aria-valuenow="0">
+      <div id="loadBar" class="h-full rounded-full bg-ink" style="width:0%;transition:width .45s ease"></div>
     </div>
-    <div class="flex justify-between mt-2 font-mono text-xs text-clay"><span id="loadPct">0%</span><span id="loadTimer">0 s</span></div>
-    <button id="cancelBtn" class="btn btn-ghost text-sm py-2 mt-4">Cancel</button>
+    <div class="flex justify-between mt-1.5 mono text-[11px] text-mute"><span id="loadPct">0%</span><span id="loadTimer">0 s</span></div>
+    <button id="cancelBtn" class="btn btn-ghost w-full mt-4">Cancel</button>
   </div>
 </div>
 
 <!-- ================================================================ 3D preview modal -->
-<div id="previewModal" class="hidden fixed inset-0 z-50 bg-ink/75 backdrop-blur-sm p-2 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
-  <div class="card h-full max-w-6xl mx-auto flex flex-col overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#e2d6bb]">
-      <h2 id="pvTitle" class="font-display text-lg font-semibold">3D preview <span id="pvSize" class="font-mono text-sm text-clay font-normal"></span></h2>
-      <div class="flex gap-2 text-sm">
-        <button id="pvTop" class="btn btn-ghost py-1.5 px-3">Top</button>
-        <button id="pvIso" class="btn btn-ghost py-1.5 px-3">3/4</button>
-        <button id="pvClose" class="btn btn-ghost py-1.5 px-3" aria-label="Close preview">✕</button>
+<div id="previewModal" class="hidden fixed inset-0 z-50 bg-ink/50 backdrop-blur-[2px] p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+  <div class="bg-paper h-full max-w-[1100px] mx-auto flex flex-col overflow-hidden sm:rounded-xl sm:border sm:border-line">
+    <div class="flex items-center justify-between gap-2 px-4 h-12 border-b border-line">
+      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap">3D preview <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
+      <div class="flex gap-1.5">
+        <div class="seg"><button id="pvTop">Top</button><button id="pvIso" aria-pressed="true">3/4</button></div>
+        <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
-    <div class="relative flex-1 min-h-0 bg-gradient-to-b from-[#fbf7ee] to-[#e9dfc7]">
+    <div class="relative flex-1 min-h-0" style="background: linear-gradient(#faf8f5, #ece8e2)">
       <div id="viewer" class="absolute inset-0"></div>
-      <div id="pvStats" class="absolute left-3 bottom-3 text-xs bg-white/85 rounded-lg px-3 py-2 max-w-[80%] font-mono"></div>
-      <p class="absolute right-3 bottom-3 text-[11px] text-clay hidden sm:block">drag = orbit · right-drag = pan · scroll / pinch = zoom</p>
+      <div id="pvStats" class="absolute left-3 bottom-3 mono text-[11px] text-ink2 bg-white/90 border border-line rounded-md px-2.5 py-1.5 max-w-[80%]"></div>
+      <p class="absolute right-3 bottom-3 mono text-[10.5px] text-mute hidden sm:block">drag orbit · right-drag pan · scroll zoom</p>
     </div>
-    <div class="flex flex-wrap items-center justify-end gap-3 px-4 py-3 border-t border-[#e2d6bb]">
-      <button id="glbBtn" class="text-sm underline text-cobalt mr-auto">Also download .GLB</button>
-      <button id="tweakBtn" class="btn btn-ghost">⬅️ Tweak Settings</button>
-      <button id="downloadBtn" class="btn btn-primary font-semibold">📥 Confirm &amp; Download .3MF</button>
+    <div class="flex items-center gap-2 px-4 py-3 border-t border-line" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
+      <button id="glbBtn" class="link mr-auto">.GLB</button>
+      <button id="tweakBtn" class="btn btn-ghost">Tweak</button>
+      <button id="downloadBtn" class="btn btn-primary">Download .3MF</button>
     </div>
   </div>
 </div>
@@ -332,16 +384,16 @@ async function checkHealth() {
   const base = apiBase();
   $('apiUrl').value = base;
   const dot = $('apiDot'), label = $('apiLabel');
-  if (!base) { dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500'; label.textContent = 'Backend: not set'; return false; }
-  dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-400 animate-pulse'; label.textContent = 'Backend: waking…';
+  if (!base) { dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500'; label.textContent = 'Engine: not set'; return false; }
+  dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse'; label.textContent = 'Engine: waking…';
   try {
     const r = await fetch(base + '/health', { signal: AbortSignal.timeout(45000) });
     const ok = r.ok && (await r.json()).status === 'ok';
-    dot.className = `w-2.5 h-2.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-red-500'}`;
-    label.textContent = ok ? 'Backend: ready' : `Backend: error ${r.status}`;
+    dot.className = `w-1.5 h-1.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-red-500'}`;
+    label.textContent = ok ? 'Engine: ready' : `Engine: error ${r.status}`;
     return ok;
   } catch {
-    dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500'; label.textContent = 'Backend: unreachable';
+    dot.className = 'w-1.5 h-1.5 rounded-full bg-red-500'; label.textContent = 'Engine: unreachable';
     return false;
   }
 }
@@ -371,7 +423,7 @@ async function loadFile(file) {
   const view = $('srcView'); view.width = S.W; view.height = S.H;
   view.getContext('2d').drawImage(c, 0, 0);
   $('overlay').setAttribute('viewBox', `0 0 ${S.W} ${S.H}`);
-  ['step2', 'step3', 'step4'].forEach((id) => $(id).classList.remove('hidden'));
+  ['step2', 'step3', 'step4', 'stepNav'].forEach((id) => $(id).classList.remove('hidden'));
   S.corners = defaultCorners();
   if (S.cropper) { S.cropper.destroy(); S.cropper = null; S.cropReady = false; }
   $('cropImg').src = c.toDataURL('image/jpeg', 0.9);
@@ -478,7 +530,7 @@ function drawOverlay() {
   svg.appendChild(shade);
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', S.corners.map((p) => p.join(',')).join(' '));
-  poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#f2c94c'); poly.setAttribute('stroke-width', sw);
+  poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#ffffff'); poly.setAttribute('stroke-width', sw);
   svg.appendChild(poly);
   ['TL', 'TR', 'BR', 'BL'].forEach((name, i) => {
     const [x, y] = S.corners[i];
@@ -486,7 +538,7 @@ function drawOverlay() {
     g.setAttribute('role', 'slider'); g.setAttribute('aria-label', `${name} corner`); g.setAttribute('tabindex', '0');
     const hit = document.createElementNS(NS, 'circle'); hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', r * 2.2); hit.setAttribute('fill', 'transparent');
     const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
-    c.setAttribute('fill', 'rgba(242,201,76,.35)'); c.setAttribute('stroke', '#f2c94c'); c.setAttribute('stroke-width', sw);
+    c.setAttribute('fill', 'rgba(28,26,23,.55)'); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', sw);
     const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', 2.2 * scale); dot.setAttribute('fill', '#fff');
     g.append(hit, c, dot); svg.appendChild(g);
   });
@@ -525,7 +577,7 @@ function drawLoupe(x, y, e) {
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#000'; g.fillRect(0, 0, 132, 132);
   g.drawImage(S.src, x - n / 2, y - n / 2, n, n, 0, 0, 132, 132);
-  g.strokeStyle = '#f2c94c'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(66, 0); g.lineTo(66, 132); g.moveTo(0, 66); g.lineTo(132, 66); g.stroke();
+  g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(66, 0); g.lineTo(66, 132); g.moveTo(0, 66); g.lineTo(132, 66); g.stroke();
   const r = $('cornerStage').getBoundingClientRect();   // keep loupe away from the finger
   L.style.left = (e.clientX - r.left < r.width / 2 ? r.width - 142 : 10) + 'px';
 }
@@ -545,7 +597,7 @@ function setMode(m) {
   $('cornerStage').classList.toggle('hidden', m !== 'corners'); $('cornerTools').classList.toggle('hidden', m !== 'corners');
   $('cropStage').classList.toggle('hidden', m !== 'crop');
   $('outlineHint').textContent = m === 'corners'
-    ? 'Drag the yellow handles onto the four glazed corners. A magnifier appears while you drag.'
+    ? 'Drag the handles onto the four glazed corners.'
     : 'Square crop: move / resize the box around the tile. Best for straight-on photos.';
   if (m === 'crop' && S.src) {
     if (!S.cropper) {
@@ -588,8 +640,8 @@ function updateWarp() {
 
 // --------------------------------------------------------------------- MediaPipe (Google AI Edge) auto-outline
 function setAiStatus(text, kind = 'info') {
-  const icon = { info: '🤖', ok: '✅', warn: '⚠️', busy: '' }[kind];
-  $('aiStatus').innerHTML = (kind === 'busy' ? '<span class="spinner !w-4 !h-4 !border-2"></span>' : `<span aria-hidden="true">${icon}</span>`) + `<span>${text}</span>`;
+  const icon = { info: '○', ok: '✓', warn: '!', busy: '' }[kind];
+  $('aiStatus').innerHTML = (kind === 'busy' ? '<span class="spinner"></span>' : `<span aria-hidden="true" class="text-ink">${icon}</span>`) + `<span>${text}</span>`;
 }
 async function initSegmenter() {
   setAiStatus('Loading on-device AI (MediaPipe)…', 'busy');
@@ -734,8 +786,7 @@ function renderTiers() {   // palette summary — every colour is an equal cushi
   const pal = S.swatches, box = $('tierList');
   updateHeightEcho();
   if (!pal.length) { box.innerHTML = ''; return; }
-  box.innerHTML = `<p class="text-xs uppercase tracking-wider text-clay mb-2">${pal.length} colours · one filament each</p>` +
-    pal.map((c, i) => `<div class="flex items-center gap-2 py-0.5"><span class="w-4 h-4 rounded" style="background:${toHex(c)};box-shadow:0 0 0 1px #cdbf9f"></span><span class="font-mono text-xs">${toHex(c)}</span></div>`).join('');
+  box.innerHTML = `<p class="mono text-[11px] uppercase tracking-wider text-mute">${pal.length} colours · one filament each</p>`;
 }
 function renderFlat() {
   if (!S.flat) return;
@@ -757,7 +808,7 @@ function renderFlat() {
   } else g.putImageData(S.flat, 0, 0);
 }
 function setView(v) {
-  if (v === 'mapped' && !S.swatches.length) { showError('Add swatches (or ✨ Suggest palette) to see the mapped preview.'); v = 'photo'; }
+  if (v === 'mapped' && !S.swatches.length) { showError('Pick colours (or tap Suggest) to see the mapped preview.'); v = 'photo'; }
   S.view = v; $('viewPhoto').setAttribute('aria-pressed', v === 'photo'); $('viewMapped').setAttribute('aria-pressed', v === 'mapped'); renderFlat();
 }
 $('viewPhoto').onclick = () => setView('photo');
@@ -791,7 +842,7 @@ $('suggestBtn').onclick = () => {   // quick client-side k-means (Lab) on a pixe
 const settingIds = ['tileSize', 'maxH', 'padThick', 'reliefH', 'fillet', 'domeH', 'mergeDE', 'beadH', 'outlineH', 'outlineW', 'clearance', 'pxPerMm', 'smoothing', 'minFeature', 'grooveFloor', 'cornerR', 'meshRes'];
 function updateHeightEcho() {
   const pad = +$('padThick').value, fl = +$('grooveFloor').value, rh = +$('reliefH').value, dh = +$('domeH').value, size = (+$('tileSize').value).toFixed(1);
-  $('heightEcho').innerHTML = `Model: <b class="font-mono">${size} × ${size} mm</b> · seams at <b class="font-mono">${(pad + fl).toFixed(1)} mm</b>, big areas top out at <b class="font-mono">${(pad + fl + rh + dh).toFixed(1)} mm</b> (${pad} pad + ${fl} floor + ${rh} edge depth + ${dh} crown).`;
+  $('heightEcho').innerHTML = `${size} × ${size} mm · seams <b class="text-ink font-medium">${(pad + fl).toFixed(1)}</b> · top <b class="text-ink font-medium">${(pad + fl + rh + dh).toFixed(1)} mm</b>`;
 }
 [...settingIds, 'numColors'].forEach((id) => $(id).addEventListener('input', renderTiers));
 
@@ -967,14 +1018,14 @@ $('generateBtn').onclick = async () => {
   } catch (e) {
     showLoading(false);
     const msg = e.name === 'AbortError' || e.name === 'TimeoutError' ? 'Cancelled / timed out.' : e.message || String(e);
-    if (previewShown) alertInModal('The printable file failed: ' + msg + ' — try “⬅️ Tweak Settings” → Generate again.');
+    if (previewShown) alertInModal('The printable file failed: ' + msg + ' — tap Tweak, then Generate again.');
     else showError(msg);
   } finally { $('generateBtn').disabled = false; }
 };
 function setDownloadReady(ready) {
   const b = $('downloadBtn');
   b.disabled = !ready;
-  b.textContent = ready ? '📥 Confirm & Download .3MF' : '⏳ Preparing .3MF…';
+  b.textContent = ready ? 'Download .3MF' : 'Preparing .3MF…';
 }
 
 // --------------------------------------------------------------------- 3D preview (Three.js)
@@ -1080,8 +1131,8 @@ async function openPreview() {
 }
 function closePreview() { $('previewModal').classList.add('hidden'); document.body.style.overflow = ''; }
 $('pvClose').onclick = closePreview;
-$('pvTop').onclick = () => frame('top');
-$('pvIso').onclick = () => frame('iso');
+$('pvTop').onclick = () => { frame('top'); $('pvTop').setAttribute('aria-pressed', 'true'); $('pvIso').setAttribute('aria-pressed', 'false'); };
+$('pvIso').onclick = () => { frame('iso'); $('pvIso').setAttribute('aria-pressed', 'true'); $('pvTop').setAttribute('aria-pressed', 'false'); };
 $('tweakBtn').onclick = () => {
   closePreview();
   const s = $('step4'); s.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1099,7 +1150,7 @@ $('glbBtn').onclick = async () => {
   catch (e) { alertInModal(e.message); }
   finally { showLoading(false); }
 };
-function alertInModal(msg) { $('pvStats').textContent = '⚠️ ' + msg; }
+function alertInModal(msg) { $('pvStats').textContent = '! ' + msg; }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('previewModal').classList.contains('hidden')) closePreview(); });
 
 // --------------------------------------------------------------------- boot

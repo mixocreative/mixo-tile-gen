@@ -1,0 +1,161 @@
+{
+  "success": true,
+  "data": {
+    "createTime": "2026-10-15T05:56:05.318239Z",
+    "designTheme": {
+      "bodyFont": "GEIST",
+      "bodyFontFamily": "Geist",
+      "colorMode": "LIGHT",
+      "colorVariant": "FIDELITY",
+      "customColor": "#1c1a17",
+      "designMd": "---\nname: Majolica Relief Studio\ncolors:\n  surface: '#fbf9f6'\n  surface-dim: '#dbdad7'\n  surface-bright: '#fbf9f6'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#f5f3f0'\n  surface-container: '#efeeeb'\n  surface-container-high: '#eae8e5'\n  surface-container-highest: '#e4e2df'\n  on-surface: '#1b1c1a'\n  on-surface-variant: '#4b463f'\n  inverse-surface: '#30312f'\n  inverse-on-surface: '#f2f0ed'\n  outline: '#7c766e'\n  outline-variant: '#cdc5bc'\n  surface-tint: '#615e5a'\n  primary: '#000000'\n  on-primary: '#ffffff'\n  primary-container: '#1d1b18'\n  on-primary-container: '#87837f'\n  inverse-primary: '#cbc5c0'\n  secondary: '#635e58'\n  on-secondary: '#ffffff'\n  secondary-container: '#e6ded7'\n  on-secondary-container: '#67625c'\n  tertiary: '#000000'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#1f1b16'\n  on-tertiary-container: '#8a827c'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#e7e1dc'\n  primary-fixed-dim: '#cbc5c0'\n  on-primary-fixed: '#1d1b18'\n  on-primary-fixed-variant: '#494643'\n  secondary-fixed: '#e9e1da'\n  secondary-fixed-dim: '#cdc5be'\n  on-secondary-fixed: '#1e1b17'\n  on-secondary-fixed-variant: '#4a4641'\n  tertiary-fixed: '#ebe1d9'\n  tertiary-fixed-dim: '#cec5be'\n  on-tertiary-fixed: '#1f1b16'\n  on-tertiary-fixed-variant: '#4c4640'\n  background: '#fbf9f6'\n  on-background: '#1b1c1a'\n  surface-variant: '#e4e2df'\ntypography:\n  headline-lg:\n    fontFamily: Geist\n    fontSize: 24px\n    fontWeight: '600'\n    lineHeight: 32px\n    letterSpacing: -0.02em\n  headline-md:\n    fontFamily: Geist\n    fontSize: 18px\n    fontWeight: '600'\n    lineHeight: 24px\n    letterSpacing: -0.015em\n  headline-sm:\n    fontFamily: Geist\n    fontSize: 14px\n    fontWeight: '600'\n    lineHeight: 20px\n    letterSpacing: -0.01em\n  body-md:\n    fontFamily: Geist\n    fontSize: 13px\n    fontWeight: '400'\n    lineHeight: 18px\n    letterSpacing: -0.005em\n  body-sm:\n    fontFamily: Geist\n    fontSize: 12px\n    fontWeight: '400'\n    lineHeight: 16px\n  label-lg:\n    fontFamily: JetBrains Mono\n    fontSize: 12px\n    fontWeight: '500'\n    lineHeight: 16px\n    letterSpacing: 0.02em\n  label-md:\n    fontFamily: JetBrains Mono\n    fontSize: 11px\n    fontWeight: '500'\n    lineHeight: 14px\n    letterSpacing: 0.03em\n  label-sm:\n    fontFamily: JetBrains Mono\n    fontSize: 10px\n    fontWeight: '400'\n    lineHeight: 12px\n    letterSpacing: 0.04em\n  code-data:\n    fontFamily: JetBrains Mono\n    fontSize: 11px\n    fontWeight: '400'\n    lineHeight: 14px\n    letterSpacing: '0'\nrounded:\n  sm: 0.125rem\n  DEFAULT: 0.25rem\n  md: 0.375rem\n  lg: 0.5rem\n  xl: 0.75rem\n  full: 9999px\nspacing:\n  gutter: 0.75rem\n  margin: 1rem\n  space-xs: 0.25rem\n  space-sm: 0.375rem\n  space-md: 0.5rem\n  space-lg: 0.75rem\n  space-xl: 1rem\n---\n\n## Brand & Style\nThe design system embodies the precision of a high-fidelity CAD/CAM utility balanced with the tactile heritage of Taiwanese architectural ceramic craft. Tailored for industrial designers, historical conservators, and digital fabricators converting 2D decorative tile motifs into mathematically sound 3D bas-relief models, the aesthetic merges calibrated tool ergonomics with warm museum-grade curation.\n\nThe visual style is **Warm Minimalist Precision**: an architectural drafting suite stripped of decorative excess. Hierarchy is commanded entirely through 1px hairline segmentations, hairline cross-hairs, compact density, and calibrated tonal shifts. It rejects glossy consumer tropes in favor of an exacting, workshop-bench tactile quality—purposeful, quiet, and hyper-legible.\n\n## Colors\nThe palette is rooted in an unyielding warm monochrome scale derived from natural kiln clay, architectural stonework, and technical ink drafting pens.\n\n- **Primary (`#1c1a17`)**: Near-black warm carbon. Used for dominant UI triggers, active segment states, high-priority glyphs, and primary structural typography.\n- **Secondary (`#3a3631`)**: Dark warm slate. Serves secondary interactions, tool labels, parameter headers, and active indicator outlines.\n- **Tertiary (`#77706a`)**: Mid warm grey. Designated for secondary dimensional units, inactive tool states, measurement ticks, and structural grid lines.\n- **Neutral Canvas (`#faf8f5`)**: Clean warm off-white stone canvas. Provides an anti-glare, non-fatiguing backdrop engineered for extended spatial editing sessions.\n- **Structural Accents**:\n  - Border Hairline: `#e6e1da` creates rigid 1px structural partitions and workbench panel boundaries without visual noise.\n  - Surface Muted / Well: `#f2efe9` defines inset control bays, slider troughs, canvas viewports, and numerical scrub fields.\n  - Subtle Warm Stone: `#b8b1a8` highlights drag handles, inactive toggles, and coordinate crosshairs.\n\n## Typography\nTypography is split into two specialized functions: structural semantic framing and rigorous tabular telemetry.\n\n- **Geist** delivers unadorned, high-clarity structural titling, section headers, and tool-group titles with tight tracking.\n- **JetBrains Mono** governs all numerical data, z-depth levels, extrusion angles, displacement heights, tessellation mesh counts, coordinate axes, and micro-labels. Always enforce tabular lining figures (`font-variant-numeric: tabular-nums`) across all data displays to prevent visual jitter during real-time value scrubbing.\n- All casing for technical metadata, axis tags (X, Y, Z), and tool indicators must be rendered in uppercase with positive letter spacing (`0.03em` to `0.04em`).\n\n## Layout & Spacing\nThe layout employs an ultra-dense, fixed-rail CAD tool paradigm. The viewport centers a fixed aspect-ratio 3D rendering canvas, flanked by dockable, persistent utility inspectors on the left and right.\n\n- **Desktop (>= 1280px)**: 3-column studio layout. Left rail (280px fixed) for vector layer extraction, tile symmetry detection, and relief profiles. Center region (fluid flex) for the WebGL/Three.js elevation viewport and orthographic guides. Right rail (320px fixed) for volumetric displacement parameters, toolpath slicing, and mesh decimation controls.\n- **Tablet (768px - 1279px)**: 2-column layout. The left inspector collapses into an iconified docking toolbar; the right parameter inspector converts to an overlay drawer.\n- **Mobile (< 768px)**: Single viewport stack. Center canvas takes 60vh; parameter rails become bottom sheets with a horizontal tool ribbon.\n- **Rhythm**: Grounded in a strict 4px sub-grid with baseline component spacing tokens (`space-xs` = 4px, `space-sm` = 6px, `space-md` = 8px, `space-lg` = 12px, `space-xl` = 16px). Margins between nested inspection fields never exceed 8px to maintain information density.\n\n## Elevation & Depth\nThe system is built upon **Structural Hairline Division and Inset Wells**, avoiding conventional blurred drop shadows to retain blueprint clarity.\n\n- **Surfaces**: Depth is established via surface nesting rather than elevation off the canvas.\n  - Level 0 (Base Canvas): `#faf8f5`\n  - Level 1 (Tool Shelves & Inspectors): `#ffffff` with a continuous `1px solid #e6e1da` perimeter.\n  - Level 2 (Recessed Scrub Inputs & Troughs): `#f2efe9` with an inner 1px hairline stroke (`#e6e1da`).\n- **Shadows**: Omit ambient drop shadows across toolbars, buttons, and inspectors. Use only a single micro-shadow on active floating context menus or flyout tooltips: `0 1px 3px rgba(28, 26, 23, 0.08)`.\n- **Viewport Canvas**: The central relief view is defined by a 1px border (`#e6e1da`) with a subtle 0.5px inner raster grid representing 10mm ceramic tile unit intervals.\n\n## Shapes\nGeometry is disciplined, utilitarian, and ergonomic. \n\n- Standard component corner radius is fixed at `6px` (`roundedness: 1`), providing an exact balance between modern industrial precision and tactile accessibility.\n- Recessed numeric inputs, segment buttons, and tool chips all share this exact `6px` radius to create uniform rows of interactive cells.\n- Internal status tags, coordinate badges, and slider thumbs use a tighter `3px` corner radius.\n- No fully pill-shaped or circular buttons are permitted in the utility suite; circular geometry is strictly reserved for directional compass indicators, arc angle scrubbers, and rotational 3D gizmos.\n\n## Components\n\n### Buttons & Interactive Triggers\n- **Dimensions**: Strictly 32px height across standard controls (`space-sm` top/bottom padding, 10px horizontal padding). Compact density is non-negotiable.\n- **Primary Action (Generate Mesh, Export STL/OBJ)**: Solid `#1c1a17` background, `#faf8f5` text, 6px border radius, no border. Hover shifts to `#3a3631`. Active state scales subtly down (`scale(0.98)`).\n- **Secondary Tool Button**: Solid `#ffffff` background, `1px solid #e6e1da`, `#1c1a17` text. Hover shifts background to `#f2efe9` and border to `#b8b1a8`.\n- **Ghost / Tool Ribbon Button**: Transparent background, 32x32px square. Renders vector icons in `#77706a`. Hover: `#ffffff` background with `#e6e1da` border; icon becomes `#1c1a17`.\n\n### Numeric Scrub Fields & Coordinate Inputs\n- **Structure**: 32px height, 6px radius, set on an inset `#f2efe9` background with a `1px solid #e6e1da` outline.\n- **Typography**: `JetBrains Mono` 11px (`label-md`). Axis label (X, Y, Z, or mm) locked to the left in `#77706a`. Numerical value right-aligned in `#1c1a17`.\n- **Interaction**: Click and drag horizontally to scrub values; single-click selects all text for direct manual entry. Focus triggers an absolute 1px border highlight of `#1c1a17`.\n\n### Sliders (Displacement, Draft Angle, Bevel)\n- **Track**: 4px height, `#e6e1da` background with a filled active segment in `#1c1a17`.\n- **Thumb**: 12px × 12px square with a 3px radius, `#ffffff` surface, bounded by a 1.5px solid `#1c1a17` rim. Zero shadow; tactile drag feel.\n\n### Segmented Controls & Tool Selectors\n- **Container**: Enclosed 32px height container in `#f2efe9` with a 1px border `#e6e1da` and 2px internal padding.\n- **Segments**: Equal-width tab segments. Active segment features a `#ffffff` background, 4px border radius, 1px border `#e6e1da`, and bold `#1c1a17` text. Inactive segments have no background, with text in `#77706a`.\n\n### Cards & Inspector Groups\n- **Structure**: Enclosed in `#ffffff` panels with `1px solid #e6e1da` borders and 6px corner radii.\n- **Header**: Compact 28px header section, separated from the content body by a 1px horizontal `#e6e1da` rule. Text styled in Geist 11px uppercase (`label-md`), tracking `0.04em`, colored `#77706a`.\n\n### Status Indicators & Badges\n- **Format**: Pill-shaped or 3px rounded rectangular chips (18px total height), featuring `JetBrains Mono` 10px text.\n- **Colors**: Mesh polygon count, GPU render time, and manifold water-tight validation tags use `#f2efe9` backgrounds, `#77706a` borders, and `#3a3631` text.\n\n### Layer & Vector Extraction Lists\n- **Rows**: Flat, dense 28px height rows with horizontal borders (`1px solid #f2efe9`).\n- **States**: Hover reveals `#f2efe9` tint. Selected layer renders a 2px vertical `#1c1a17` bar on the left edge with a `#f7f5f0` surface fill.",
+      "font": "GEIST",
+      "headlineFont": "GEIST",
+      "headlineFontFamily": "Geist",
+      "labelFont": "JETBRAINS_MONO",
+      "labelFontFamily": "JetBrains Mono",
+      "namedColors": {
+        "background": "#fbf9f6",
+        "error": "#ba1a1a",
+        "error_container": "#ffdad6",
+        "inverse_on_surface": "#f2f0ed",
+        "inverse_primary": "#cbc5c0",
+        "inverse_surface": "#30312f",
+        "on_background": "#1b1c1a",
+        "on_error": "#ffffff",
+        "on_error_container": "#93000a",
+        "on_primary": "#ffffff",
+        "on_primary_container": "#87837f",
+        "on_primary_fixed": "#1d1b18",
+        "on_primary_fixed_variant": "#494643",
+        "on_secondary": "#ffffff",
+        "on_secondary_container": "#67625c",
+        "on_secondary_fixed": "#1e1b17",
+        "on_secondary_fixed_variant": "#4a4641",
+        "on_surface": "#1b1c1a",
+        "on_surface_variant": "#4b463f",
+        "on_tertiary": "#ffffff",
+        "on_tertiary_container": "#8a827c",
+        "on_tertiary_fixed": "#1f1b16",
+        "on_tertiary_fixed_variant": "#4c4640",
+        "outline": "#7c766e",
+        "outline_variant": "#cdc5bc",
+        "primary": "#000000",
+        "primary_container": "#1d1b18",
+        "primary_fixed": "#e7e1dc",
+        "primary_fixed_dim": "#cbc5c0",
+        "secondary": "#635e58",
+        "secondary_container": "#e6ded7",
+        "secondary_fixed": "#e9e1da",
+        "secondary_fixed_dim": "#cdc5be",
+        "surface": "#fbf9f6",
+        "surface_bright": "#fbf9f6",
+        "surface_container": "#efeeeb",
+        "surface_container_high": "#eae8e5",
+        "surface_container_highest": "#e4e2df",
+        "surface_container_low": "#f5f3f0",
+        "surface_container_lowest": "#ffffff",
+        "surface_dim": "#dbdad7",
+        "surface_tint": "#615e5a",
+        "surface_variant": "#e4e2df",
+        "tertiary": "#000000",
+        "tertiary_container": "#1f1b16",
+        "tertiary_fixed": "#ebe1d9",
+        "tertiary_fixed_dim": "#cec5be"
+      },
+      "overrideNeutralColor": "#faf8f5",
+      "overridePrimaryColor": "#1c1a17",
+      "overrideSecondaryColor": "#3a3631",
+      "overrideTertiaryColor": "#77706a",
+      "roundness": "ROUND_FOUR",
+      "spacing": {
+        "gutter": "0.75rem",
+        "margin": "1rem",
+        "space-lg": "0.75rem",
+        "space-md": "0.5rem",
+        "space-sm": "0.375rem",
+        "space-xl": "1rem",
+        "space-xs": "0.25rem"
+      },
+      "spacingScale": 2,
+      "typography": {
+        "body-md": {
+          "fontFamily": "Geist",
+          "fontSize": "13px",
+          "fontWeight": "400",
+          "letterSpacing": "-0.005em",
+          "lineHeight": "18px"
+        },
+        "body-sm": {
+          "fontFamily": "Geist",
+          "fontSize": "12px",
+          "fontWeight": "400",
+          "lineHeight": "16px"
+        },
+        "code-data": {
+          "fontFamily": "JetBrains Mono",
+          "fontSize": "11px",
+          "fontWeight": "400",
+          "letterSpacing": "0",
+          "lineHeight": "14px"
+        },
+        "headline-lg": {
+          "fontFamily": "Geist",
+          "fontSize": "24px",
+          "fontWeight": "600",
+          "letterSpacing": "-0.02em",
+          "lineHeight": "32px"
+        },
+        "headline-md": {
+          "fontFamily": "Geist",
+          "fontSize": "18px",
+          "fontWeight": "600",
+          "letterSpacing": "-0.015em",
+          "lineHeight": "24px"
+        },
+        "headline-sm": {
+          "fontFamily": "Geist",
+          "fontSize": "14px",
+          "fontWeight": "600",
+          "letterSpacing": "-0.01em",
+          "lineHeight": "20px"
+        },
+        "label-lg": {
+          "fontFamily": "JetBrains Mono",
+          "fontSize": "12px",
+          "fontWeight": "500",
+          "letterSpacing": "0.02em",
+          "lineHeight": "16px"
+        },
+        "label-md": {
+          "fontFamily": "JetBrains Mono",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "letterSpacing": "0.03em",
+          "lineHeight": "14px"
+        },
+        "label-sm": {
+          "fontFamily": "JetBrains Mono",
+          "fontSize": "10px",
+          "fontWeight": "400",
+          "letterSpacing": "0.04em",
+          "lineHeight": "12px"
+        }
+      }
+    },
+    "deviceType": "DESKTOP",
+    "metadata": {
+      "userRole": "OWNER"
+    },
+    "name": "projects/11051604963556458741",
+    "origin": "STITCH",
+    "projectType": "PROJECT_DESIGN",
+    "thumbnailScreenshot": {
+      "downloadUrl": "https://lh3.googleusercontent.com/aida/AEtjO1VzLeSnZkjTjyCtgVVLUad4j_y82yCtnsbZnN-p8I8bE6bgeWcYIcQt3rVNAwCb_q34zfSzxfv1Dj5WPHpZ8bbmz1I-hypISN19TPUsy3yxJMa3wzakUcWm8jKA6AccB0RUVYXu_N5--mQ93bTOOnzN6Q5EtPvP7R1uaEcmgP2pJaZ9FbypiPNLKJ9l_UnzHh8GmMlRNjXOLoVsfI5WE6orn5y4pUHPphSUwb70oIAVaZZnp0PQeB-BMvU",
+      "name": "projects/11051604963556458741/files/defa2ff7b5a0462189c8d398f7724833"
+    },
+    "title": "tw-tile-gen",
+    "updateTime": "2026-10-15T05:57:56.280173Z",
+    "visibility": "PRIVATE"
+  }
+}

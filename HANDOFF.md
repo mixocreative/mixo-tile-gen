@@ -97,6 +97,17 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 4. Status log (newest first)
 
+- **2026-10-15, ship round (published):**
+  - Repo https://github.com/mixocreative/tw-tile-gen (public), Pages live at https://mixocreative.github.io/tw-tile-gen/.
+  - **UI redesign** via Stitch (project 11051604963556458741, `.stitch/DESIGN.md`): warm monochrome palette (ink #1c1a17 → paper #faf8f5), Geist + Geist Mono, compact 32 px controls (38/44 px on touch), hairline numbered sections, phone bottom step nav. Owner rule: everything monochrome **except the original coloured tile logo/favicon**. All original element IDs kept.
+  - Defaults changed: backing pad **15 mm** (max-relief cap = width/10 applies above the base only), smoothing **1.2** (app and backend in sync).
+  - Streaming `/process-tile?stream=true`: NDJSON progress → binary preview mesh → 3MF bytes; preview opens before the file is ready.
+  - Dockerfile runs as uid 1000 (Hugging Face Spaces requirement), port 8080.
+  - Hosting: owner won't pay → **Hugging Face Space** (Docker, free) on a *different* HF account than `mixoadrian`. Not deployed yet: owner must log in on this PC (`python -c "from huggingface_hub import login; login()"`, Write token). Then create Space `tw-tile-gen` (README front matter `sdk: docker`, `app_port: 8080`), set variable `ALLOWED_ORIGINS=https://mixocreative.github.io`, test `/health`, set `DEFAULT_API` in `frontend/index.html`, push. Until then the live site shows "Engine: not set".
+  - Empty GCP project `tw-tile-gen` exists under mixoadrian (no billing); owner hasn't said whether to delete it.
+  - Final 16-tile run through the new UI: all OK, corner drift 0.0, 150 × 150 × 19.4–19.9 mm, 6.6–12.3 s per tile. One-off: tile 15's first screenshot showed the camera zoomed in (not reproduced on re-run; watch for it).
+  - Results table: `docs/results/all_tiles.jpg` (built by `backend/tests/make_table.py <renders_dir> <out.jpg>` from Playwright renders `previews/user_*.png`).
+
 - **2026-10-15, raised outlines (Fable, owner-delegated):** tube-lining detection + geometry ridge shipped (`detect_outlines`, `snap_outline_colours`, `ridge_dist` in `cushion_body_mesh`/`build_relief`/`process_tile`; new settings `outline_height_mm`/`outline_width_mm` in TileConfig, main.py Form, frontend). Verified: `run_local.py` all 7 bodies watertight; `run_real.py` on 02/04/06/09/16 all bodies watertight (16–24 s each, 2 GiB); 16-tile sheet `docs/research/lines_final.jpg` (detection 0.3–0.6 s/tile). Recovered ≈ 85–90 % of visible tube-lines on 09/02/04/10/11/14; crazing (16) and the museum-card tangle (05) are rejected; residual false positives: glossy mane highlights on 06 and specular ridges on 07 petals. `tests/run_real.py` and `tests/lines_sheet.py` now read `tests/fixtures/real_tiles` by default.
 
 - **2026-10-15, real-photo round:**
@@ -194,7 +205,7 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 2. Re-render all 16 real tiles and make photo-vs-render sheets (`backend/tests/out/user/compare.py`). Send them to the owner.
 3. A better framed-tile auto-outline: detect the inner glaze rectangle with OpenCV, or tap-to-detect with a larger mask target.
 4. Update the README geometry section to match section 3.
-5. Deploy only when the owner asks: Cloud Run plus Pages, steps in the README.
+5. Deploy the engine to Hugging Face (see the ship-round entry in section 4); then test the live github.io site end to end on a phone.
 
 ## 6. Gotchas
 

@@ -59,7 +59,7 @@ class TileConfig:
     num_colors: int = 8              # max colours (auto-k picks 3..this; with swatches: ignored)
     px_per_mm: float = 4.0           # colour-analysis raster resolution (fine lines need ≥ 4)
     mesh_resolution_mm: float = 0.16 # 0.12 exceeds Cloud Run 2 GiB on full-tile bodies; grid spacing in X/Y (smaller = smoother, slower)
-    smoothing_mm: float = 0.5        # majority-filter radius used to clean colour regions
+    smoothing_mm: float = 1.2        # majority-filter radius used to clean colour regions (matches the app default)
     min_feature_mm2: float = 2.0     # drop islands / holes smaller than this
     merge_delta_e: float = 12.0      # merge shading bands of one glaze (ΔE76 below this + shared border); 0 = off
     bead_height_mm: float = 1.2      # printable minimum height for thin strokes / outlines (0 = off)
