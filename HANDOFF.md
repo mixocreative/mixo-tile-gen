@@ -2,7 +2,7 @@
 
 > Living handoff for any agent (Claude Code, Codex, human) picking this up mid-stream.
 > **Update the "Status log" and "Next steps" sections at every key step.**
-> Last updated: 2026-10-15, after the real-photo test round (see Status log).
+> Last updated: 2026-10-15, after the docs audit pass (see Status log).
 
 ## 1. What this is
 
@@ -10,30 +10,38 @@ Photo of a Taiwanese majolica tile (花磚) → printable multi-colour 3D relief
 
 - `frontend/index.html`: single-file app (Tailwind CDN, MediaPipe Interactive Segmenter for the auto-outline, Cropper.js fallback, 4-corner perspective editor, canvas eyedropper, settings, Three.js preview with 3MFLoader). Hosted on GitHub Pages (`.github/workflows/pages.yml`).
 - `backend/`: FastAPI on Cloud Run (`main.py` = API, `tile_processor.py` = all image + geometry work, `Dockerfile`, `requirements.txt`).
-- `README.md`: deploy steps for Cloud Run and GitHub Pages, plus the API reference. **Partly stale.** Its geometry section still describes an older version, so trust section 3 below.
-- Not deployed yet. Not a git repo yet; ask the owner before running `git init` or committing.
+- `README.md`: the user guide (what it does, the step-by-step setup guide for every way to run it, the command line, the API, tests, known limits). Section 3 below is the source of truth for the geometry.
+- `scripts/`: `mixo.py` (command line, wrapped by `mixo.bat` / `mixo.sh`) and `run_local.py` (the launcher behind `start-windows.bat`, `start-windows-phone.bat`, `start-mac-linux.sh`).
+- **Status: live.** Engine on Google Cloud Run (https://mixo-tile-gen-616971929665.asia-east1.run.app, asia-east1, 4 vCPU, 4 GiB, `MIXOTILE_BODY_WORKERS=2`, max 1 instance, NT$30 budget kill switch tested). Site on GitHub Pages (https://mixocreative.github.io/mixo-tile-gen/). The folder is a git repo with `origin` = github.com/mixocreative/mixo-tile-gen. Don't commit, push or deploy unless the owner asks.
 
 ## 2. How to run and verify (Windows; Git Bash or PowerShell)
 
 ```bash
-# API (local port 8080 is taken on this machine -> use 8088)
+# Whole app on this PC (engine + website on one port): double-click start-windows.bat, or
+python scripts/run_local.py            # opens http://localhost:8088/?api=self ; creates .venv on first run
+
+# Engine only, in Docker (the same image Cloud Run builds)
 cd backend && docker build -t mixotile-api .
-docker run -d --name mixotile-test -m 2g -p 8088:8080 -e ALLOWED_ORIGINS="http://localhost:8790" mixotile-api
+docker run -d --name mixotile-test -m 4g -p 8088:8080 -e ALLOWED_ORIGINS="http://localhost:8790" mixotile-api
 curl localhost:8088/health
 
-# Frontend
+# Frontend only
 cd frontend && python -m http.server 8790 --bind 127.0.0.1
 # open http://localhost:8790/index.html?api=http://localhost:8088&v=<anything>   (v= busts browser cache)
-
-# Pipeline without HTTP (+ watertight check of every body)
-MSYS_NO_PATHCONV=1 docker run --rm -m 2g -v "S:/ai/twtile/backend:/app" -w /app mixotile-api python tests/run_local.py
 ```
 
-- Debug helpers in `backend/tests/`: `make_sample.py` (synthetic photo), `run_local.py` (end-to-end + watertight), `check_watertight.py`, `check_colours.py` (palette per real tile), `check_symmetry.py`.
-- Real test photos: `backend/tests/out/user/NN_name.jpg` (16 museum tiles from the owner) and `corners.json` (`{name: [upload_id, [[x,y]×4 TL,TR,BR,BL]]}`, in **2048-px coords**, so scale by `img_width/2048`). `compare.py` / `sheet.py` there build photo-vs-render sheets.
+- **Test photos: only the owner's 18 photos** in `backend/tests/fixtures/real_tiles/originals/IMG_*.jpg` (3024 px), with corners in `real_tiles/corners.json` (`{"IMG_xxxx": [[x,y] TL,TR,BR,BL]}`, in photo pixels). Never add, delete or replace fixtures; if the folder changes, the owner is curating, so ask first. There are no synthetic test images.
+- Scripts in `backend/tests/` (run from `backend/`, with the app's Python: `..\.venv\Scripts\python` on Windows, `../.venv/bin/python` on Mac/Linux, or inside the `mixotile-api` image):
+  - `run_real.py [IMG_...]`: every colour body watertight, time per tile (no args = all 18; run one tile per process on low-memory machines).
+  - `check_formats.py IMG_9255`: STL closed per colour, OBJ materials, photo texture lined up.
+  - `check_borders.py IMG_9255 [clearance]`: puzzle-fit gap/overlap between colours.
+  - `lines_sheet.py`: visual sheet (photo | outlines | colours | height map) to `docs/research/`. LOOK at it.
+  - `make_table.py <renders_dir> <out.jpg>`: photo-vs-render table from app screenshots `user_<name>.png`.
+  - `check_labels.py`, `mem_trace.py`, `profile_tile.py`: colour-label sheet, memory trace, profiler.
+- Command line: `scripts/mixo.py` (`mixo.bat` / `mixo.sh`), local or `--server URL`.
 - Renders land in `previews/`. Files starting with `_` are scratch.
-- Every generated body must be watertight (`run_local.py` prints this). Cloud Run has 2 GiB, so test with `-m 2g`.
-- **Every pipeline change must be verified on all 16 fixture tiles** in `backend/tests/fixtures/real_tiles/` (permanent, git-tracked; never delete or replace): `python tests/run_real.py` (no args = all 16, watertight check, in the `mixotile-api` image) and `python tests/lines_sheet.py` (writes `docs/research/lines_final.jpg`: photo | detected outlines | labels | top surface) — then LOOK at the sheet.
+- Every generated body must be watertight. Cloud Run has 4 GiB; test memory-sensitive changes with `-m 4g` (peak is about 1.5-2 GB per tile).
+- **Every pipeline change must be verified on all 18 fixture tiles**: `python tests/run_real.py` and `python tests/lines_sheet.py`, then look at the sheet.
 
 ## 3. Current design (decided with the owner; do not regress)
 
@@ -44,42 +52,43 @@ MSYS_NO_PATHCONV=1 docker run --rm -m 2g -v "S:/ai/twtile/backend:/app" -w /app 
 - Big areas have a near-level top with a gentle crown that flattens as the area grows. Thin strokes stay lower and round.
 - Smooth from top to edge: no plateaus with kinks, no terraces.
 - The math is in `seam_field` (screened-Poisson ψ → smooth seam distance `d = −L·ln(1−ψ)`), `refine_seam_field`, `cushion_profile` / `edge_roundover`, `bead_floor`, and `cushion_body_mesh` (height field → marching cubes).
-- Zero gaps: each body's footprint is dilated about 0.5 mm into its neighbours at groove-floor height (hidden overlap).
+- Zero gaps: all colours are cut from one shared partition (`partition_fields`), so neighbours meet exactly; `clearance_mm` opens a slot. (The old 0.5 mm hidden overlap is gone.)
 - The tile edge is **not** a seam (`edge_is_seam=False`): fields run level to the edge with a soft roll-off.
 - **Raised outlines (tube-lining):** `detect_outlines` finds thin light/dark lines on the photo itself (top-hat / black-hat of L at 2× raster, hysteresis, width ≥ 0.4 mm, length ≥ 4 mm, contrast ≥ 10 L, texture/crazing rejection), independent of colour clustering. Every detected line becomes a smooth cos² ridge (`outline_height_mm` × `outline_width_mm`) ADDED on top of the cushion of whichever colour it lies in (`cushion_body_mesh`, `ridge_dist`), faded out within ~1.6 mm of a seam (the groove already draws the line there). Lines whose colour clearly differs from their host (ΔE > 18) and matches another existing palette colour (ΔE ≤ 14) are also relabelled to that colour (`snap_outline_colours`); palette entries are never invented from lines.
 
-**Defaults** (`TileConfig`, mirrored in `main.py` Form defaults and the `frontend` inputs; keep all three in sync):
+**Defaults** (`TileConfig` in `backend/tile_processor.py`, mirrored in `main.py` Form defaults and the `frontend` inputs; keep all three in sync):
 
 | Setting | Default |
 |---|---|
-| Tile size | 150 mm |
-| Pad | 3.0 mm |
+| Tile size (`tile_size_mm`) | 150 mm |
+| Base / pad (`pad_thickness_mm`) | 15 mm |
 | Edge depth (`relief_height_mm`) | 3.0 mm |
-| Roll width (`fillet_radius_mm`) | 6.0 mm |
+| Edge roll width (`fillet_radius_mm`) | 6.0 mm |
 | Crown (`dome_height_mm`) | 1.0 mm |
-| Crown reach | 12 mm |
-| Groove floor | 0.4 mm |
-| Tile corner radius | 2.0 mm |
+| Crown reach (`dome_reach_mm`) | 12 mm |
+| Groove floor (`groove_floor_mm`) | 0.4 mm |
+| Tile corner radius (`corner_radius_mm`) | 2.0 mm |
 | Raised outlines (`outline_height_mm`, 0 = off) | 0.8 mm |
 | Outline width (`outline_width_mm`) | 1.2 mm |
-| k | 6 |
-| Raster | 4 px/mm |
-| Mesh grid | 0.12 mm |
-| Smoothing | 0.5 mm |
-| Min feature | 2 mm² |
+| Max colours (`num_colors`) | up to 8 (auto picks 3 up to this) |
+| Raster (`px_per_mm`) | 4 px/mm |
+| Mesh grid (`mesh_resolution_mm`) | 0.16 mm |
+| Smoothing (`smoothing_mm`) | 1.2 mm |
+| Min feature (`min_feature_mm2`) | 2 mm² |
 | `merge_delta_e` | 12 |
-| Bead for thin strokes | 1.2 mm high / 0.8 mm |
+| Thin-stroke bead (`bead_height_mm`, `bead_width_mm`) | 1.2 mm high / 0.8 mm |
 | `min_band_mm` | 3 |
+| Clearance (`clearance_mm`) | 0 (flush) |
 | `symmetry` | `off` (opt-in) |
 
-Total height is about 7.1–7.4 mm at 150 mm. The frontend re-derives relief from tile size: depth 2 %, roll width 4 %, crown 0.7 % of the width, capped at **max height = width ÷ 10**, which is a cap, not a target.
+Total height is about 19-20 mm at 150 mm (15 mm base plus about 4-5 mm relief). The frontend re-derives relief from tile size: depth 2 %, roll width 4 %, crown 0.7 % of the width, capped at **max relief = width ÷ 10 above the base**, which is a cap, not a target.
 
 **Colour pipeline** (`process_tile`), in order:
 1. Warp with a 1.5 % inward inset.
 2. Optional symmetrise.
 3. Bilateral filter (9/45/9).
-4. k-means with **2k** clusters.
-5. `merge_shading_bands` (ΔE < 12 and a shared border), then merge the closest pairs down to k. User-picked swatches are never merged.
+4. Mean-shift flattening, then k-means with k = 12 in L-weighted Lab (auto-k; `num_colors` is the maximum).
+5. `merge_shading_bands` (ΔE < 12 and a shared border), then merge the closest pairs until ΔE ≥ 14 or k ≤ `num_colors`. User-picked swatches are never merged.
 6. Majority filter.
 7. `remove_specks`, which keeps strokes ≥ 4 mm long as outlines.
 
@@ -97,6 +106,8 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 4. Status log (newest first)
 
+- **2026-10-15, docs audit pass:** README rewritten for complete beginners (which-way table, terminals, Python per OS, Cloud Shell re-paste safety, update/delete, troubleshooting, command-line examples with the bundled photo, settings table with app labels and `--set` names). HANDOFF sections 1, 2, 3 and 5 refreshed. Removed the synthetic test files (`tests/run_local.py`, `make_sample.py`, `sample_tile.jpg`, `check_watertight.py`), since the owner's rule is to test only on the owner's photos. Dockerfile comments reworded. No code behaviour changed.
+
 - **2026-10-15, owner decisions:** corners for the fixture set confirmed by the owner; IMG_9391 (heron) removed from the set at the owner's request (now 18 photos); old empty GCP project `tw-tile-gen` (mixoadrian) deleted (DELETE_REQUESTED, recoverable 30 days).
 
 - **2026-10-15, textured exports + command line:** new formats `3mftex` (3MF Materials-extension texture2dgroup per corner; slicer part table unchanged so it prints in glaze colours) and `glbtex` (trimesh PBR baseColorTexture); pad stays plain. `tests/check_formats.py` checks all (IMG_9255: corner-UV error 0.00001; three.js 3MFLoader renders the textured 3MF). App menu groups formats by Glaze colours / Photo texture. **`scripts/mixo.py`** (+ `mixo.bat`, `mixo.sh`): command line without the web page, local (re-runs itself in `.venv`) or `--server URL`, `--corners`, `--corners-json` batch, `--set name=value`; tested local single + batch. README: "Without the web page" guide + with/without-UI × online/local table. Live site verified after the memory fix: 2 tiles in a row OK on cloud.
@@ -109,32 +120,32 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
   - **Cloud Run memory bug found and fixed:** a 2nd tile in a row on 3024 px photos hit "Memory limit of 2048 MiB exceeded" (503). Now 4 GiB, and `main.py` calls `malloc_trim(0)` after each tile. **Speed:** desktop 10–12 s/tile; Cloud Run 2 vCPU ≈ 25 s (thread caps didn't help); 4 vCPU + `MIXOTILE_BODY_WORKERS=2` ≈ 17–19 s. Deploy flags now `--cpu 4 --memory 4Gi`, env `MIXOTILE_BODY_WORKERS=2` (README Option B updated).
 
 - **2026-10-15, engine on Google Cloud Run + hard spending cap + local self-hosting (IN PROGRESS):**
-  - Hugging Face is out: since ~July 2026 free accounts get `402 Payment Required` for Docker/Gradio Spaces on cpu-basic (PRO only). Owner chose Google Cloud Run with a card on file and a cap.
+  - (Superseded: the engine is on Cloud Run, see above.) Hugging Face is out: as of 2026 free accounts get `402 Payment Required` for Docker/Gradio Spaces on cpu-basic (PRO only). Owner chose Google Cloud Run with a card on file and a cap.
   - Repo renamed `tw-tile-gen` -> **`mixo-tile-gen`** (github.com/mixocreative/mixo-tile-gen, Pages https://mixocreative.github.io/mixo-tile-gen/). Product name changed everywhere (commit 003a33e).
   - GCP (account mixocreative@gmail.com, gcloud at `%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdkin\gcloud.cmd`, not on PATH; use PowerShell for JSON args):
     - Project `mixo-tile-gen`, billing account `018205-9A5C87-68D277` (TWD). Old project `tw-tile-gen` under mixoadrian: empty, owner not asked to delete yet.
-    - **Engine live:** https://mixo-tile-gen-616971929665.asia-east1.run.app (2 vCPU, 2 GiB, concurrency 1, **max-instances 1**, min 0, timeout 300, `ALLOWED_ORIGINS=https://mixocreative.github.io`). `/health` OK, CORS verified (other origins rejected).
+    - **Engine live:** https://mixo-tile-gen-616971929665.asia-east1.run.app (was 2 vCPU, 2 GiB, now 4 vCPU, 4 GiB with `MIXOTILE_BODY_WORKERS=2`; concurrency 1, **max-instances 1**, min 0, timeout 300, `ALLOWED_ORIGINS=https://mixocreative.github.io`). `/health` OK, CORS verified (other origins rejected).
     - Fresh-project gotchas hit: Artifact Registry 403 right after enabling the API (wait/retry), and the compute default SA needed `cloudbuild.builds.builder`, `storage.objectViewer`, `artifactregistry.writer`, `logging.logWriter`.
     - **Spending cap:** budget `mixo-tile-gen-cap` = NT$30 (50/90/100 % thresholds) -> Pub/Sub topic `budget-alerts` -> Cloud Run function `budget-killswitch` (`ops/budget_killswitch/`, SA `budget-killswitch@` with `billing.projectManager` + `browser` on the project, `run.invoker` on the function). At cost >= budget it unlinks billing (engine stops; nothing more can be charged). **Verified end to end:** below-budget alert = no action; fake over-budget alert = billing disabled; then relinked by hand (`gcloud billing projects link mixo-tile-gen --billing-account=018205-9A5C87-68D277`). Budget data lags a few hours, so a small overshoot is possible; max-instances 1 bounds it.
   - **Local self-hosting (verified):** `scripts/run_local.py` (+ `start-windows.bat`, `start-windows-phone.bat`, `start-mac-linux.sh`): makes `.venv`, installs `backend/requirements.txt` (pins relaxed to `>=` on Python 3.14+, since numpy 2.2.6 has no 3.14 wheel; wrappers prefer 3.13/3.12/3.11), runs uvicorn with `FRONTEND_DIR` so the engine also serves the website (new mount at the end of `main.py`), opens `http://localhost:8088/?api=self` (new `?api=self` = same origin in `apiBase()`). `--phone`: same-Wi-Fi link + free Cloudflare quick tunnel (`cloudflared` auto-downloaded to `tools/`), writes `tools/phone.html` with QR codes.
   - Local launcher verified end to end: fresh `.venv` install on Python 3.13, `--phone` gave a same-Wi-Fi link + `https://*.trycloudflare.com` link; a tile generated through the tunnel at 390 px width in 13 s, `.3MF` downloaded, all 9 parts closed (edge check by index). Note: trimesh with `process=True` reports them open because 3-decimal rounding makes distinct vertices coincide; slicers don't merge, so it's harmless.
   - **New download formats** (`output_format`): `stl` (zip, one binary STL per colour; pinch vertices nudged 0.002 mm so STL welding stays manifold), `obj` (zip, OBJ+MTL, one object per colour), `objtex` (zip, OBJ+MTL+`texture.jpg` 2048 px: the same warp as the geometry, projected top-down, u = x/size, v = y/size; the pad keeps a plain colour because its sides would streak; OBJ numbers v and vt separately, so faces carry their own vt index). STEP deliberately not offered (faceted STEP of ~1 M triangles is impractical). `backend/tests/check_formats.py <tile>` verifies all three (STL closed per colour, materials, face-followed UV error < 1e-4, photo-under-body colour vs glaze colour, with a flipped-texture control). UI: "Other formats" select in the preview footer (re-runs the engine, ~10 s).
-  - **UI:** header **AI pill** (loading / on / off · manual); when the AI can't load the app stays in 4-corner manual mode and hides Tap-to-detect / Detect-again (tested by blocking the MediaPipe URLs). Desktop: drag-and-drop anywhere + Ctrl+V paste, "Take photo" only on touch devices (`pointer: coarse`). "Try a sample" now loads the owner's 09 rose photo (`frontend/samples/rose.jpg`, 1600 px) with measured corners, no auto-detect.
+  - **UI:** header **AI pill** (loading / on / off · manual); when the AI can't load the app stays in 4-corner manual mode and hides Tap-to-detect / Detect-again (tested by blocking the MediaPipe URLs). Desktop: drag-and-drop anywhere + Ctrl+V paste, "Take photo" only on touch devices (`pointer: coarse`). "Try a sample" now loads the owner's 09 rose photo (`frontend/samples/rose.jpg` at the time; now `roses.jpg` = IMG_9255, 1600 px) with measured corners, no auto-detect.
   - **Found: `corners.json` is inaccurate.** Drawing the stored corners on the 16 fixtures shows most fall 5–9 % short on the right/bottom (e.g. 09: stored BR (1590,1610), measured (1689,1717) in 2048 units). Photo-vs-render sheets so far were consistent (same corners for both) but trimmed the outer strip. Next: re-measure all 16 from zoomed corner crops and update `corners.json` (values only; the photos stay untouched).
-  - Owner rule (2026-10-15): test **only** with the owner's 16 photos in `real_tiles/`, never the museum crops or synthetic images.
+  - Owner rule (2026-10-15): test **only** with the owner's photos in `real_tiles/` (16 then, 18 now), never the museum crops or synthetic images.
 
 - **2026-10-15, ship round (published):**
   - Repo https://github.com/mixocreative/mixo-tile-gen (public), Pages live at https://mixocreative.github.io/mixo-tile-gen/.
   - **UI redesign** via Stitch (project 11051604963556458741, `.stitch/DESIGN.md`): warm monochrome palette (ink #1c1a17 → paper #faf8f5), Geist + Geist Mono, compact 32 px controls (38/44 px on touch), hairline numbered sections, phone bottom step nav. Owner rule: everything monochrome **except the original coloured tile logo/favicon**. All original element IDs kept.
   - Defaults changed: backing pad **15 mm** (max-relief cap = width/10 applies above the base only), smoothing **1.2** (app and backend in sync).
   - Streaming `/process-tile?stream=true`: NDJSON progress → binary preview mesh → 3MF bytes; preview opens before the file is ready.
-  - Dockerfile runs as uid 1000 (Hugging Face Spaces requirement), port 8080.
-  - Hosting: owner won't pay → **Hugging Face Space** (Docker, free) on a *different* HF account than `mixoadrian`. Not deployed yet: owner must log in on this PC (`python -c "from huggingface_hub import login; login()"`, Write token). Then create Space `mixo-tile-gen` (README front matter `sdk: docker`, `app_port: 8080`), set variable `ALLOWED_ORIGINS=https://mixocreative.github.io`, test `/health`, set `DEFAULT_API` in `frontend/index.html`, push. Until then the live site shows "Engine: not set".
+  - Dockerfile runs as uid 1000 (non-root), port 8080.
+  - (Superseded by the Cloud Run entry above; nothing to deploy to Hugging Face.) Hosting: owner won't pay → **Hugging Face Space** (Docker, free) on a *different* HF account than `mixoadrian`. Not deployed yet: owner must log in on this PC (`python -c "from huggingface_hub import login; login()"`, Write token). Then create Space `mixo-tile-gen` (README front matter `sdk: docker`, `app_port: 8080`), set variable `ALLOWED_ORIGINS=https://mixocreative.github.io`, test `/health`, set `DEFAULT_API` in `frontend/index.html`, push. Until then the live site shows "Engine: not set".
   - Empty GCP project `tw-tile-gen` exists under mixoadrian (no billing); owner hasn't said whether to delete it.
   - Final 16-tile run through the new UI: all OK, corner drift 0.0, 150 × 150 × 19.4–19.9 mm, 6.6–12.3 s per tile. One-off: tile 15's first screenshot showed the camera zoomed in (not reproduced on re-run; watch for it).
   - Results table: `docs/results/all_tiles.jpg` (built by `backend/tests/make_table.py <renders_dir> <out.jpg>` from Playwright renders `previews/user_*.png`).
 
-- **2026-10-15, raised outlines (Fable, owner-delegated):** tube-lining detection + geometry ridge shipped (`detect_outlines`, `snap_outline_colours`, `ridge_dist` in `cushion_body_mesh`/`build_relief`/`process_tile`; new settings `outline_height_mm`/`outline_width_mm` in TileConfig, main.py Form, frontend). Verified: `run_local.py` all 7 bodies watertight; `run_real.py` on 02/04/06/09/16 all bodies watertight (16–24 s each, 2 GiB); 16-tile sheet `docs/research/lines_final.jpg` (detection 0.3–0.6 s/tile). Recovered ≈ 85–90 % of visible tube-lines on 09/02/04/10/11/14; crazing (16) and the museum-card tangle (05) are rejected; residual false positives: glossy mane highlights on 06 and specular ridges on 07 petals. `tests/run_real.py` and `tests/lines_sheet.py` now read `tests/fixtures/real_tiles` by default.
+- **2026-10-15, raised outlines (Fable, owner-delegated):** tube-lining detection + geometry ridge shipped (`detect_outlines`, `snap_outline_colours`, `ridge_dist` in `cushion_body_mesh`/`build_relief`/`process_tile`; new settings `outline_height_mm`/`outline_width_mm` in TileConfig, main.py Form, frontend). Verified: all 7 bodies watertight (the old synthetic-photo script is gone); `run_real.py` on 02/04/06/09/16 all bodies watertight (16–24 s each, 2 GiB); 16-tile sheet `docs/research/lines_final.jpg` (detection 0.3–0.6 s/tile). Recovered ≈ 85–90 % of visible tube-lines on 09/02/04/10/11/14; crazing (16) and the museum-card tangle (05) are rejected; residual false positives: glossy mane highlights on 06 and specular ridges on 07 petals. `tests/run_real.py` and `tests/lines_sheet.py` now read `tests/fixtures/real_tiles` by default.
 
 - **2026-10-15, real-photo round:**
   - Ran 16 owner photos plus 4 Wikimedia museum crops.
@@ -218,23 +229,12 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
   - The non-stream API, GLB output and the stream error path are verified.
   - `tests/check_borders.py` now ignores 1-px fill-rounding hairlines (3×3 erosion). At clearance 0 every tile has 0–1 px of real gap or overlap.
 
-## 5. In-flight / next steps
+## 5. Next steps
 
-**Owner's open requests (2026-10-15), in order:**
-2. Re-render the photo-vs-render table `docs/results/all_tiles.jpg` from the new photos (Playwright: load each photo, drag corners from `corners.json`, generate, screenshot `#viewer` to `previews/user_<name>.png`, then `backend/tests/make_table.py previews docs/results/all_tiles.jpg`).
-
-0. **Outlines, known limits to improve:** (a) glossy modelled glaze still yields highlight streaks (06 lion mane, 07 petal ridges) — candidates: both-flank symmetry test, structure-tensor orientation coherence; (b) a tube-line that coincides with a colour seam is drawn only by the groove (ridge faded within 1.6 mm of seams) — a dedicated line body would be needed to raise it; (c) 0.3–0.5 mm hair lines are below the 0.4 mm width gate by design; (d) `compare.py`/`check_labels.py` in `tests/out/user` still read their own folder.
-1. **Apply the Fable photo report.** Prototype: `docs/research/photo_proto.py`. Before/after sheet: `docs/research/photo_before_after.jpg`, with columns photo | current | glare+meanshift k=6 | auto-k + L-weight. Ranked:
-   1. **Mean-shift pre-flattening** in `quantize`, after the bilateral filter: `cv2.pyrMeanShiftFiltering(rgb, sp=7, sr=22)`. This gives fewer, larger patches on shaded glazes. Keep `sr` ≤ 22; higher eats tube-lines.
-   2. **Glare/sticker inpaint** (`remove_glare` in the prototype), called in `process_tile` right after `symmetrise`. Candidate pixels: L > 80, chroma < 16, and (L − open(L, disc)) > 14. Each component must be < 3 % of the tile and have distance-transform max ≥ 1.5 mm, so thin white tube-lines are untouched. Then `cv2.inpaint` TELEA r=5. **Use a 10 mm disc**, not 6 mm, otherwise the "61"/"75" stickers survive.
-   3. **Auto-k:** k-means with k=12 in Lab with L weighted 0.5, then `merge_shading_bands`, then merge the closest pair in weighted Lab while its distance is < 14. Stop at 3 colours minimum, with `num_colors` as the maximum. Gives k ≈ 5–11 and keeps faces and the rose centre.
-   4. **Small-detail keeper** (untested): in `remove_specks`, keep a speck if its ΔE to the colour it would merge into is > 25 and its area is ≥ 1 mm².
-   5. **Line layer** (top-hat): picks up glare ridges. Opt-in only, not default.
-   - Fable's honest verdict: moderate gains, not transformative. Added runtime is about 0.4 s per tile.
-2. Re-render all 16 real tiles and make photo-vs-render sheets (`backend/tests/out/user/compare.py`). Send them to the owner.
-3. A better framed-tile auto-outline: detect the inner glaze rectangle with OpenCV, or tap-to-detect with a larger mask target.
-4. Update the README geometry section to match section 3.
-5. Deploy the engine to Hugging Face (see the ship-round entry in section 4); then test the live github.io site end to end on a phone.
+1. **Re-render the photo-vs-render table** `docs/results/all_tiles.jpg` from the 18 current photos (Playwright: load each photo, drag corners from `corners.json`, generate, screenshot `#viewer` to `previews/user_<name>.png`, then `python backend/tests/make_table.py previews docs/results/all_tiles.jpg`).
+2. **Outlines, known limits to improve:** (a) glossy modelled glaze still yields highlight streaks (candidates: both-flank symmetry test, structure-tensor orientation coherence); (b) a tube-line that coincides with a colour seam is drawn only by the groove (ridge faded within 1.6 mm of seams), so a dedicated line body would be needed to raise it; (c) 0.3-0.5 mm hair lines are below the 0.4 mm width gate by design.
+3. **A better framed-tile auto-outline:** detect the inner glaze rectangle with OpenCV, or tap-to-detect with a larger mask target (the AI sometimes grabs a sliver of the frame on IMG_9255 and IMG_9343).
+4. **Pale glaze inside a shiny motif** can still quantise to cream and split a colour; the highlight-absorb step doesn't cover it.
 
 ## 6. Gotchas
 

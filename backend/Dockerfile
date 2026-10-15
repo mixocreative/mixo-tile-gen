@@ -1,4 +1,4 @@
-# mixo-tile-gen backend: FastAPI + OpenCV + scikit-image (marching cubes); runs on Hugging Face Spaces or Google Cloud Run
+# mixo-tile-gen backend: FastAPI + OpenCV + scikit-image (marching cubes); runs on Google Cloud Run or any Docker host
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,7 +20,7 @@ COPY main.py tile_processor.py ./
 # Fail the build early if a native dependency can't load.
 RUN python -c "import cv2, sklearn, skimage.measure, scipy.sparse, fast_simplification, trimesh, tile_processor; print('deps ok')"
 
-# uid 1000: Hugging Face Spaces runs containers as user 1000 (also fine on Cloud Run)
+# Run as a non-root user (uid 1000). Works on Google Cloud Run and any Docker host.
 RUN useradd --create-home --uid 1000 app
 USER app
 

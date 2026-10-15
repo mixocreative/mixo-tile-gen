@@ -16,7 +16,7 @@
 `{"IMG_9245": [[x, y] TL, TR, BR, BL], ...}`, the glaze corners **in the photo's own pixels**. `process_tile` takes them as they are.
 
 - The rest were proposed automatically (the opening inside the wooden frame).
-- 9 were read off gridded views by eye: 9251, 9279, 9287, 9343, 9351, 9381, 9384, 9390, 9392. (IMG_9391, the heron, was removed by the owner.)
+- 9 were read off gridded views by eye: 9251, 9279, 9287, 9343, 9351, 9381, 9384, 9390, 9392.
 - All were checked by flattening each photo with its corners and looking for wood or a neighbouring tile at the edges.
 
 ## Scripts that use them
