@@ -91,7 +91,7 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 
 | 設定 | App 中的標籤 | --set / API 用的名稱 | 預設值 | 意義 |
 |---|---|---|---|---|
-| 磚寬 | 磚寬 | `tile_size_mm` | 150 mm | 歷史上 6 英吋的馬賽克花磚尺寸。更改後，下面的浮雕設定會依比例重新調整。 |
+| 磚寬 | 磚寬 | `tile_size_mm` | 150 mm | 歷史上 6 英吋（約 15 公分）花磚的標準尺寸。更改後，下面的浮雕設定會依比例重新調整。 |
 | 最大浮雕高度 | 最大浮雕 | （僅限 App） | 磚寬 ÷ 10 | 底座以上的浮雕高度不會超過這個值。它是上限，不是目標。 |
 | 底座墊板 | 底座 | `pad_thickness_mm` | 15 mm | 實心的底座厚板。 |
 | 邊緣深度 | 邊緣深度 | `relief_height_mm` | 3.0 mm | 每種顏色往接縫處下滑的深度。 |
