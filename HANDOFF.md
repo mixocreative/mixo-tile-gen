@@ -10,7 +10,7 @@ Photo of a Taiwanese majolica tile (花磚) → printable multi-colour 3D relief
 
 - `frontend/index.html`: single-file app (Tailwind CDN, MediaPipe Interactive Segmenter for the auto-outline, Cropper.js fallback, 4-corner perspective editor, canvas eyedropper, settings, Three.js preview with 3MFLoader). Hosted on GitHub Pages (`.github/workflows/pages.yml`).
 - `backend/`: FastAPI on Cloud Run (`main.py` = API, `tile_processor.py` = all image + geometry work, `Dockerfile`, `requirements.txt`).
-- `README.md`: the user guide (what it does, the step-by-step setup guide for every way to run it, the command line, the API, tests, known limits). Section 3 below is the source of truth for the geometry.
+- `README.md` (繁體中文, shown first on GitHub) and `README.en.md` (English, same content): the user guide (what it does, the step-by-step setup guide for every way to run it, the command line, the API, tests, known limits). Section 3 below is the source of truth for the geometry.
 - `scripts/`: `mixo.py` (command line, wrapped by `mixo.bat` / `mixo.sh`) and `run_local.py` (the launcher behind `start-windows.bat`, `start-windows-phone.bat`, `start-mac-linux.sh`).
 - **Status: live.** Engine on Google Cloud Run (https://mixo-tile-gen-616971929665.asia-east1.run.app, asia-east1, 4 vCPU, 4 GiB, `MIXOTILE_BODY_WORKERS=2`, max 1 instance, NT$30 budget kill switch tested). Site on GitHub Pages (https://mixocreative.github.io/mixo-tile-gen/). The folder is a git repo with `origin` = github.com/mixocreative/mixo-tile-gen. Don't commit, push or deploy unless the owner asks.
 

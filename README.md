@@ -1,77 +1,79 @@
-# mixo-tile-gen · 花磚 3D relief generator
+**繁體中文** | [English](README.en.md)
 
-Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, plus `.GLB`, `.STL` and `.OBJ`, even one wearing your photo as a texture) ready for multi-material 3D printing.
+# mixo-tile-gen · 花磚 3D 浮雕產生器
 
-**Live app:** https://mixocreative.github.io/mixo-tile-gen/
-**Engine:** Python, running on Google Cloud Run (with a hard spending cap). You can also run the whole app on your own computer with one double-click, phone included; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
+把一張台灣傳統花磚（馬約利卡釉面磚）的手機照片，變成封閉無破洞（watertight）的多色 3D 浮雕（`.3MF`，另有 `.GLB`、`.STL` 和 `.OBJ`，甚至可以直接把你的照片貼在模型上當貼圖），直接拿去做多材料 3D 列印。
 
-![Real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
+**線上版：** https://mixocreative.github.io/mixo-tile-gen/
+**引擎：** Python，跑在 Google Cloud Run 上（設有硬性花費上限）。你也可以只要雙擊一下，就在自己的電腦上執行整個應用程式，連手機也能一起用；請見[逐步指南](#自己架設逐步指南零基礎也能上手)。
+
+![真實花磚：照片與產生的浮雕對照](docs/results/all_tiles.jpg)
 
 ---
 
-## Why you'll love it
+## 為什麼你會愛上它
 
-**Point your phone at a tile. Get a 3D-printable copy in about 20 seconds** (the first tile after a quiet spell can take up to a minute). There's nothing to install, no account, and it's free. It speaks **English** and **繁體中文**, picked automatically from your phone's language (and you can switch on the first page).
+**手機對準花磚，約 20 秒就能拿到可 3D 列印的複製品**（閒置一陣子後的第一塊磚最久可能要一分鐘）。不用安裝、不用註冊帳號，而且免費。支援 **English** 和 **繁體中文**，會依手機語言自動切換（第一頁也能手動切換）。
 
-- **📸 Snap it, done.** Take a photo of any tile: in a museum, on an old house, at a flea market. Crooked angles are fine; the app straightens them for you. Your photo is processed in memory and never stored.
-- **🤖 It finds the tile for you, and you stay in charge.** Google's on-device AI suggests the four corners right in your browser. You always get to check them and drag them into place, with a magnifier to help. If the AI can't load, the app says **AI off · manual** and everything still works.
-- **🎨 It works out the colours.** Tell it how many colours you want with **− / +** and it splits the tile for you. Missed one? **Pick from photo** adds it (and keeps it pinned 📌). Tap any swatch to swap in a different colour, or merge two colours into one.
-- **🖼️ Glaze colours or photo skin.** One big switch chooses what you see. **Glaze colours** are flat colours, what a multi-colour printer prints. **Photo skin** wraps your real photo onto the relief, so it looks like the real tile (printers still print the glaze colours).
-- **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into soft valleys at the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
-- **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw. Every body is watertight. Want a tiny gap so the pieces snap together? Set the **clearance**.
-- **👀 See it, then tweak it live.** Spin and zoom a 3D preview in the browser, with a big **Colours / Photo** toggle and **Top** and **3/4** views. The preview opens before anything else is ready. Then drag the **Fine-tune** sliders (base thickness, edge depth, crown, groove floor, outline height) and watch the model move as you drag, even on a phone. **Apply** updates the full model instantly in your browser, with no waiting for the cloud.
-- **📦 Your files, made on your device.** The cloud only builds the shape. Your own browser writes the files when you ask for them: **3MF** for multi-colour printing (PrusaSlicer, OrcaSlicer, Bambu Studio), **GLB** for web viewers, AR and sharing, **OBJ** for Blender, and **STL**, one file per colour. Pick a **+ photo skin** version of 3MF, GLB or OBJ to have your photo on the model too.
-- **🛠️ Make it yours.** Every setting is a simple number in millimetres, with a live cross-section drawing that lights up the setting you're editing. Each one has its own ↺ reset, and your choices are remembered between visits. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing).
-- **📱 Works on your phone.** It's designed for phones first: one **Take or choose photo** button, big tap targets, and downloads that go easy on your phone's memory.
-- **🆓 Free, and yours to run your way.** Use the website, or run the whole app on your own computer with one double-click (your phone can join over the same Wi-Fi, or through a free Cloudflare link with QR codes), or skip the web page and use the `mixo` command for one photo or a whole batch. The online engine has a hard spending cap. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
+- **📸 拍下來就完成。** 博物館裡、老房子牆上、跳蚤市場，任何一塊花磚都能拍。角度歪了也沒關係，App 會幫你拉正。你的照片只在記憶體中處理，不會被保存。
+- **🤖 它幫你找出花磚，但決定權還是在你。** Google 的裝置端 AI 會直接在你的瀏覽器裡建議四個角的位置。你一定可以自己檢查、拖到準確的位置，還有放大鏡輔助。如果 AI 載入不了，App 會顯示 **AI：關閉・手動**，其他功能完全照常運作。
+- **🎨 顏色自動幫你分好。** 用 **− / +** 告訴它想要幾種顏色，它就替你把花磚分色。漏掉某個顏色？按 **從照片挑色**（Pick from photo）就能補上（還會固定保留 📌）。點任何一個色票就能換成別的顏色，也可以把兩種顏色合併成一種。
+- **🖼️ 釉色或照片貼面，一鍵切換。** 一個大開關決定你看到的樣子。**釉色**（Glaze colours）是單一平塗的顏色，也就是多色列印機實際會印出的顏色。**照片貼面**（Photo skin）則把你的真實照片貼在浮雕上，看起來就像真的花磚（列印機仍然印釉色）。
+- **🏺 看起來像真的陶瓷，不是一疊鬆餅。** 每種顏色都像釉料一樣微微隆起，邊緣在接縫處柔和地滑進淺淺的谷底，就像真正壓製出來的磚。花磚最迷人的那些細細凸起輪廓線，也會被找出來，重建成圓滑的稜線。
+- **🧩 直接就能多色列印。** 每種顏色都是獨立的零件，彼此像拼圖一樣精準嵌合。每個零件都是水密閉合的。想留一點點縫隙讓零件能卡進去？調整**間隙**（clearance）即可。
+- **👀 先預覽，再即時微調。** 在瀏覽器裡旋轉、縮放 3D 預覽，有大大的 **釉色 / 照片** 切換，以及 **俯視** 和 **斜視** 兩種視角。預覽會比其他東西更早打開。接著拖曳 **微調（即時）** 的滑桿（底座厚度、邊緣深度、弧頂、溝底、輪廓線高度），邊拖邊看模型跟著動，手機上也一樣。按 **套用** 就能在瀏覽器裡立刻更新完整模型，不必等雲端。
+- **📦 檔案在你的裝置上製作。** 雲端只負責建出形狀；等你需要時，由你自己的瀏覽器寫出檔案：**3MF** 用於多色列印（PrusaSlicer、OrcaSlicer、Bambu Studio）、**GLB** 用於網頁檢視、AR 與分享、**OBJ** 給 Blender，還有 **STL**（每種顏色一個檔案）。選擇 3MF、GLB 或 OBJ 的 **+ 照片貼面** 版本，模型上就會附上你的照片。
+- **🛠️ 照你的想法來調。** 每個設定都是簡單的公釐數值，旁邊有即時剖面圖，會標示出你正在編輯的那一項。每一項都有自己的 ↺ 還原鈕，你的選擇下次來還會記得。想做大的（30 公分壁掛飾板）或小的（5 公分冰箱磁鐵）都行；小尺寸的磚會自動加強浮雕，讓細節在列印後仍然清晰。
+- **📱 手機也好用。** 以手機為優先設計：只有一個 **拍照或選擇照片** 按鈕、點擊範圍夠大，下載時也盡量不吃手機記憶體。
+- **🆓 免費，而且想怎麼用都行。** 用網站、或雙擊一下就在自己的電腦上執行整個 App（手機可以透過同一個 Wi-Fi，或用免費的 Cloudflare 連結搭配 QR code 加入）、或是不開網頁，直接用 `mixo` 指令處理一張或一整批照片。線上引擎有硬性花費上限。想要自己的一份？照著[逐步指南](#自己架設逐步指南零基礎也能上手)做就好，不用會寫程式。
 
-**Fun ideas:** coasters 🍵 · fridge magnets 🧲 · a wall of your neighbourhood's tiles 🏘️ · gifts from a trip to Taiwan 🎁 · restoring a missing tile in an old floor 🔧 · class projects about Taiwanese heritage 🏫
+**好玩的點子：** 杯墊 🍵 · 冰箱磁鐵 🧲 · 把整個社區的花磚做成一面牆 🏘️ · 台灣旅行的伴手禮 🎁 · 補回老地板上缺掉的那一塊 🔧 · 台灣文化資產主題的課堂專題 🏫
 
-## What it does
+## 它能做什麼
 
-1. **Capture.** On a phone: one **Take or choose photo** button (camera, photo library or files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real tiles. A big photo shows **Loading photo…** for a moment and is shrunk before it goes to the engine, so it's quick. The photo is never stored.
-2. **Outline.** On-device AI (Google MediaPipe) *suggests* the tile's four corners. You always check them.
-   - Drag the corner handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
-   - Or switch to **Square crop**.
-   - If the AI can't load (old phone, blocked network, offline), the app says **AI off · manual** and you simply drag the 4 corners yourself; everything else works the same. The 3D engine itself uses no AI.
-3. **Colours.** Choose how the tile looks with the two big buttons: **Glaze colours** (each part one flat colour, what a multi-colour printer prints) or **Photo skin** (your real photo on the relief, for viewing and renders; printers still print the glaze colours). The picture follows the mode.
-   - Suggested colours appear automatically. Use **− / +** to set how many colours; the app splits the tile into that many.
-   - **Pick from photo** adds a colour the split missed. It stays pinned 📌 when you change the count.
-   - Tap a swatch to change its colour; its area stays the same (↺ goes back). The **−** on a swatch merges its area into the closest colour.
-   - **Restore suggested** starts over.
-4. **Size.** Settings are in millimetres, with a live cross-section drawing that highlights the setting you're editing. Every setting is remembered between visits and has its own ↺ reset, plus a reset-all. The defaults are tuned for a realistic 150 mm tile (15 mm base, about 19–20 mm tall in total). Max relief is the tile width ÷ 10, above the base.
-5. **Generate.** Click **Generate 3D relief**. The cloud engine builds the 3D shape in about 20 seconds (up to a minute after a quiet spell), with a real progress bar. If it's busy you'll see "waiting — another tile is being made" instead of an error.
-6. **Preview and fine-tune.** The 3D preview opens as soon as the shape is ready. Flip between **Colours** and **Photo**, and between **Top** and **3/4** views. Under **Fine-tune (live)**, sliders for base thickness, edge depth, crown, groove floor and outline height move the model live as you drag. Click **Apply** to update the full model in your browser instantly (within a tiny fraction of a millimetre of a full rebuild; tested), or **Exact rebuild (cloud)** if you prefer. Settings that change the shapes (edge roll, clearance, outline width, colours, corners, tile size) need a cloud rebuild.
-7. **Download.** The cloud only builds the shape (about 20–25 MB, once). **Your browser writes the files, only when you ask**, and they match the engine's own (tested).
-   - **Computer:** tick the formats you want (pre-ticked to match your colour mode) and click **Download .zip**.
-   - **Phone:** one button per format, each saved on its own, which is light on memory.
+1. **拍攝。** 手機上：只有一個 **拍照或選擇照片**（Take or choose photo）按鈕（相機、相簿或檔案都可以）。電腦上：**上傳照片**（Upload）、把照片**拖放**到頁面上，或直接**貼上**（Ctrl+V）。手邊沒照片？按 **試用範例**（Try a sample）就會載入一塊真實的花磚。大張照片會短暫顯示 **正在載入照片…**，並在送到引擎前先縮小，所以很快。照片不會被保存。
+2. **輪廓。** 裝置端 AI（Google MediaPipe）會*建議*花磚的四個角，但一定由你確認。
+   - 拖曳角落的控制點來微調；拖曳時會出現放大鏡。手動調整永遠優先於 AI。
+   - 也可以改用 **方形裁切**（Square crop）。
+   - 如果 AI 載入不了（舊手機、網路被擋、離線），App 會顯示 **AI：關閉・手動**，你只要自己拖曳 4 個角，其他功能完全一樣。3D 引擎本身完全不使用 AI。
+3. **顏色。** 用兩個大按鈕選擇花磚的外觀：**釉色**（每個部分一種平塗顏色，也就是多色列印機會印出的顏色）或 **照片貼面**（把你的真實照片貼在浮雕上，供檢視與渲染；列印機仍然印釉色）。畫面會跟著模式變化。
+   - 建議的顏色會自動出現。用 **− / +** 設定顏色數；App 會把花磚分成那麼多種顏色。
+   - **從照片挑色**（Pick from photo）可以補上分色時漏掉的顏色。更改顏色數時，它會固定保留 📌。
+   - 點色票可以換顏色，它的區域範圍不變（按 ↺ 可還原）。色票上的 **−** 會把該區域併入最接近的顏色。
+   - **還原建議色**（Restore suggested）會從頭開始。
+4. **尺寸。** 設定都以公釐為單位，旁邊有即時剖面圖，會標示出你正在編輯的那一項。每個設定下次來都還記得，各有自己的 ↺ 還原鈕，另外也有全部還原。預設值是針對實際 150 mm 的磚調整的（底座 15 mm，總高約 19–20 mm）。最大浮雕高度是磚寬 ÷ 10（從底座往上算）。
+5. **產生。** 按下 **產生 3D 浮雕**（Generate 3D relief）。雲端引擎約 20 秒就會建好 3D 形狀（閒置一陣子後最久一分鐘），並有真實的進度條。如果引擎忙碌，你會看到「等待中：另一塊磚正在製作」，而不是錯誤訊息。
+6. **預覽與微調。** 形狀一建好就會打開 3D 預覽。可以在 **釉色** 與 **照片** 之間切換，也能在 **俯視** 與 **斜視** 之間切換。在 **微調（即時）** 底下，底座厚度、邊緣深度、弧頂、溝底和輪廓線高度的滑桿，會在你拖曳時即時移動模型。按 **套用** 就能立刻在瀏覽器裡更新完整模型（與完整重建只差極小一部分公釐；已測試），或是選 **精確重建（雲端）**。會改變形狀的設定（邊緣圓滑、間隙、輪廓線寬、顏色、四個角、磚寬）需要雲端重建。
+7. **下載。** 雲端只負責建出形狀（約 20–25 MB，一次就好）。**檔案由你的瀏覽器在你要求時才寫出**，內容與引擎自己產生的一致（已測試）。
+   - **電腦：** 勾選要的格式（預設會依你的顏色模式預先勾選），然後按 **下載 .zip**。
+   - **手機：** 每種格式一個按鈕，各自單獨儲存，比較省記憶體。
 
-   | Format | What it's for |
+   | 格式 | 用途 |
    |---|---|
-   | **3MF** | Multi-colour 3D printing: one part per colour, each on its own filament. Opens in PrusaSlicer, OrcaSlicer and Bambu Studio. |
-   | **3MF + photo skin** | Prints exactly the same; 3D viewers also show your photo. |
-   | **GLB** and **GLB + photo skin** | Web viewers, AR and sharing. |
-   | **OBJ** and **OBJ + photo skin** | Blender and other 3D software. |
-   | **STL** | One file per colour. Load them together in any slicer, one filament each. |
+   | **3MF** | 多色 3D 列印：每種顏色一個零件，各用一種線材。可在 PrusaSlicer、OrcaSlicer 和 Bambu Studio 中開啟。 |
+   | **3MF + 照片貼面** | 列印結果完全相同；3D 檢視軟體還會顯示你的照片。 |
+   | **GLB** 與 **GLB + 照片貼面** | 網頁檢視、AR 與分享。 |
+   | **OBJ** 與 **OBJ + 照片貼面** | Blender 與其他 3D 軟體。 |
+   | **STL** | 每種顏色一個檔案。在任何切片軟體中一起載入，各用一種線材。 |
 
-   In the photo-skin versions, your photo is projected straight down onto the relief, lined up exactly. The backing pad's four sides continue the border colours, and its underside is white.
+   在照片貼面版本中，你的照片會由正上方垂直投影到浮雕上，並且精準對齊。底座墊板的四個側面會延續邊框的顏色，底面則是白色。
 
-   STEP isn't offered: it's a format for exact CAD surfaces, and a relief of about a million triangles turns into a huge STEP that CAD programs choke on. Import the STL or OBJ instead.
+   我們不提供 STEP：它是用來表達精確 CAD 曲面的格式，而一個約一百萬個三角面的浮雕，轉成 STEP 會變得超級巨大，CAD 軟體根本吃不消。請改匯入 STL 或 OBJ。
 
-## How the relief is built (design decisions)
+## 浮雕如何建構（設計決策）
 
-These rules came out of many review rounds with the owner. Keep them unless the owner changes them.
+這些規則是和作者來回檢討很多輪才定下來的。除非作者改變主意，否則請維持不動。
 
-| Rule | Why |
+| 規則 | 原因 |
 |---|---|
-| **Every colour is equal.** There is no "background" colour and no height tiers by colour. | A photo doesn't tell you which colour is the ground. |
-| **Carve the edges.** Every colour starts at the shared full height; the surface then rolls down smoothly into a soft V-valley at each seam. | On a real tile, glaze fields sit level and only the edges round off. Two neighbouring rectangles give a lowercase **"m"** in cross-section. |
-| **Big areas are near-level**, with a gentle crown that flattens as the area grows. Thin strokes stay lower and round. | Looks like pressed, glazed ceramic. |
-| **Raised outlines (tube-lining).** Thin light or dark lines are found on the photo itself and become a smooth 0.8 mm ridge. | They are the signature of majolica tiles and are often almost the same colour as their neighbour. |
-| **Puzzle-piece borders.** All colours are cut from one shared partition, so neighbours meet exactly with no gap and no overlap. An optional **clearance** leaves a slot between pieces. | Clean multi-material prints; print pieces separately if you like. |
-| **Watertight bodies.** Every part is a closed, manifold mesh, checked on every change. | Slicers need it. |
+| **每種顏色一律平等。** 沒有「背景」色，也不依顏色分高度階層。 | 照片並不會告訴你哪個顏色是底。 |
+| **雕出邊緣。** 每種顏色都從共同的完整高度出發，表面再平順地滑下，在每條接縫處形成柔和的 V 形谷。 | 真實的磚上，釉面區塊是平的，只有邊緣會圓下去。兩個相鄰的長方形，剖面會呈現小寫的 **「m」** 形。 |
+| **大面積接近平整**，帶有一點點弧頂，面積越大弧頂越平。細線條則保持較低、圓潤。 | 看起來就像壓製上釉的陶瓷。 |
+| **凸起輪廓線（擠花線 tube-lining）。** 細的淺色或深色線條會直接從照片中找出來，變成一條圓滑的 0.8 mm 稜線。 | 這是馬賽克花磚的招牌特色，而且常常和相鄰的顏色幾乎一樣。 |
+| **拼圖式邊界。** 所有顏色都從同一個共用分割切出來，所以相鄰的顏色剛好密合，沒有縫隙也沒有重疊。可選的 **間隙** 會在零件之間留出一道槽。 | 多材料列印乾淨俐落；想的話也可以把零件分開列印。 |
+| **水密閉合的實體。** 每個零件都是封閉的流形網格（manifold mesh），每次變更都會檢查。 | 切片軟體需要這樣。 |
 
-Pipeline (`backend/tile_processor.py`):
+處理流程（`backend/tile_processor.py`）：
 
 ```
 photo ─► perspective warp (4 corners, 1.5 % inset) ─► colours: bilateral + mean-shift,
@@ -83,217 +85,217 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 ─► backing pad (rounded slab) ─► .3MF (PrusaSlicer-family part table) / .GLB
 ```
 
-### Default settings (150 mm tile)
+### 預設設定（150 mm 磚）
 
-"Label in the app" is the text you see on the page (the ones marked *Advanced* sit under the **Advanced** fold in step 04). "Name for --set / API" is the name to use with `mixo --set name=value` and in the [API](#api).
+「App 中的標籤」是你在頁面上看到的文字（標示 *進階* 的在步驟 04 的 **進階** 摺疊區裡）。「--set / API 用的名稱」是搭配 `mixo --set name=value` 以及 [API](#api) 使用的名稱。
 
-| Setting | Label in the app | Name for --set / API | Default | Meaning |
+| 設定 | App 中的標籤 | --set / API 用的名稱 | 預設值 | 意義 |
 |---|---|---|---|---|
-| Tile width | Tile width | `tile_size_mm` | 150 mm | Historic 6-inch majolica size. Changing it re-tunes the relief settings below in proportion. |
-| Max relief height | Max relief | (app only) | width ÷ 10 | The relief above the base never exceeds this. It is a cap, not a target. |
-| Backing pad | Base | `pad_thickness_mm` | 15 mm | Solid base slab. |
-| Edge depth | Edge depth | `relief_height_mm` | 3.0 mm | How far each colour rolls down into its seams. |
-| Edge roll width | Edge roll | `fillet_radius_mm` | 6.0 mm | Seam to full height. Wider gives a softer valley. |
-| Top crown | Crown | `dome_height_mm` | 1.0 mm | Gentle dome; leveler on bigger areas. |
-| Groove floor | Groove floor (*Advanced*) | `groove_floor_mm` | 0.4 mm | Material under the seams (2 print layers). |
-| Raised outlines | Outlines | `outline_height_mm` | 0.8 mm | Height of the raised line ridge. 0 turns it off. |
-| Outline width | Outline width (*Advanced*) | `outline_width_mm` | 1.2 mm | Full width of that ridge. |
-| Clearance between colours | Clearance | `clearance_mm` | 0 mm | 0 is a flush fit; e.g. 0.3 leaves slots. |
-| Number of colours | Colours (step 03, with − / +) | `num_colors` | 8 | How many colours the tile is split into; the app finds them in the photo. |
-| Mesh smoothness | Mesh grid (*Advanced*) | `mesh_resolution_mm` | 0.16 mm | Finer than this needs much more memory per tile, so the server enforces it. |
-| Smoothing | Smoothing (*Advanced*) | `smoothing_mm` | 1.2 mm | How much the colour regions are tidied. 0 keeps every speck of detail. |
-| Colour detail | Detail (*Advanced*) | `px_per_mm` | 4 px/mm | Resolution of the colour analysis. |
-| Smallest speck | Min speck (*Advanced*) | `min_feature_mm2` | 2 mm² | Islands and holes smaller than this are dropped. |
-| Tile corner radius | Corner radius (*Advanced*) | `corner_radius_mm` | 2.0 mm | Rounding of the tile's four corners, seen from above. |
-| Merge shades | Merge shades (*Advanced*) | `merge_delta_e` | 12 | Shading bands of one glaze closer than this are merged. 0 = off. |
-| Thin-line minimum | Thin-line min (*Advanced*) | `bead_height_mm` | 1.2 mm | Printable minimum height for thin strokes. |
-| Symmetry | Symmetry (*Advanced*) | `symmetry` | `off` | `off`, `auto`, `d4` (8-fold) or `c4` (4-fold). |
-| Groove along edge | Groove along edge (*Advanced*) | `edge_is_seam` | off | `true` also cuts a groove along the tile's outer edge. |
+| 磚寬 | 磚寬 | `tile_size_mm` | 150 mm | 歷史上 6 英吋的馬賽克花磚尺寸。更改後，下面的浮雕設定會依比例重新調整。 |
+| 最大浮雕高度 | 最大浮雕 | （僅限 App） | 磚寬 ÷ 10 | 底座以上的浮雕高度不會超過這個值。它是上限，不是目標。 |
+| 底座墊板 | 底座 | `pad_thickness_mm` | 15 mm | 實心的底座厚板。 |
+| 邊緣深度 | 邊緣深度 | `relief_height_mm` | 3.0 mm | 每種顏色往接縫處下滑的深度。 |
+| 邊緣圓滑寬度 | 邊緣圓滑 | `fillet_radius_mm` | 6.0 mm | 從接縫到完整高度的距離。越寬，谷越柔和。 |
+| 頂面弧頂 | 弧頂 | `dome_height_mm` | 1.0 mm | 微微的圓頂；面積越大越平。 |
+| 溝底 | 溝底（*進階*） | `groove_floor_mm` | 0.4 mm | 接縫下方保留的材料厚度（2 層列印層）。 |
+| 凸起輪廓線 | 輪廓線 | `outline_height_mm` | 0.8 mm | 凸起線條稜線的高度。設 0 即關閉。 |
+| 輪廓線寬 | 輪廓線寬（*進階*） | `outline_width_mm` | 1.2 mm | 該稜線的完整寬度。 |
+| 顏色之間的間隙 | 間隙 | `clearance_mm` | 0 mm | 0 是緊貼密合；例如 0.3 會留出縫隙。 |
+| 顏色數 | 顏色數（步驟 03，用 − / +） | `num_colors` | 8 | 花磚要分成幾種顏色；App 會從照片中找出來。 |
+| 網格平滑度 | 網格精度（*進階*） | `mesh_resolution_mm` | 0.16 mm | 比這更細，每塊磚需要多非常多的記憶體，所以伺服器會強制這個限制。 |
+| 平滑 | 平滑（*進階*） | `smoothing_mm` | 1.2 mm | 顏色區域整理到什麼程度。0 會保留每一點細節斑點。 |
+| 顏色細節 | 細節（*進階*） | `px_per_mm` | 4 px/mm | 顏色分析的解析度。 |
+| 最小斑點 | 最小斑點（*進階*） | `min_feature_mm2` | 2 mm² | 小於這個面積的孤島和孔洞會被捨棄。 |
+| 磚角半徑 | 轉角半徑（*進階*） | `corner_radius_mm` | 2.0 mm | 從上方看，磚的四個角的圓角大小。 |
+| 合併相近色 | 合併相近色（*進階*） | `merge_delta_e` | 12 | 同一種釉色中，差距小於這個值的明暗色帶會被合併。0 = 關閉。 |
+| 細線下限 | 細線下限（*進階*） | `bead_height_mm` | 1.2 mm | 細線條可列印的最小高度。 |
+| 對稱 | 對稱（*進階*） | `symmetry` | `off` | `off`、`auto`、`d4`（8 重）或 `c4`（4 重）。 |
+| 沿邊緣設溝 | 沿邊緣設溝（*進階*） | `edge_is_seam` | off | 設為 `true` 時，也會沿著磚的外緣切出一道溝。 |
 
-A few more settings have no box in the app (`dome_reach_mm` 12, `bead_width_mm` 0.8, `min_band_mm` 3, `remove_glare` off). `mixo --set` accepts them when it runs on your computer. If you type a name it doesn't know, `mixo` prints the full list of valid names.
+另有少數設定在 App 裡沒有輸入欄位（`dome_reach_mm` 12、`bead_width_mm` 0.8、`min_band_mm` 3、`remove_glare` off）。在你自己的電腦上執行時，`mixo --set` 都接受它們。如果你輸入了不認得的名稱，`mixo` 會印出所有有效名稱的完整清單。
 
-A 150 mm tile is about 19–20 mm tall (15 mm base plus about 4–5 mm relief) and about 0.9–1.6 M triangles.
+一塊 150 mm 的磚高約 19–20 mm（15 mm 底座加上約 4–5 mm 的浮雕），約有 0.9–1.6 M 個三角面。
 
-## Performance
+## 效能
 
-Measured on the owner's test photos (3024 × 3024):
+以作者的測試照片（3024 × 3024）量測：
 
-| Where the engine runs | Time per tile | Notes |
+| 引擎執行的地方 | 每塊磚耗時 | 備註 |
 |---|---|---|
-| A recent desktop PC (Option A, local) | about 10–12 s | |
-| Google Cloud Run, 4 vCPU / 4 GiB (the live site) | about 17–19 s of engine time; in the app the preview opens in about 20 s and the files are ready about 5 s later (your browser writes them) | Google's virtual CPUs are slower than a desktop's. With 2 vCPU it was about 25 s, and 2 GiB ran out of memory on a second tile in a row. |
+| 近年的桌上型電腦（選項 A，本機） | 約 10–12 秒 | |
+| Google Cloud Run，4 vCPU / 4 GiB（線上版） | 引擎時間約 17–19 秒；在 App 裡約 20 秒預覽就會打開，約 5 秒後檔案準備好（由你的瀏覽器寫出） | Google 的虛擬 CPU 比桌機慢。用 2 vCPU 時約 25 秒，而 2 GiB 在連續做第二塊磚時會記憶體不足。 |
 
-- Peak memory is about 1.5–2 GB per tile. After each tile the engine hands freed memory back to the system, so tile after tile stays within the limit.
-- The 3D preview appears before the printable file is finished, and the page never freezes for more than about 1 s.
-- **Cold start:** the cloud engine sleeps when idle, so the first tile after a quiet spell adds roughly 20–60 s. The app wakes it as soon as a photo is loaded, and the progress bar says so if it's still waking.
+- 每塊磚的記憶體尖峰約 1.5–2 GB。每塊磚做完後，引擎會把釋放的記憶體還給系統，所以一塊接一塊做也不會超出限制。
+- 3D 預覽會在可列印檔案完成之前出現，而且頁面凍結的時間不會超過約 1 秒。
+- **冷啟動：** 雲端引擎閒置時會休眠，所以閒置一陣子後的第一塊磚，大約要多等 20–60 秒。App 會在照片一載入就去喚醒它，如果還沒醒，進度條也會告訴你。
 
-## Set it up yourself: step-by-step guide (no experience needed)
+## 自己架設：逐步指南（零基礎也能上手）
 
-> **Just want to use it?** Open https://mixocreative.github.io/mixo-tile-gen/. It's already connected to an engine, so skip this whole section.
+> **只是想用而已？** 直接打開 https://mixocreative.github.io/mixo-tile-gen/ 就好。它已經連好引擎了，整個章節都可以跳過。
 
-The app has two halves:
+這個 App 分成兩半：
 
-| Half | What it is | Where it can run |
+| 部分 | 是什麼 | 可以在哪裡執行 |
 |---|---|---|
-| **Website** (front end) | The page you see in the browser. | GitHub Pages (free), or your own computer |
-| **Engine** (back end, Python) | Turns the photo into the 3D file. | **Your own computer** (free), or **Google Cloud Run** (online all the time) |
+| **網站**（前端） | 你在瀏覽器裡看到的頁面。 | GitHub Pages（免費），或你自己的電腦 |
+| **引擎**（後端，Python） | 把照片變成 3D 檔案。 | **你自己的電腦**（免費），或 **Google Cloud Run**（全天候上線） |
 
-### Which way should I use?
+### 我該選哪種方式？
 
-Every way has the same features: all download formats, glaze colours or photo texture. The AI only suggests the tile's corners; without it you drag the four corners yourself.
+每種方式的功能都一樣：所有下載格式、釉色或照片貼圖都有。AI 只負責建議磚的四個角；沒有它的話，你就自己拖曳四個角。
 
-| I want to... | Use | Needs | Go to |
+| 我想要… | 使用 | 需要 | 前往 |
 |---|---|---|---|
-| Use it online, nothing to install | The live website | A browser | [Live app](https://mixocreative.github.io/mixo-tile-gen/) |
-| Use it online **without the web page** (scripts, batches) | `mixo photo.jpg --server <engine address>`, or `curl` | Python (for `mixo`) | [Command line](#without-the-web-page-command-line) |
-| Run it on my computer **with the web page** | `start-windows.bat` or `bash start-mac-linux.sh` | Python, internet (the page loads some libraries from the internet) | [Option A](#option-a-run-everything-on-your-own-computer-free) |
-| Run it on my computer **without the web page** | `mixo photo.jpg` | Python. Fully offline after the first setup | [Command line](#without-the-web-page-command-line) |
-| Use it on my phone, through my computer | `start-windows-phone.bat` or `bash start-mac-linux.sh phone`, then scan a QR code (same Wi-Fi, or the Cloudflare link) | Option A | [Option A, step 4](#option-a-run-everything-on-your-own-computer-free) |
-| Have the AI find the corners | The web page, with internet | A browser | [What it does](#what-it-does) |
-| Skip the AI and place the corners myself | The web page when it says **AI off · manual**, or `mixo --corners` | Nothing extra | [What it does](#what-it-does), [Command line](#without-the-web-page-command-line) |
-| Have my own engine that is online all the time | Google Cloud Run, with a spending cap | A Google account and a card | [Option B](#option-b-google-cloud-run-online-all-the-time-with-a-hard-spending-cap) |
-| Have my own copy of the website | Fork on GitHub, GitHub Pages | A free GitHub account | [Option D](#option-d-your-own-copy-of-the-website-github-pages) |
-| Run the engine in Docker | `docker build` and `docker run` | Docker Desktop | [Option C](#option-c-docker-for-tinkerers) |
+| 線上使用，什麼都不用裝 | 線上網站 | 一個瀏覽器 | [線上版](https://mixocreative.github.io/mixo-tile-gen/) |
+| 線上使用，但**不開網頁**（寫腳本、批次處理） | `mixo photo.jpg --server <engine address>`，或 `curl` | Python（`mixo` 需要） | [命令列](#不用網頁命令列) |
+| 在我的電腦上執行，**而且要用網頁** | `start-windows.bat` 或 `bash start-mac-linux.sh` | Python、網路（網頁會從網路載入一些函式庫） | [選項 A](#選項-a在自己的電腦上執行免費) |
+| 在我的電腦上執行，**不開網頁** | `mixo photo.jpg` | Python。第一次設定之後可完全離線 | [命令列](#不用網頁命令列) |
+| 透過我的電腦，在手機上使用 | `start-windows-phone.bat` 或 `bash start-mac-linux.sh phone`，然後掃描 QR code（同一個 Wi-Fi，或用 Cloudflare 連結） | 選項 A | [選項 A，第 4 步](#選項-a在自己的電腦上執行免費) |
+| 讓 AI 幫我找出四個角 | 網頁，需要連網 | 一個瀏覽器 | [它能做什麼](#它能做什麼) |
+| 不用 AI，自己放四個角 | 網頁顯示 **AI：關閉・手動** 時，或 `mixo --corners` | 不需額外東西 | [它能做什麼](#它能做什麼)、[命令列](#不用網頁命令列) |
+| 擁有自己的、全天候上線的引擎 | Google Cloud Run，附花費上限 | Google 帳號和一張信用卡 | [選項 B](#選項-bgoogle-cloud-run全天候上線有硬性花費上限) |
+| 擁有自己的網站副本 | 在 GitHub 上 Fork，搭配 GitHub Pages | 免費的 GitHub 帳號 | [選項 D](#選項-d自己的網站副本github-pages) |
+| 用 Docker 執行引擎 | `docker build` 和 `docker run` | Docker Desktop | [選項 C](#選項-cdocker給愛玩技術的人) |
 
-Pick where the engine runs:
+選擇引擎要在哪裡執行：
 
-| | Cost | Works when your computer is off? | Phone? | Difficulty |
+| | 費用 | 電腦關機時還能用嗎？ | 手機？ | 難度 |
 |---|---|---|---|---|
-| **[A. Your own computer](#option-a-run-everything-on-your-own-computer-free)** | Free | No | Yes, same Wi-Fi or a free Cloudflare link | Easiest: double-click a file |
-| **[B. Google Cloud Run](#option-b-google-cloud-run-online-all-the-time-with-a-hard-spending-cap)** | About $0, card required, hard cap | Yes | Yes | Copy and paste 6 blocks |
-| **[C. Docker](#option-c-docker-for-tinkerers)** | Free | No | Yes | Needs Docker |
+| **[A. 你自己的電腦](#選項-a在自己的電腦上執行免費)** | 免費 | 不行 | 可以，同一個 Wi-Fi 或免費的 Cloudflare 連結 | 最簡單：雙擊一個檔案 |
+| **[B. Google Cloud Run](#選項-bgoogle-cloud-run全天候上線有硬性花費上限)** | 約 $0，需要信用卡，有硬性上限 | 可以 | 可以 | 複製貼上 6 個區塊 |
+| **[C. Docker](#選項-cdocker給愛玩技術的人)** | 免費 | 不行 | 可以 | 需要 Docker |
 
-> **What about Hugging Face?** As of 2026, Hugging Face only runs this kind of engine (a "Docker Space") for paying PRO accounts. If you have PRO, see [the note at the end](#hugging-face-pro-accounts-only).
-
----
-
-### Basics: Python and the terminal
-
-You need these for Option A, the command line and (a little) Option C.
-
-**Python (one time).** You need **version 3.11 or newer; 3.13 is recommended.** This is the same on Windows, Mac and Linux. Check with `python --version` (Windows) or `python3 --version` (Mac/Linux).
-
-- **Windows:** go to https://www.python.org/downloads/ and click the big yellow **Download Python** button. Run the installer, tick **"Add python.exe to PATH"** at the bottom of the first screen, then click **Install Now**.
-  - *Typing `python` opens the Microsoft Store?* Windows has a fake `python` shortcut. Turn it off: **Settings → Apps → Advanced app settings → App execution aliases**, switch **off** `python.exe` and `python3.exe`. Then install Python from python.org (not from the Store) and open a new terminal.
-- **Mac:** same page; open the downloaded `.pkg` and click through. Then open **Applications → Python 3.13** (the folder the installer made) and double-click **Install Certificates.command** once. Without it, the phone tunnel download and `--server` fail with a certificate error.
-- **Linux:** usually already installed. On Debian/Ubuntu also run `sudo apt install python3-venv python3-pip`. Other distros: install the same two things with your package manager.
-
-**Open a terminal in the app folder.** A terminal is the window where you type commands. It must be "in" the app folder (the one that contains `README.md`, `backend` and `start-windows.bat`).
-
-- **Windows:** open the app folder in File Explorer, click the address bar at the top, type `cmd` and press **Enter**. A black window opens in that folder. (In PowerShell or Windows Terminal, type `.\mixo.bat` instead of `mixo`, or type `cmd` first.)
-- **Mac:** press **Cmd + Space**, type `Terminal`, press Enter. Type `cd ` (with a space after it), drag the app folder from Finder into the Terminal window, and press Enter.
-- **Linux:** right-click the app folder → **Open in Terminal**.
-
-**Mac and Linux commands.** A ZIP download loses the "executable" mark on files, so `./start-mac-linux.sh` may say *Permission denied*. Start the scripts with `bash` instead: `bash start-mac-linux.sh`, `bash start-mac-linux.sh phone`, `bash mixo.sh ...`. (Alternatively, run `chmod +x start-mac-linux.sh mixo.sh` once, after which `./start-mac-linux.sh` works.)
-
-**Paths with spaces** need quotes: `mixo "C:\My Photos\tile 1.jpg"`.
+> **那 Hugging Face 呢？** 截至 2026 年，Hugging Face 只有付費的 PRO 帳號才能執行這類引擎（「Docker Space」）。如果你有 PRO，請見[最後的說明](#hugging-face僅限-pro-帳號)。
 
 ---
 
-### Option A: run everything on your own computer (free)
+### 基礎：Python 與終端機
 
-Website and engine both run on your computer. Nothing to sign up for.
+選項 A、命令列，以及（少部分的）選項 C 都會用到這些。
 
-**1. Install Python (one time).** See [Basics](#basics-python-and-the-terminal).
+**Python（只要裝一次）。** 你需要 **3.11 版或更新的版本；建議 3.13。** Windows、Mac 和 Linux 都一樣。用 `python --version`（Windows）或 `python3 --version`（Mac/Linux）檢查。
 
-**2. Download the app.**
-1. On https://github.com/mixocreative/mixo-tile-gen click the green **Code** button, then **Download ZIP**.
-2. Find the ZIP (usually in your **Downloads** folder). **Right-click it → Extract All** (Mac/Linux: double-click it). Don't run files from inside the ZIP; that fails.
-3. Open the extracted folder, and keep opening folders until you see **`start-windows.bat`**, **`README.md`** and **`backend`** together. That is the app folder. Move it somewhere easy, like your Desktop.
+- **Windows：** 前往 https://www.python.org/downloads/，按下黃色的大按鈕 **Download Python**。執行安裝程式，在第一個畫面最下方勾選 **"Add python.exe to PATH"**，然後按 **Install Now**。
+  - *輸入 `python` 卻跳出 Microsoft Store？* 這是 Windows 內建的假 `python` 捷徑。把它關掉：**設定 → 應用程式 → 進階應用程式設定 → 應用程式執行別名**，把 `python.exe` 和 `python3.exe` **關閉**。然後從 python.org（不是從 Store）安裝 Python，再開一個新的終端機。
+- **Mac：** 同一個網頁；打開下載的 `.pkg` 一路點下去。接著打開 **應用程式 → Python 3.13**（安裝程式建立的資料夾），對 **Install Certificates.command** 雙擊一次。沒做這步的話，手機通道的下載與 `--server` 會出現憑證錯誤。
+- **Linux：** 通常已經裝好了。在 Debian/Ubuntu 上還要執行 `sudo apt install python3-venv python3-pip`。其他發行版：用你的套件管理員安裝同樣兩個東西。
 
-**3. Start it.**
-- **Windows:** in the app folder, double-click **`start-windows.bat`**.
-  - If a blue "Windows protected your PC" box appears, click **More info → Run anyway**. It's a plain text script you can open in Notepad to check.
-- **Mac / Linux:** open a terminal in the app folder (see [Basics](#basics-python-and-the-terminal)) and run:
+**在 App 資料夾開啟終端機。** 終端機就是你輸入指令的視窗。它必須「位於」App 資料夾裡（也就是裡面有 `README.md`、`backend` 和 `start-windows.bat` 的那個資料夾）。
+
+- **Windows：** 在檔案總管中打開 App 資料夾，點上方的網址列，輸入 `cmd` 後按 **Enter**。會在那個資料夾開啟一個黑色視窗。（在 PowerShell 或 Windows Terminal 裡，要輸入 `.\mixo.bat` 而不是 `mixo`，或是先輸入 `cmd`。）
+- **Mac：** 按 **Cmd + Space**，輸入 `Terminal`，按 Enter。輸入 `cd `（後面留一個空格），把 App 資料夾從 Finder 拖進終端機視窗，然後按 Enter。
+- **Linux：** 在 App 資料夾上按右鍵 → **在終端機中開啟**。
+
+**Mac 與 Linux 的指令。** 下載 ZIP 會讓檔案失去「可執行」標記，所以 `./start-mac-linux.sh` 可能會出現 *Permission denied*。請改用 `bash` 來啟動腳本：`bash start-mac-linux.sh`、`bash start-mac-linux.sh phone`、`bash mixo.sh ...`。（或者先執行一次 `chmod +x start-mac-linux.sh mixo.sh`，之後 `./start-mac-linux.sh` 就能用了。）
+
+**路徑含有空格**時要加引號：`mixo "C:\My Photos\tile 1.jpg"`。
+
+---
+
+### 選項 A：在自己的電腦上執行（免費）
+
+網站和引擎都在你的電腦上執行。不用註冊任何東西。
+
+**1. 安裝 Python（只要一次）。** 請見[基礎](#基礎python-與終端機)。
+
+**2. 下載 App。**
+1. 在 https://github.com/mixocreative/mixo-tile-gen 按綠色的 **Code** 按鈕，再按 **Download ZIP**。
+2. 找到那個 ZIP（通常在你的 **下載** 資料夾）。**對它按右鍵 → 全部解壓縮**（Mac/Linux：雙擊它）。不要直接在 ZIP 裡面執行檔案，那樣會失敗。
+3. 打開解壓縮出來的資料夾，一直往下開資料夾，直到你同時看到 **`start-windows.bat`**、**`README.md`** 和 **`backend`**。那就是 App 資料夾。把它搬到好找的地方，例如桌面。
+
+**3. 啟動。**
+- **Windows：** 在 App 資料夾裡，雙擊 **`start-windows.bat`**。
+  - 如果跳出藍色的「Windows 已保護您的電腦」視窗，按 **其他資訊 → 仍要執行**。它只是一個純文字腳本，你可以用記事本打開檢查。
+- **Mac / Linux：** 在 App 資料夾開啟終端機（請見[基礎](#基礎python-與終端機)），然後執行：
   ```bash
   bash start-mac-linux.sh
   ```
 
-The **first start takes 3–10 minutes** because it downloads the engine's parts (about 400 MB). **It can look frozen, with no new text for several minutes. That is normal. Wait.** Later starts take about 10 seconds. When you see
+**第一次啟動要 3–10 分鐘**，因為它要下載引擎的元件（約 400 MB）。**看起來可能像當掉了，好幾分鐘都沒有新的文字，這是正常的，請耐心等。** 之後每次啟動約 10 秒。當你看到
 
 ```
 [mixo] READY  ->  open http://localhost:8088/?api=self
 ```
 
-your browser opens the app by itself. **Keep the black window open** while you use the app; closing it (or pressing **Ctrl + C**) stops everything.
+瀏覽器就會自動打開 App。使用 App 期間，**請讓黑色視窗保持開著**；關掉它（或按 **Ctrl + C**）就會停止所有東西。
 
-**After you press Generate.**
-- The file goes to your browser's normal **Downloads** folder.
-- Open it in **PrusaSlicer, OrcaSlicer or Bambu Studio**. Each colour is a separate part. Give each part its own filament (extruder), then slice and print. The `.3MF` already has one extruder per part, so you only pick the filament colours.
+**按下「產生」之後。**
+- 檔案會存到瀏覽器一般的 **下載** 資料夾。
+- 用 **PrusaSlicer、OrcaSlicer 或 Bambu Studio** 打開。每種顏色是一個獨立的零件。替每個零件指定各自的線材（擠出機），然後切片、列印。`.3MF` 已經替每個零件配好一個擠出機，所以你只需要選線材的顏色。
 
-**4. Use it on your phone (optional).**
-- **Windows:** double-click **`start-windows-phone.bat`** instead.
-- **Mac / Linux:** run `bash start-mac-linux.sh phone`.
+**4. 在手機上使用（選用）。**
+- **Windows：** 改成雙擊 **`start-windows-phone.bat`**。
+- **Mac / Linux：** 執行 `bash start-mac-linux.sh phone`。
 
-A page with **QR codes** opens. Scan one with your phone's camera:
+會打開一個有 **QR code** 的頁面。用手機相機掃描其中一個：
 
-| QR code | When to use it | Notes |
+| QR code | 何時使用 | 備註 |
 |---|---|---|
-| **Same Wi-Fi** | Phone and computer on the same Wi-Fi | Fastest. If it doesn't load, see the troubleshooting table below. |
-| **Anywhere (Cloudflare link)** | Phone on mobile data, or a friend elsewhere | Free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/). No account needed. The tool downloads itself the first time. |
+| **同一個 Wi-Fi** | 手機和電腦在同一個 Wi-Fi | 最快。如果載入不了，請看下方的疑難排解表。 |
+| **任何網路（Cloudflare 連結）** | 手機用行動網路，或朋友在別的地方 | 免費的 [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/)。不需要帳號。工具會在第一次使用時自動下載。 |
 
-> 🔒 The Cloudflare link works for **anyone who has it** while the window is open. It's a long random address that changes every time you start, and it stops working when you close the window. Only share it with people you trust.
+> 🔒 視窗開著的期間，**任何拿到** Cloudflare 連結的人都能使用。它是一串很長的隨機網址，每次啟動都會變，視窗一關就失效。只分享給你信任的人。
 
-**Next time, restart, update, uninstall**
+**下次使用、重新啟動、更新、解除安裝**
 
-| I want to... | Do this |
+| 我想要… | 這樣做 |
 |---|---|
-| Use it again later | Double-click `start-windows.bat` again (Mac/Linux: `bash start-mac-linux.sh`). It starts in about 10 seconds. |
-| Restart it | Close the black window (or Ctrl + C), then start it again. |
-| Fix "Engine: unreachable" | You closed the black window, so the engine stopped. Start it again and reload the page. |
-| Update to a newer version | Download a new ZIP and extract it to a new folder. To skip the 400 MB download, you can copy the old `.venv` folder into the new app folder. If it then misbehaves, delete that `.venv` and start again. |
-| Uninstall | Delete the app folder. Nothing else was installed except Python. |
+| 之後再次使用 | 再次雙擊 `start-windows.bat`（Mac/Linux：`bash start-mac-linux.sh`）。約 10 秒就會啟動。 |
+| 重新啟動 | 關掉黑色視窗（或按 Ctrl + C），然後再啟動一次。 |
+| 解決「引擎：無法連線」 | 你把黑色視窗關掉了，所以引擎停了。重新啟動它，然後重新整理頁面。 |
+| 更新到新版本 | 下載新的 ZIP，解壓縮到新的資料夾。想省下那 400 MB 的下載，可以把舊的 `.venv` 資料夾複製到新的 App 資料夾裡。如果之後運作不正常，就刪掉那個 `.venv` 再重新啟動。 |
+| 解除安裝 | 刪除 App 資料夾。除了 Python 之外，沒有安裝其他東西。 |
 
-**Troubleshooting (Option A)**
+**疑難排解（選項 A）**
 
-| Problem | What to do |
+| 問題 | 解決方法 |
 |---|---|
-| **"Python is not installed"** but you did install it | Restart the computer, or re-run the installer and tick "Add python.exe to PATH". On Windows also check the Microsoft Store alias note in [Basics](#basics-python-and-the-terminal). |
-| **Windows asks "Allow Python on networks?"** | Tick **Private networks** and click **Allow**. The same-Wi-Fi QR code needs this. |
-| **"Using port 36189 (8088 was busy)"** (any number) | Fine: something else uses 8088, so the app keeps trying random free ports until one works. The READY line, the browser tab and the QR page all use the port it picked. |
-| **Install failed halfway** (internet dropped) | Delete the `.venv` folder inside the app folder and start again. |
-| **Antivirus blocks `tools\cloudflared.exe`** (phone link) | Allow that file in your antivirus, or use the same-Wi-Fi QR code instead. |
-| **Same-Wi-Fi QR doesn't load** | Guest Wi-Fi and some routers stop devices from seeing each other ("AP isolation"). Use the Cloudflare QR instead, or join your normal Wi-Fi. |
-| **Cloudflare QR doesn't load** | Some office and school networks block Cloudflare. Use the same-Wi-Fi QR, or another network. |
-| **Page loads but looks broken** | The page loads its libraries from the internet. Check that the computer is online. |
+| 明明裝了卻顯示 **"Python is not installed"** | 重新啟動電腦，或重新執行安裝程式並勾選 "Add python.exe to PATH"。Windows 上也請檢查[基礎](#基礎python-與終端機)裡關於 Microsoft Store 別名的說明。 |
+| **Windows 詢問「要允許 Python 使用網路嗎？」** | 勾選 **私人網路**，然後按 **允許**。同一個 Wi-Fi 的 QR code 需要這個。 |
+| **"Using port 36189 (8088 was busy)"**（任何數字） | 沒問題：有別的程式佔用了 8088，所以 App 會一直隨機嘗試可用的埠，直到成功為止。READY 那一行、瀏覽器分頁和 QR 頁面，用的都是它選到的埠。 |
+| **安裝到一半失敗**（網路斷了） | 刪掉 App 資料夾裡的 `.venv` 資料夾，再重新啟動。 |
+| **防毒軟體擋掉 `tools\cloudflared.exe`**（手機連結） | 在防毒軟體中允許該檔案，或改用同一個 Wi-Fi 的 QR code。 |
+| **同一個 Wi-Fi 的 QR 載入不了** | 訪客 Wi-Fi 和部分路由器會讓裝置彼此看不到對方（「AP isolation」）。改用 Cloudflare 的 QR，或連到你平常的 Wi-Fi。 |
+| **Cloudflare 的 QR 載入不了** | 有些公司和學校的網路會擋 Cloudflare。改用同一個 Wi-Fi 的 QR，或換一個網路。 |
+| **頁面載入了但看起來壞掉** | 頁面會從網路載入它的函式庫。請確認電腦有連上網路。 |
 
 ---
 
-### Option B: Google Cloud Run (online all the time, with a hard spending cap)
+### 選項 B：Google Cloud Run（全天候上線，有硬性花費上限）
 
-The engine runs on Google's servers, so the website works even when your computer is off. Google's free allowance covers roughly **2,000 tiles a month** (each tile uses about 70 vCPU-seconds at 4 vCPU), so **normal use costs $0**. Google changes its free-tier details from time to time; check the current numbers on [Google's Cloud Run pricing page](https://cloud.google.com/run/pricing). Google still requires a card on file, so this guide adds a **kill switch**: if spending ever reaches the cap you choose, billing switches off automatically and nothing more can be charged.
+引擎跑在 Google 的伺服器上，所以就算你的電腦關機，網站也能用。Google 的免費額度大約涵蓋**每月 2,000 塊磚**（每塊磚在 4 vCPU 下約用 70 vCPU 秒），所以**一般使用的花費是 $0**。Google 會不定時調整免費額度的細節；請到 [Google 的 Cloud Run 價格頁面](https://cloud.google.com/run/pricing)查看最新數字。Google 仍然要求留一張信用卡，所以這份指南加了一個**緊急斷電開關（kill switch）**：只要花費達到你設定的上限，帳單就會自動關閉，不會再被扣任何錢。
 
-**How to paste.** In Cloud Shell, paste with **Ctrl + Shift + V** (Windows/Linux) or **Cmd + V** (Mac), or right-click → Paste. If a box asks you to confirm a multi-line paste, confirm it. Then press **Enter** if the last line did not run by itself.
+**如何貼上。** 在 Cloud Shell 中，用 **Ctrl + Shift + V**（Windows/Linux）或 **Cmd + V**（Mac）貼上，或按右鍵 → 貼上。如果跳出方塊要你確認多行貼上，請確認。然後如果最後一行沒有自己執行，就按 **Enter**。
 
-> **If Cloud Shell reconnects, or you come back later:** Cloud Shell forgets your settings when it restarts. Before anything else, paste **Block 1** again (and the `BILLING=` line), then run:
+> **如果 Cloud Shell 重新連線，或你過一陣子才回來：** Cloud Shell 重新啟動後會忘掉你的設定。先別做別的事，再貼一次 **區塊 1**（以及 `BILLING=` 那一行），然後執行：
 > ```bash
 > gcloud config set project $PROJECT && cd ~/mixo-tile-gen
 > ```
-> and continue where you stopped. (Before Block 3 has run, the `cd` part shows an error; ignore it.)
+> 再從你停下來的地方接著做。（在區塊 3 執行之前，`cd` 的部分會顯示錯誤，可以忽略。）
 
-**1. Turn on billing (one time, in the browser).**
-1. Open https://console.cloud.google.com/billing.
-   > **Several Google accounts?** Google picks the first one. Add `?authuser=you@gmail.com` to the address (for example `https://console.cloud.google.com/billing?authuser=you@gmail.com`), or open a private window (**Ctrl + Shift + N**) and sign in with only the account you want. Check the avatar at the top right.
-2. Click **Create account** (or start the **Free trial** if offered; the trial credit is optional and not needed). Choose **Individual**, enter your card, and submit. A small temporary card check may appear; it's refunded.
+**1. 開啟帳單（只要一次，在瀏覽器中）。**
+1. 打開 https://console.cloud.google.com/billing。
+   > **有好幾個 Google 帳號？** Google 會選第一個。在網址後面加上 `?authuser=you@gmail.com`（例如 `https://console.cloud.google.com/billing?authuser=you@gmail.com`），或打開無痕視窗（**Ctrl + Shift + N**），只登入你想用的那個帳號。請確認右上角的大頭貼。
+2. 按 **Create account**（如果有提供，也可以開始 **Free trial**；試用額度是選用的，不是必要的）。選擇 **Individual**，輸入你的信用卡並送出。可能會出現一筆小額的暫時性卡片驗證扣款，之後會退還。
 
-**2. Open Cloud Shell.** Go to https://console.cloud.google.com (same account), then click the **>_** icon at the top right. A terminal opens at the bottom of the page. Nothing to install.
+**2. 打開 Cloud Shell。** 前往 https://console.cloud.google.com（同一個帳號），然後按右上角的 **>_** 圖示。頁面下方會打開一個終端機。什麼都不用安裝。
 
-**3. Paste the blocks below one at a time**, pressing **Enter** after each. Click **Authorize** if asked.
+**3. 把下面的區塊一個一個貼上**，每貼一個就按 **Enter**。如果被問到，按 **Authorize**。
 
-Block 1: settings. **Change the first line** to a name that's yours (lower case, letters, digits and dashes, 6–30 characters, must be unique on Google):
+區塊 1：設定。**修改第一行**，換成專屬於你的名稱（小寫，只能有英文字母、數字和連字號，6–30 個字元，在 Google 上必須是唯一的）：
 ```bash
 PROJECT=mixo-tile-gen-yourname
 REGION=asia-east1        # Taiwan. Others: us-central1, europe-west1, asia-northeast1 ...
 SITE=https://mixocreative.github.io   # the website allowed to use your engine (no path, no trailing /)
 gcloud billing accounts list
 ```
-The last command shows a table. Copy the **ACCOUNT_ID** of the account with `OPEN True`, then paste this (with your ID):
+最後一個指令會顯示一張表。複製 `OPEN True` 那個帳號的 **ACCOUNT_ID**，然後貼上這一行（填入你的 ID）：
 ```bash
 BILLING=000000-000000-000000
 ```
-If Block 2 later says the **project ID already exists**, someone already has that name. Go back, change the name on the first line of Block 1, paste Block 1 and the `BILLING=` line again, then paste Block 2 again.
+如果區塊 2 之後說**專案 ID 已存在**，代表已經有人用了那個名稱。回去修改區塊 1 第一行的名稱，再貼一次區塊 1 和 `BILLING=` 那一行，然後再貼一次區塊 2。
 
-Block 2: project, billing and services. If you get a permission error, wait a minute and paste it again.
+區塊 2：專案、帳單和服務。如果出現權限錯誤，等一分鐘再貼一次。
 ```bash
 gcloud projects create $PROJECT && gcloud config set project $PROJECT
 gcloud billing projects link $PROJECT --billing-account=$BILLING
@@ -307,7 +309,7 @@ for r in cloudbuild.builds.builder storage.objectViewer artifactregistry.writer 
 echo OK
 ```
 
-Block 3: the engine. Takes 5–10 minutes. If it says *Permission denied … Artifact Registry* (or any permission error), wait one minute and paste it again; new projects need a moment. Pasting it again is safe.
+區塊 3：引擎。需要 5–10 分鐘。如果顯示 *Permission denied … Artifact Registry*（或任何權限錯誤），等一分鐘再貼一次；新專案需要一點時間。重複貼上是安全的。
 ```bash
 [ -d mixo-tile-gen ] || git clone https://github.com/mixocreative/mixo-tile-gen.git
 cd ~/mixo-tile-gen
@@ -315,10 +317,10 @@ gcloud run deploy mixo-tile-gen --source backend --region $REGION --allow-unauth
   --cpu 4 --memory 4Gi --concurrency 4 --timeout 300 --min-instances 0 --max-instances 1 \
   --set-env-vars ALLOWED_ORIGINS=$SITE,MIXOTILE_BODY_WORKERS=2 --quiet
 ```
-**Success:** the last lines show `Service URL: https://mixo-tile-gen-….run.app`. **That's your engine address.** Open it with `/health` added; you should see `{"status":"ok", …}`.
-**If `/health` fails:** wait a minute and reload. If it still fails, open https://console.cloud.google.com/run, click **mixo-tile-gen**, then the **Logs** tab, and read the last red lines.
+**成功：** 最後幾行會顯示 `Service URL: https://mixo-tile-gen-….run.app`。**那就是你的引擎網址。** 在後面加上 `/health` 打開它；你應該會看到 `{"status":"ok", …}`。
+**如果 `/health` 失敗：** 等一分鐘再重新整理。如果還是失敗，打開 https://console.cloud.google.com/run，按 **mixo-tile-gen**，再按 **Logs** 分頁，看最後幾行紅字。
 
-Block 4: the kill switch (a tiny function that switches billing off). If you get a permission error, wait a minute and paste it again.
+區塊 4：緊急斷電開關（一個會把帳單關掉的小函式）。如果出現權限錯誤，等一分鐘再貼一次。
 ```bash
 cd ~/mixo-tile-gen
 gcloud pubsub topics create budget-alerts
@@ -333,52 +335,52 @@ gcloud run services add-iam-policy-binding budget-killswitch --region $REGION \
   --member=serviceAccount:$KS --role=roles/run.invoker >/dev/null && echo OK
 ```
 
-Block 5: the budget (the cap). Use your billing account's currency, shown by `gcloud billing accounts describe $BILLING`: for example `30TWD`, `1USD` or `1EUR`.
+區塊 5：預算（花費上限）。請使用你的帳單帳號的幣別，可用 `gcloud billing accounts describe $BILLING` 查看：例如 `30TWD`、`1USD` 或 `1EUR`。
 ```bash
 gcloud billing budgets create --billing-account=$BILLING --display-name=mixo-tile-gen-cap \
   --budget-amount=1USD --filter-projects=projects/$PROJECT \
   --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 \
   --notifications-rule-pubsub-topic=projects/$PROJECT/topics/budget-alerts
 ```
-You also get an **email** at 50 % and 90 % of the cap.
+花費達到上限的 50 % 和 90 % 時，你也會收到**電子郵件**。
 
-Block 6 (optional, recommended): test the kill switch. This pretends the cap was reached, checks that billing went off, then switches it back on:
+區塊 6（選用，建議做）：測試緊急斷電開關。這會假裝已經達到上限，檢查帳單是否被關掉，然後再把它開回來：
 ```bash
 gcloud pubsub topics publish budget-alerts --message='{"costAmount": 2, "budgetAmount": 1, "currencyCode": "USD"}'
 sleep 60; gcloud billing projects describe $PROJECT --format='value(billingEnabled)'   # should print False
 gcloud billing projects link $PROJECT --billing-account=$BILLING >/dev/null; echo "billing back on"
 ```
-- **It printed `False`:** the kill switch works. 
-- **It printed `True`:** the function may still be starting. Wait a minute and run only the `describe` line again. If it still says `True`, read the function's log: `gcloud functions logs read budget-killswitch --region $REGION --gen2`.
-- **Do not skip the last line** (`gcloud billing projects link …`), even if the test failed or you stopped halfway. Until you run it, billing stays off and your engine stays stopped.
+- **印出 `False`：** 緊急斷電開關運作正常。
+- **印出 `True`：** 函式可能還在啟動。等一分鐘，只重跑 `describe` 那一行。如果仍然是 `True`，請查看函式的記錄：`gcloud functions logs read budget-killswitch --region $REGION --gen2`。
+- **不要跳過最後一行**（`gcloud billing projects link …`），就算測試失敗或你做到一半就停了也一樣。在你執行它之前，帳單都會維持關閉，你的引擎也會維持停止。
 
-**4. Connect the website** to your engine address. See [Connect the website to your engine](#connect-the-website-to-your-engine).
+**4. 把網站連到**你的引擎網址。請見[將網站連到你的引擎](#將網站連到你的引擎)。
 
-**Good to know**
-- **When nobody uses it,** the engine sleeps and costs nothing. The first tile after a quiet spell takes 20–60 s longer while it wakes up; the progress bar says so.
-- **If the cap is ever reached,** the engine stops working (the site shows "Engine: unreachable"). To turn it back on, link the project to your billing account again. In Cloud Shell (paste Block 1 and the `BILLING=` line first if it restarted), run:
+**值得知道的事**
+- **沒人使用時，** 引擎會休眠，不花一毛錢。閒置一陣子後的第一塊磚，在它醒來期間要多等 20–60 秒；進度條會告訴你。
+- **如果曾經達到上限，** 引擎就會停止運作（網站會顯示「引擎：無法連線」）。要把它重新開啟，請把專案重新連結到你的帳單帳號。在 Cloud Shell 中（如果它重新啟動過，請先貼上區塊 1 和 `BILLING=` 那一行），執行：
   ```bash
   gcloud billing projects link $PROJECT --billing-account=$BILLING
   ```
-  or open Billing → **My projects** in the browser and link it there. Google's cost reports lag a few hours, so the final bill can be a few cents above the cap. Allowing only one engine copy at a time (`--max-instances 1`) keeps that small.
-- **Update to a newer version.** In Cloud Shell (after pasting Block 1 and `gcloud config set project $PROJECT`):
+  或是在瀏覽器中打開 Billing → **My projects** 並在那裡連結。Google 的費用報表會延遲幾個小時，所以最後的帳單可能會比上限多出幾分錢。一次只允許一份引擎副本（`--max-instances 1`）可以讓這個差額維持很小。
+- **更新到新版本。** 在 Cloud Shell 中（貼上區塊 1 和 `gcloud config set project $PROJECT` 之後）：
   ```bash
   cd ~/mixo-tile-gen && git pull
   ```
-  then paste the `gcloud run deploy …` command from Block 3 again.
-- **To remove everything.** Run `gcloud projects delete $PROJECT`, or go to https://console.cloud.google.com/cloud-resource-manager, select the project and click **Delete**. The budget belongs to your billing account, not the project, so also open Billing → **Budgets & alerts** and delete `mixo-tile-gen-cap`.
+  然後再貼一次區塊 3 裡的 `gcloud run deploy …` 指令。
+- **移除所有東西。** 執行 `gcloud projects delete $PROJECT`，或前往 https://console.cloud.google.com/cloud-resource-manager，選取該專案並按 **Delete**。預算是屬於你的帳單帳號，而不是專案，所以也要打開 Billing → **Budgets & alerts**，刪除 `mixo-tile-gen-cap`。
 
 ---
 
-### Option C: Docker (for tinkerers)
+### 選項 C：Docker（給愛玩技術的人）
 
-Install **Docker Desktop** (https://www.docker.com/products/docker-desktop/) and start it. Give it at least **4 GB of memory**: Docker Desktop → **Settings → Resources**. Then open a terminal in the unzipped app folder (see [Basics](#basics-python-and-the-terminal)) and run:
+安裝 **Docker Desktop**（https://www.docker.com/products/docker-desktop/）並啟動它。至少給它 **4 GB 記憶體**：Docker Desktop → **Settings → Resources**。然後在解壓縮出來的 App 資料夾打開終端機（請見[基礎](#基礎python-與終端機)），執行：
 
 ```bash
 docker build -t mixo-tile-gen backend
 ```
 
-Then start it. Pick the line for your terminal:
+接著啟動它。挑一行適合你的終端機的：
 
 ```bash
 # Mac, Linux, Git Bash
@@ -393,97 +395,97 @@ docker run --rm -p 8088:8080 -v "%cd%\frontend:/frontend" -e FRONTEND_DIR=/front
 docker run --rm -p 8088:8080 -v "${PWD}/frontend:/frontend" -e FRONTEND_DIR=/frontend mixo-tile-gen
 ```
 
-Open **http://localhost:8088/?api=self**. Press **Ctrl + C** in the terminal to stop it. Without the `-v … -e …` part you get the engine only, with no website.
+打開 **http://localhost:8088/?api=self**。在終端機按 **Ctrl + C** 即可停止。如果沒有 `-v … -e …` 那一段，你只會得到引擎，沒有網站。
 
 ---
 
-### Connect the website to your engine
+### 將網站連到你的引擎
 
-The website needs to know the engine's address. Choose one:
+網站需要知道引擎的網址。選擇其中一種：
 
-| How | Steps | Best for |
+| 方式 | 步驟 | 最適合 |
 |---|---|---|
-| **The Engine pill** | On the website, click the pill at the **top right** ("Engine: …"). Paste your engine address (no `/health` on the end), then **Save & test**. The dot turns green ("Engine: ready"). Your browser remembers it. | Just you |
-| **A link** | Add `?api=` plus the address to the website link, e.g. `https://mixocreative.github.io/mixo-tile-gen/?api=https://mixo-tile-gen-xxxx.asia-east1.run.app` | Sharing with friends |
-| **The default** (your own copy) | On github.com, in your fork: open `frontend/index.html`, click the **pencil** icon (Edit this file), find the line `const DEFAULT_API = '…';` and put your address between the quotes. Click **Commit changes…**, then **Commit changes** in the box. Wait about a minute for the site to update. | Everyone who visits your copy |
+| **「引擎」膠囊** | 在網站上，點**右上角**的膠囊（「引擎：…」）。貼上你的引擎網址（結尾不要加 `/health`），然後按 **儲存並測試**。圓點會變綠（「引擎：就緒」）。你的瀏覽器會記住它。 | 只有你自己用 |
+| **連結** | 在網站連結後面加上 `?api=` 和網址，例如 `https://mixocreative.github.io/mixo-tile-gen/?api=https://mixo-tile-gen-xxxx.asia-east1.run.app` | 分享給朋友 |
+| **預設值**（你自己的副本） | 在 github.com 你的 fork 中：打開 `frontend/index.html`，按**鉛筆**圖示（Edit this file），找到 `const DEFAULT_API = '…';` 這一行，把你的網址放在引號之間。按 **Commit changes…**，再按對話框中的 **Commit changes**。等大約一分鐘讓網站更新。 | 所有造訪你副本的人 |
 
-`?api=self` means "the engine is at this same address". Option A's links use it, because there the engine also serves the website.
+`?api=self` 的意思是「引擎就在這個網址」。選項 A 的連結會用到它，因為那時引擎同時也提供網站。
 
-**Self-hosting everything?**
-- **Option A or C:** the website comes with the engine; nothing to connect.
-- **Your own GitHub Pages site + your own Cloud Run engine:** deploy the engine with `SITE=https://YOUR-GITHUB-NAME.github.io` (Option B, block 1), then set `DEFAULT_API` in your copy.
-- **Website already deployed and only the allowed site needs changing:** run `gcloud run services update mixo-tile-gen --region $REGION --update-env-vars ALLOWED_ORIGINS=https://YOUR-GITHUB-NAME.github.io`.
+**全部都要自己架？**
+- **選項 A 或 C：** 網站隨引擎一起提供；不需要連接任何東西。
+- **你自己的 GitHub Pages 網站 + 你自己的 Cloud Run 引擎：** 用 `SITE=https://YOUR-GITHUB-NAME.github.io` 部署引擎（選項 B，區塊 1），然後在你的副本裡設定 `DEFAULT_API`。
+- **網站已經部署好了，只需要修改允許的網站：** 執行 `gcloud run services update mixo-tile-gen --region $REGION --update-env-vars ALLOWED_ORIGINS=https://YOUR-GITHUB-NAME.github.io`。
 
-**If the dot is red ("unreachable"):**
-- Open the engine address with `/health` on the end. If that fails, the engine is off or asleep (or its spending cap was reached).
-- The engine's `ALLOWED_ORIGINS` must exactly match your website's address: `https://NAME.github.io`, with no path and no trailing `/`.
-- A sleeping engine takes 20–60 s to wake. Try again.
-
----
-
-### Option D: your own copy of the website (GitHub Pages)
-
-1. Create a free account at https://github.com/signup.
-2. Open https://github.com/mixocreative/mixo-tile-gen and click **Fork**, then **Create fork**. Keep the repository name `mixo-tile-gen`, so your site address ends in `/mixo-tile-gen/`.
-3. In your fork, go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**.
-4. Go to the **Actions** tab. A fresh fork has workflows switched off: click the green **I understand my workflows, go ahead and enable them** button first.
-5. Still in **Actions**, click **Deploy frontend to GitHub Pages**, then **Run workflow**.
-6. After about a minute your website is at `https://YOUR-GITHUB-NAME.github.io/mixo-tile-gen/`.
-7. Connect it to your engine (previous section). Until you do, your copy shows **"Engine: unreachable"**. That is expected: it still points at the original engine, which only answers the original website.
+**如果圓點是紅色（「無法連線」）：**
+- 在引擎網址後面加上 `/health` 打開看看。如果失敗，代表引擎關了或正在休眠（或是已達到花費上限）。
+- 引擎的 `ALLOWED_ORIGINS` 必須和你網站的網址完全一致：`https://NAME.github.io`，不含路徑，結尾也不能有 `/`。
+- 休眠中的引擎要 20–60 秒才會醒。再試一次。
 
 ---
 
-### Hugging Face (PRO accounts only)
+### 選項 D：自己的網站副本（GitHub Pages）
 
-Free accounts get `402 Payment Required` when creating a Docker Space. With **PRO**:
-1. Create a Space at https://huggingface.co/new-space: SDK **Docker → Blank**, **Public**.
-2. Upload `backend/Dockerfile`, `main.py`, `tile_processor.py` and `requirements.txt`.
-3. Add `sdk: docker` and `app_port: 8080` to the front matter of the Space's `README.md`.
-4. Add the variable `ALLOWED_ORIGINS` = your website (Settings → Variables and secrets).
-5. Your engine address is `https://YOUR-HF-NAME-SPACE-NAME.hf.space`.
+1. 到 https://github.com/signup 建立一個免費帳號。
+2. 打開 https://github.com/mixocreative/mixo-tile-gen，按 **Fork**，再按 **Create fork**。保留儲存庫名稱 `mixo-tile-gen`，這樣你的網站網址才會以 `/mixo-tile-gen/` 結尾。
+3. 在你的 fork 中，前往 **Settings → Pages**。在 **Build and deployment → Source** 底下，選擇 **GitHub Actions**。
+4. 前往 **Actions** 分頁。剛 fork 的專案預設會關閉 workflow：請先按綠色的 **I understand my workflows, go ahead and enable them** 按鈕。
+5. 仍在 **Actions** 中，按 **Deploy frontend to GitHub Pages**，再按 **Run workflow**。
+6. 約一分鐘後，你的網站就在 `https://YOUR-GITHUB-NAME.github.io/mixo-tile-gen/`。
+7. 把它連到你的引擎（上一節）。在你連好之前，你的副本會顯示 **「引擎：無法連線」**。這是預期中的：它仍然指向原本的引擎，而那個引擎只會回應原本的網站。
 
-### Without the web page (command line)
+---
 
-`mixo` makes the same models from the command line: one photo, or a whole folder at once. The files are the same as the website's. It uses no AI, so you give it the tile's corners.
+### Hugging Face（僅限 PRO 帳號）
 
-**1. Install Python** and **download the app** (Option A, steps 1 and 2). See [Basics](#basics-python-and-the-terminal).
+免費帳號在建立 Docker Space 時會收到 `402 Payment Required`。有 **PRO** 的話：
+1. 到 https://huggingface.co/new-space 建立一個 Space：SDK 選 **Docker → Blank**，選 **Public**。
+2. 上傳 `backend/Dockerfile`、`main.py`、`tile_processor.py` 和 `requirements.txt`。
+3. 在 Space 的 `README.md` 開頭的 front matter 加上 `sdk: docker` 和 `app_port: 8080`。
+4. 新增變數 `ALLOWED_ORIGINS` = 你的網站（Settings → Variables and secrets）。
+5. 你的引擎網址是 `https://YOUR-HF-NAME-SPACE-NAME.hf.space`。
 
-**2. Open a terminal in the app folder** (see [Basics](#basics-python-and-the-terminal)). On Mac/Linux, write `bash mixo.sh` instead of `mixo`. In PowerShell, write `.\mixo.bat`.
+### 不用網頁：命令列
 
-**3. Try it now, with the bundled photo.** This uses one of the owner's photos that comes in the download. `--out` puts the result in the app folder:
+`mixo` 能從命令列做出同樣的模型：一張照片，或一整個資料夾一次處理。產生的檔案和網站的一樣。它不使用 AI，所以要由你提供磚的四個角。
+
+**1. 安裝 Python** 並**下載 App**（選項 A，第 1 步和第 2 步）。請見[基礎](#基礎python-與終端機)。
+
+**2. 在 App 資料夾開啟終端機**（請見[基礎](#基礎python-與終端機)）。在 Mac/Linux 上，用 `bash mixo.sh` 取代 `mixo`。在 PowerShell 中，寫 `.\mixo.bat`。
+
+**3. 馬上用內附的照片試試看。** 這會用下載內容裡附的一張作者的照片。`--out` 會把結果放在 App 資料夾：
 
 ```bash
 mixo backend\tests\fixtures\real_tiles\originals\IMG_9255.jpg --corners "510,564 2616,534 2514,2508 594,2478" --out my-first-tile.3mf
 ```
-On Mac/Linux:
+在 Mac/Linux 上：
 ```bash
 bash mixo.sh backend/tests/fixtures/real_tiles/originals/IMG_9255.jpg --corners "510,564 2616,534 2514,2508 594,2478" --out my-first-tile.3mf
 ```
 
-The first run sets itself up (3–10 minutes, same as Option A; it may look frozen). After that, a tile takes about 10–12 s. You will see something like this (your numbers will differ):
+第一次執行會自己做初始設定（3–10 分鐘，和選項 A 一樣；可能看起來像當掉）。之後一塊磚約 10–12 秒。你會看到類似這樣的輸出（你的數字會不一樣）：
 ```
 IMG_9255.jpg -> my-first-tile.3mf  (this computer)
    45%  Carving colour 3 of 8
   100%  done: 9 colour bodies, 1,234,567 triangles
   saved 32.9 MB in 12.5 s
 ```
-Open `my-first-tile.3mf` in PrusaSlicer, OrcaSlicer or Bambu Studio.
+用 PrusaSlicer、OrcaSlicer 或 Bambu Studio 打開 `my-first-tile.3mf`。
 
-**4. Use your own photo.** Without `--out`, the file lands next to the photo (`my-tile.3mf`).
+**4. 用你自己的照片。** 不加 `--out` 的話，檔案會放在照片旁邊（`my-tile.3mf`）。
 ```bash
 mixo my-tile.jpg --corners "510,564 2616,534 2514,2508 594,2478"
 ```
-If you leave out `--corners`, `mixo` prints this warning and uses the centred square of the photo:
+如果你省略 `--corners`，`mixo` 會印出這個警告，並使用照片正中央的正方形：
 ```
 ! my-tile.jpg: no corners given, using the centred square of the photo
 ```
 
-**Finding your tile's four corners.** They are pixel positions in the **full-size photo** (not a shrunken copy). Go top-left, top-right, bottom-right, bottom-left, on the glaze corners.
-- **Windows:** open the photo in Paint and hover over each glaze corner. The position shows at the bottom of the window.
-- **Mac:** Preview doesn't show pixel positions easily. Open the full-size photo in the free https://www.photopea.com, hover over each corner and read the **X** and **Y** values in the info panel.
-- **Any system:** use the web app. Upload the photo, drag the corners, and note where the handles sit.
+**找出你那塊磚的四個角。** 它們是**完整尺寸照片**（不是縮小的副本）上的像素位置。順序是左上、右上、右下、左下，落在釉面的角上。
+- **Windows：** 用小畫家打開照片，把游標移到每個釉面角上。位置會顯示在視窗底部。
+- **Mac：** 「預覽程式」不太容易顯示像素位置。用免費的 https://www.photopea.com 打開完整尺寸的照片，把游標移到每個角上，在資訊面板讀出 **X** 和 **Y** 的值。
+- **任何系統：** 使用網頁版 App。上傳照片，拖曳四個角，然後記下控制點所在的位置。
 
-**More examples:**
+**更多範例：**
 ```bash
 mixo my-tile.jpg --corners "…" --format 3mftex          # 3MF with the photo as a texture
 mixo my-tile.jpg --corners "…" --format objtex --out tile.zip
@@ -492,74 +494,74 @@ mixo a.jpg b.jpg c.jpg --corners-json corners.json --out models   # many photos 
 mixo my-tile.jpg --corners "…" --server https://mixo-tile-gen-616971929665.asia-east1.run.app   # use the online engine
 mixo "C:\My Photos\tile 1.jpg" --corners "…"            # quotes around paths with spaces
 ```
-- `--format`: `3mf` (default), `3mftex`, `glb`, `glbtex`, `obj`, `objtex`, `stl`.
-- `--corners-json`: a file like `{"a": [[x,y],[x,y],[x,y],[x,y]], "b": …}`, keyed by photo name without `.jpg`.
-- `--set`: any setting from [Default settings](#default-settings-150-mm-tile), using the names in the "Name for --set / API" column. An unknown name prints the full list of valid names.
-- `--server`: send the photo to an engine instead of using this computer (the online engine above, your own Cloud Run address, or a local one like `http://localhost:8088`).
-- Fully offline: after the first setup, `mixo` without `--server` needs no internet.
+- `--format`：`3mf`（預設）、`3mftex`、`glb`、`glbtex`、`obj`、`objtex`、`stl`。
+- `--corners-json`：一個像 `{"a": [[x,y],[x,y],[x,y],[x,y]], "b": …}` 的檔案，以不含 `.jpg` 的照片名稱當鍵。
+- `--set`：[預設設定](#預設設定150-mm-磚)中的任何設定，使用「--set / API 用的名稱」那一欄的名稱。輸入不認得的名稱時，會印出所有有效名稱的完整清單。
+- `--server`：把照片送到某個引擎處理，而不是用這台電腦（上面的線上引擎、你自己的 Cloud Run 網址，或像 `http://localhost:8088` 這樣的本機引擎）。
+- 完全離線：第一次設定之後，不加 `--server` 的 `mixo` 不需要網路。
 
-**Without `mixo`**, any tool that can send a form works, e.g. `curl`. Replace `YOUR-ENGINE` with your engine address.
+**不用 `mixo`** 的話，任何能送出表單的工具都行，例如 `curl`。把 `YOUR-ENGINE` 換成你的引擎網址。
 
-Windows Command Prompt (`cmd`). Use `curl.exe` and double quotes:
+Windows 命令提示字元（`cmd`）。請用 `curl.exe` 和雙引號：
 ```bat
 curl.exe -F image=@my-tile.jpg -F "corners=[[510,564],[2616,534],[2514,2508],[594,2478]]" -F output_format=3mftex -o my-tile.textured.3mf https://YOUR-ENGINE/process-tile
 ```
-Mac, Linux, Git Bash:
+Mac、Linux、Git Bash：
 ```bash
 curl -F image=@my-tile.jpg -F 'corners=[[510,564],[2616,534],[2514,2508],[594,2478]]' \
      -F output_format=3mftex -o my-tile.textured.3mf https://YOUR-ENGINE/process-tile
 ```
-(In Windows PowerShell, `curl` is a different command, an alias of `Invoke-WebRequest`. Use `curl.exe`, or use Command Prompt.)
+（在 Windows PowerShell 中，`curl` 是另一個指令，是 `Invoke-WebRequest` 的別名。請用 `curl.exe`，或改用命令提示字元。）
 
-An engine only answers browsers from the websites in its `ALLOWED_ORIGINS`; command-line tools like these aren't affected.
+引擎只會回應 `ALLOWED_ORIGINS` 中所列網站的瀏覽器；像這樣的命令列工具不受影響。
 
 ## API
 
-- `GET /health` returns `{"status":"ok", …}`.
-- `POST /process-tile` takes `multipart/form-data`:
-  - **Required:** `image`.
-  - **Optional:** `corners` (JSON `[[x,y]×4]`), `swatches` (JSON hex list), plus any setting above, using the names in `TileConfig`: `tile_size_mm`, `pad_thickness_mm`, `relief_height_mm`, `fillet_radius_mm`, `dome_height_mm`, `groove_floor_mm`, `clearance_mm`, `outline_height_mm`, `outline_width_mm`, `num_colors`, `mesh_resolution_mm`, `smoothing_mm`, `symmetry`, `output_format` (`3mf` | `3mftex` = 3MF with the photo as a texture, still prints in glaze colours | `glb` | `glbtex` | `stl` = zip, one STL per colour | `obj` = zip, OBJ+MTL colours | `objtex` = zip, OBJ+MTL+texture.jpg).
-- `stream=false` (default) returns the model bytes, plus stats in the `X-MixoTile-Stats` header.
-- `stream=true` returns a single streamed response, used by the app:
-  - JSON lines: `{"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}`.
-  - Then `{"type":"preview","layout":[…],"bytes":N}` followed by N bytes of preview mesh (float32 positions and uint32 indices per part).
-  - Then `{"type":"texture","bytes":T}` followed by T bytes of JPEG: the top-down photo for the preview's Photo view (u = x/size, v = y/size).
-  - Then `{"type":"done","bytes":M}` followed by M bytes of model, or `{"type":"error",…}`.
+- `GET /health` 會回傳 `{"status":"ok", …}`。
+- `POST /process-tile` 接受 `multipart/form-data`：
+  - **必填：** `image`。
+  - **選填：** `corners`（JSON `[[x,y]×4]`）、`swatches`（JSON 十六進位色碼清單），以及上面任何設定，使用 `TileConfig` 中的名稱：`tile_size_mm`、`pad_thickness_mm`、`relief_height_mm`、`fillet_radius_mm`、`dome_height_mm`、`groove_floor_mm`、`clearance_mm`、`outline_height_mm`、`outline_width_mm`、`num_colors`、`mesh_resolution_mm`、`smoothing_mm`、`symmetry`、`output_format`（`3mf` | `3mftex` = 以照片當貼圖的 3MF，仍以釉色列印 | `glb` | `glbtex` | `stl` = zip，每種顏色一個 STL | `obj` = zip，OBJ+MTL 顏色 | `objtex` = zip，OBJ+MTL+texture.jpg）。
+- `stream=false`（預設）會回傳模型的位元組，統計資料放在 `X-MixoTile-Stats` 標頭裡。
+- `stream=true` 會回傳單一串流回應，App 用的就是這個：
+  - JSON 行：`{"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}`。
+  - 接著是 `{"type":"preview","layout":[…],"bytes":N}`，後面跟著 N 位元組的預覽網格（每個零件的 float32 位置和 uint32 索引）。
+  - 接著是 `{"type":"texture","bytes":T}`，後面跟著 T 位元組的 JPEG：預覽「照片」檢視用的由上往下照片（u = x/size，v = y/size）。
+  - 接著是 `{"type":"done","bytes":M}`，後面跟著 M 位元組的模型，或是 `{"type":"error",…}`。
 
-## Tests and verification
+## 測試與驗證
 
-Tests use **only the owner's hand-picked photos**: 18 shots in `backend/tests/fixtures/real_tiles/originals/`, with their tile corners in `real_tiles/corners.json` (see the README there). Every pipeline change must pass on all of them. Start the app (Option A) once first, so the app's own Python environment `.venv` exists, then run from the `backend` folder with that Python:
+測試**只用作者親手挑選的照片**：`backend/tests/fixtures/real_tiles/originals/` 裡的 18 張照片，磚的四個角放在 `real_tiles/corners.json`（請見那裡的 README）。每一次處理流程的變更都必須全部通過。請先啟動一次 App（選項 A），讓 App 自己的 Python 環境 `.venv` 存在，然後從 `backend` 資料夾用那個 Python 執行：
 
-Windows (Command Prompt):
+Windows（命令提示字元）：
 ```bat
 cd backend
 ..\.venv\Scripts\python tests\run_real.py
 ```
-Mac / Linux:
+Mac / Linux：
 ```bash
 cd backend
 ../.venv/bin/python tests/run_real.py
 ```
 
-The other checks work the same way; swap in the script name:
+其他檢查的做法相同；換成對應的腳本名稱即可：
 ```
 tests/run_real.py                  every photo: each colour body watertight, time per tile
 tests/check_formats.py IMG_9255    STL closed per colour, OBJ materials, photo texture lined up
 tests/check_borders.py IMG_9255 0  puzzle-fit between colours (gap / overlap)
 tests/lines_sheet.py               visual sheet: photo | outlines | colours | height map
 ```
-On a PC with little memory, test one tile per run: `..\.venv\Scripts\python tests\run_real.py IMG_9255`.
+在記憶體不多的電腦上，每次只測一塊磚：`..\.venv\Scripts\python tests\run_real.py IMG_9255`。
 
-`HANDOFF.md` has the full engineering log, the design decisions and the next steps, for whoever picks this up (human, Claude, or Codex). `AGENTS.md` has the rules for coding agents.
+`HANDOFF.md` 有完整的工程紀錄、設計決策和後續步驟，給接手的人看（人類、Claude 或 Codex 都可以）。`AGENTS.md` 則是給寫程式的代理（coding agents）看的規則。
 
-## Known limits
+## 已知限制
 
-- **Auto-outline:** the AI only suggests the corners. On framed tiles it sometimes grabs a sliver of the wooden frame (seen on IMG_9255 and IMG_9343 in the tests). Always check the four corners and drag any that are off.
-- **Low-contrast tiles:** a white motif on a pale background can merge into one colour. Adding the missing colour with **Pick from photo** may keep them apart.
-- **Glossy, painterly glazes** can still split into small patches.
-- **Stickers or labels** on the glaze become relief. The glare/sticker inpaint is implemented but off by default, because it also erased real white glaze.
+- **自動輪廓：** AI 只是建議四個角。在有框的磚上，它有時會抓到一小條木框（測試中的 IMG_9255 和 IMG_9343 就看過）。請務必檢查四個角，把不準的拖正。
+- **低對比的磚：** 淺底上的白色圖案可能會合併成同一種顏色。用 **從照片挑色** 補上漏掉的顏色，也許能讓它們分開。
+- **有光澤、畫意風格的釉面**仍可能被切成許多小碎塊。
+- **貼在釉面上的貼紙或標籤**會變成浮雕。反光／貼紙修補（inpaint）雖已實作，但預設是關閉的，因為它也會把真正的白色釉面一起抹掉。
 
-## Credits
+## 致謝
 
-- **Tile photos** (tests, results table and the in-app sample): taken and hand-picked by the owner.
-- **Built with:** FastAPI, OpenCV, scikit-image, scikit-learn, SciPy, fast-simplification, trimesh; Three.js, MediaPipe Tasks Vision, Cropper.js and Tailwind (via CDN).
+- **磚的照片**（測試、成果表和 App 內的範例）：由作者親自拍攝並挑選。
+- **使用的技術：** FastAPI、OpenCV、scikit-image、scikit-learn、SciPy、fast-simplification、trimesh；Three.js、MediaPipe Tasks Vision、Cropper.js 和 Tailwind（透過 CDN）。
