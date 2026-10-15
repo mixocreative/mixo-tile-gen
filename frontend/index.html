@@ -179,6 +179,20 @@
   @media (min-width: 900px) { .fmt small { display: inline; } }
   @media (pointer: coarse) { .fmt { height: 36px; } .fmt input { width: 18px; height: 18px; } }
 
+
+  /* step 3: the shapes box is a plain block in Glaze mode, collapsible in Photo mode */
+  #shapesBox.plain > summary { display: none; }
+  #shapesBox:not(.plain) > summary { padding: 8px 10px; border: 1px solid var(--line2); border-radius: 8px; background: var(--white); }
+  /* phone download buttons: one per format */
+  .dlb { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 8px 12px; text-align: left; background: var(--white); border: 1px solid var(--line2); border-radius: 8px; color: var(--ink); }
+  .dlb:hover:not(:disabled) { border-color: var(--faint); background: var(--soft); }
+  .dlb:disabled { opacity: .5; cursor: not-allowed; }
+  .dlb .nm { font: 600 13.5px/1.2 Geist, "Noto Sans TC", sans-serif; }
+  .dlb .ds { font: 400 11px/1.3 Geist, "Noto Sans TC", sans-serif; color: var(--mute); margin-top: 2px; }
+  .dlb .st { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; font: 500 11px/1.2 "Geist Mono", "Noto Sans TC", monospace; color: var(--ink2); text-align: right; }
+  .dlb[data-state="done"] { border-color: var(--ink); }
+  .dlb:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
   /* per-setting reset-to-default button + live fine-tune sliders */
   .rs { flex: none; width: 18px; height: 18px; display: inline-grid; place-items: center; border-radius: 4px; font: 400 13px/1 "Geist Mono", "Noto Sans TC", monospace; color: var(--mute); cursor: pointer; }
   .rs:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
@@ -333,40 +347,52 @@
 
   <!-- ============================================================ 3. colours -->
   <section class="sec hidden" id="step3" aria-labelledby="h3s">
-    <div class="sec-h"><h2 id="h3s" data-i18n="s3.h">03 Colours</h2><span class="meta" data-i18n="s3.meta">Tap glazes to pick</span></div>
-    <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5">
-      <div class="relative">
-        <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette." data-i18n-aria="s3.canvas"></canvas>
-        <div id="hoverChip" class="hidden absolute pointer-events-none px-1.5 py-0.5 rounded text-[11px] mono bg-ink text-white"></div>
-      </div>
-      <div>
-        <p class="mono text-[11px] uppercase tracking-wider text-mute" data-i18n="s3.how">How to choose colours</p>
-        <div class="grid grid-cols-3 gap-2 mt-2" role="group" aria-label="How to choose colours" data-i18n-aria="s3.how">
-          <button id="suggestBtn" class="cmode" aria-pressed="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.5-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.2" r="1"/><circle cx="14.5" cy="7.2" r="1"/></svg>
-            <b data-i18n="s3.mSuggest">Suggest</b><small data-i18n="s3.dSuggest">App picks the main glaze colours</small>
-          </button>
-          <button id="viewPhoto" class="cmode" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4zM14.5 7.5L5 17l-1 4 4-1 9.5-9.5"/></svg>
-            <b data-i18n="s3.mPick">Photo</b><small data-i18n="s3.dPick">Tap the tile to pick a colour</small>
-          </button>
-          <button id="viewMapped" class="cmode" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
-            <b data-i18n="s3.mMapped">Mapped</b><small data-i18n="s3.dMapped">Tile redrawn in your colours only</small>
-          </button>
-        </div>
-        <div class="card p-3 mt-3">
-          <div class="flex items-center justify-between mono text-[11px] uppercase tracking-wider text-mute"><span data-i18n="s3.palette">Glaze palette</span><span data-i18n="s3.edit">Tap swatch to edit</span></div>
-          <div id="swatches" class="flex flex-wrap gap-x-2.5 gap-y-2 mt-2.5 min-h-[34px]" aria-live="polite"></div>
-          <p id="swatchEmpty" class="hint mt-1"></p>
-        </div>
-        <div class="flex items-center justify-between gap-3 mt-3">
-          <div class="field w-44"><label for="numColors" data-i18n="s3.max">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
-          <button id="clearSwatches" class="btn-text btn" data-i18n="s3.clear">Clear</button>
-        </div>
-        <div id="tierList" class="mt-3"></div>
-      </div>
+    <div class="sec-h"><h2 id="h3s" data-i18n="s3.h">03 Colours</h2><span class="meta" data-i18n="s3.meta">Glaze colours or photo skin</span></div>
+    <div class="grid grid-cols-2 gap-2 max-w-xl" role="group" aria-label="Look of the tile" data-i18n-aria="m.aria">
+      <button id="modeGlaze" class="cmode" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.5-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.2" r="1"/><circle cx="14.5" cy="7.2" r="1"/></svg>
+        <b data-i18n="m.glaze">Glaze colours</b><small data-i18n="m.glazeD">What a multi-colour printer prints</small>
+      </button>
+      <button id="modePhoto" class="cmode" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M21 16l-5-5-9 9"/></svg>
+        <b data-i18n="m.photo">Photo skin</b><small data-i18n="m.photoD">Your real photo on the relief</small>
+      </button>
     </div>
+    <p id="modeInfo" class="hint mt-2.5 max-w-2xl" role="status"></p>
+    <details id="shapesBox" class="plain mt-3" open>
+      <summary id="shapesSum" class="mono text-[11.5px] text-ink2 flex items-center gap-1.5 py-1"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="s3.shapes">Shapes (colours still decide where the bumps and valleys go)</span></summary>
+      <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5 mt-3">
+        <div class="relative">
+          <div class="seg mb-2" role="group" aria-label="Tile view" data-i18n-aria="s3.viewAria">
+            <button id="viewPhoto" aria-pressed="false" data-i18n="s3.viewPhoto">Tile photo</button><button id="viewMapped" aria-pressed="true" data-i18n="s3.viewMapped">In your colours</button>
+          </div>
+          <div class="relative">
+            <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette." data-i18n-aria="s3.canvas"></canvas>
+            <div id="hoverChip" class="hidden absolute pointer-events-none px-1.5 py-0.5 rounded text-[11px] mono bg-ink text-white"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card p-3">
+            <div class="flex items-center justify-between gap-2 mono text-[11px] uppercase tracking-wider text-mute"><span data-i18n="s3.palette">Glaze palette</span><span data-i18n="s3.edit">Tap swatch to edit</span></div>
+            <div id="swatches" class="flex flex-wrap gap-x-2.5 gap-y-2 mt-2.5 min-h-[34px]" aria-live="polite"></div>
+            <p id="swatchEmpty" class="hint mt-1"></p>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button id="addPick" type="button" class="btn btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4zM14.5 7.5L5 17l-1 4 4-1 9.5-9.5"/></svg><span data-i18n="s3.pick">Pick from photo</span></button>
+            <label class="btn btn-ghost relative cursor-pointer"><span aria-hidden="true">+</span><span data-i18n="s3.custom">Custom colour</span><input id="addCustom" type="color" value="#c8553d" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Custom colour" data-i18n-aria="s3.custom"></label>
+            <button id="restoreBtn" type="button" class="btn btn-ghost"><span aria-hidden="true">↺</span><span data-i18n="s3.restore">Restore suggested</span></button>
+          </div>
+          <p id="pickNote" class="hidden text-[12px] text-ink mt-2 font-medium" role="status"></p>
+          <p id="addHint" class="hint mt-2" data-i18n="s3.addHint">Pick from photo: tap the tile on the left. Custom colour: choose any colour. − on a swatch removes it. Restore suggested: drops your edits and lets the app pick again.</p>
+          <div class="flex items-center justify-between gap-3 mt-3">
+            <div class="field w-44"><label for="numColors" data-i18n="s3.max">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
+            <button id="clearSwatches" class="btn-text btn" data-i18n="s3.clear">Clear</button>
+          </div>
+          <p class="hint mt-1.5" data-i18n="s3.maxD">Most colours the app will suggest (each colour is one filament).</p>
+          <div id="tierList" class="mt-3"></div>
+        </div>
+      </div>
+    </details>
   </section>
 
   <!-- ============================================================ 4. size -->
@@ -485,16 +511,25 @@
           <p id="ftStatus" class="hint text-[11px] mt-2" role="status" aria-live="polite"></p>
           <div class="flex items-center gap-2 mt-2">
             <button id="ftReset" type="button" class="btn btn-ghost" data-i18n="ft.resetAll">Reset all</button>
-            <button id="ftConfirm" type="button" class="btn btn-primary flex-1" disabled data-i18n="ft.confirm">Confirm</button>
+            <button id="ftConfirm" type="button" class="btn btn-primary flex-1" disabled>Confirm</button>
           </div>
+          <button id="ftExact" type="button" class="link hidden mt-2" data-i18n="ft.exact">Exact rebuild (cloud)</button>
         </div>
       </div>
-      <div class="flex items-center justify-between gap-2">
-        <p class="mono text-[11px] uppercase tracking-wider text-mute" id="fmTitle" data-i18n="fm.title">Files in the .zip</p>
-        <span class="flex items-center gap-2"><button id="fmAll" class="btn-text btn" data-i18n="fm.all">All</button><span class="text-faint">·</span><button id="fmNone" class="btn-text btn" data-i18n="fm.none">None</button></span>
+      <div id="dlDesk">
+        <div class="flex items-center justify-between gap-2">
+          <p class="mono text-[11px] uppercase tracking-wider text-mute" id="fmTitle" data-i18n="fm.title">Files in the .zip</p>
+          <span class="flex items-center gap-2"><button id="fmAll" class="btn-text btn" data-i18n="fm.all">All</button><span class="text-faint">·</span><button id="fmNone" class="btn-text btn" data-i18n="fm.none">None</button></span>
+        </div>
+        <div id="fmList" class="flex flex-wrap gap-1.5 mt-1.5" role="group" aria-labelledby="fmTitle"></div>
+        <p id="fmHelp" class="hint text-[11px] mt-1.5 min-h-[2.6em]"></p>
       </div>
-      <div id="fmList" class="flex flex-wrap gap-1.5 mt-1.5" role="group" aria-labelledby="fmTitle"></div>
-      <p class="hint text-[11px] mt-1.5 min-[900px]:hidden" data-i18n="fm.note">+ photo: viewers show the photo; 3MF still prints in glaze colours.</p>
+      <div id="dlPhone" class="hidden">
+        <p class="mono text-[11px] uppercase tracking-wider text-mute" id="dlPhoneTitle" data-i18n="dl.tapTitle">Tap a format to save it</p>
+        <div id="dlBtns" class="grid gap-2 mt-1.5"></div>
+        <p class="hint text-[11px] mt-1.5" data-i18n="fm.note">“+ photo skin” = your real photo wrapped onto the relief, for viewing and renders. Printers still print the glaze colours.</p>
+      </div>
+      <p id="dlNote" class="hidden text-[12px] mt-2 px-2.5 py-1.5 rounded-md border border-line bg-soft text-ink2" role="status" aria-live="polite"></p>
       <div class="flex items-center gap-2 mt-2.5">
         <button id="tweakBtn" class="btn btn-ghost" data-i18n="pv.tweak">Tweak</button>
         <button id="downloadBtn" class="btn btn-primary flex-1" disabled>Download .zip</button>
@@ -536,14 +571,20 @@ const D = {
     'a.stillLoading': 'AI still loading… corners will snap automatically.', 'a.finding': 'Finding tile edges…',
     'a.nolock': 'Couldn’t lock onto the tile outline — drag the corners, or tap the tile to retry.',
     'a.kept': 'Kept your manual corners (auto-detect finished after you edited them).', 'a.suggest': 'AI suggestion: check that the 4 corners sit on the glaze edges, and drag any that don’t.',
-    's3.h': '03 Colours', 's3.meta': 'Tap glazes to pick', 's3.canvas': 'Flattened tile. Tap a colour to add it to the palette.', 's3.how': 'How to choose colours',
-    's3.mSuggest': 'Suggest', 's3.dSuggest': 'App picks the main glaze colours', 's3.mPick': 'Photo', 's3.dPick': 'Tap the tile to pick a colour', 's3.mMapped': 'Mapped', 's3.dMapped': 'Tile redrawn in your colours only',
+    's3.h': '03 Colours', 's3.meta': 'Glaze colours or photo skin', 's3.canvas': 'Flattened tile. Tap a colour to add it to the palette.',
+    'm.aria': 'Look of the tile', 'm.glaze': 'Glaze colours', 'm.glazeD': 'What a multi-colour printer prints', 'm.photo': 'Photo skin', 'm.photoD': 'Your real photo on the relief',
+    'm.infoGlaze': 'Glaze colours are what a multi-colour printer prints: every part is one flat colour, one filament each. Check the palette, then add, remove or recolour as you like.',
+    'm.infoPhoto': 'Photo skin wraps your real photo onto the relief, like the real tile. It is for viewing and renders; a printer still prints the glaze colours. The colours below only decide where the bumps and valleys go.',
+    's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours',
     's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Max colours', 's3.clear': 'Clear',
+    's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
+    's3.addHint': 'Pick from photo: tap the tile on the left. Custom colour: choose any colour. − on a swatch removes it. Restore suggested: drops your edits and lets the app pick again.',
+    's3.maxD': 'Most colours the app will suggest (each colour is one filament).', 'c.countShape': '{n} shape colours · the photo decides how it looks',
     'c.empty': 'No colours yet — tap Suggest, or tap the tile to pick up to {k} of your own.', 'c.max12': 'Maximum 12 colours.', 'c.needPal': 'Pick colours (or tap Suggest) to see the mapped preview.',
     'sw.colour': 'Swatch {n} colour', 'sw.remove': 'Remove swatch {n}', 'c.count': '{n} colours · one filament each',
     's4.h': '04 Size', 's4.meta': 'Dimensions · mm', 's4.scale': 'Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.',
     's4.echo': '{s} × {s} mm · seams <b class="text-ink font-medium">{a}</b> · top <b class="text-ink font-medium">{b} mm</b>',
-    's4.gen': 'Generate 3D relief', 's4.genHint': 'Usually ~10 s · first run after idle ~30–60 s · downloads a .zip',
+    's4.gen': 'Generate 3D relief', 's4.genHint': 'Usually ~10 s · first run after idle ~30–60 s · files are written on your device when you download',
     'f.size': 'Tile width', 'f.maxH': 'Max relief', 'f.maxHt': 'Max relief above the base (width ÷ 10)', 'f.pad': 'Base', 'f.crown': 'Crown', 'f.crownt': 'Gentle crown on top of each colour',
     'f.depth': 'Edge depth', 'f.deptht': 'How far each colour rolls down into its seams', 'f.clear': 'Clearance', 'f.cleart': 'Gap between colour pieces (0 = flush)',
     'f.fillet': 'Edge roll', 'f.filletT': 'Seam to full height', 'f.outH': 'Outlines', 'f.outHt': 'Raised tube-lining ridge (0 = off)', 'f.adv': 'Advanced',
@@ -558,11 +599,19 @@ const D = {
     'pv.title': '3D preview', 'pv.view': 'View', 'pv.top': 'Top', 'pv.iso': '3/4', 'pv.close': 'Close preview', 'pv.surface': 'Surface', 'pv.colours': 'Colours', 'pv.photo': 'Photo',
     'pv.photoTip': 'Your photo projected from the top', 'pv.loadingPhoto': 'Loading photo…', 'pv.noPhoto': 'Photo not available', 'pv.help': 'drag orbit · right-drag pan · scroll zoom',
     'pv.tweak': 'Tweak', 'pv.stats': '{n} colours · edge {a} mm + crown {b} mm · {k}k tris', 'pv.failed': '3D preview failed to load ({e}). You can still download the files.', 'pv.buildFail': 'Could not build the preview: {e}',
-    'fm.title': 'Files in the .zip', 'fm.all': 'All', 'fm.none': 'None', 'fm.note': '+ photo: viewers show the photo; 3MF still prints in glaze colours.',
-    'fmt.3mf': '3MF', 'fmt.3mf.d': 'glaze colours, for printing', 'fmt.3mftex': '3MF + photo', 'fmt.3mftex.d': 'prints in colours, viewers show the photo',
-    'fmt.glb': 'GLB', 'fmt.glb.d': 'viewers, web, AR', 'fmt.glbtex': 'GLB + photo', 'fmt.glbtex.d': 'with the photo',
-    'fmt.obj': 'OBJ', 'fmt.obj.d': 'glaze colours', 'fmt.objtex': 'OBJ + photo', 'fmt.objtex.d': 'with the photo', 'fmt.stl': 'STL', 'fmt.stl.d': 'one per colour',
-    'dl.prep': 'Preparing files…', 'dl.prepN': 'Preparing files… {a}/{b}', 'dl.ready': 'Download .zip ({n} files)', 'dl.ready1': 'Download .zip (1 file)', 'dl.make': 'Make & download', 'dl.none': 'Pick at least one file',
+    'fm.title': 'Files in the .zip', 'fm.all': 'All', 'fm.none': 'None', 'fm.note': '“+ photo skin” = your real photo wrapped onto the relief, for viewing and renders. Printers still print the glaze colours.',
+    'fmt.3mf': '3MF', 'fmt.3mf.d': 'multi-colour printing', 'fmt.3mf.h': 'For multi-colour 3D printing: one part per colour, each set to its own filament (PrusaSlicer, OrcaSlicer, Bambu Studio).',
+    'fmt.3mftex': '3MF + photo skin', 'fmt.3mftex.d': 'prints like 3MF', 'fmt.3mftex.h': 'Prints exactly like 3MF; 3D viewers also show your photo on it.',
+    'fmt.stl': 'STL', 'fmt.stl.d': 'one file per colour', 'fmt.stl.h': 'One file per colour; load them together in any slicer, one filament each (no colour inside).',
+    'fmt.glb': 'GLB', 'fmt.glb.d': 'web, AR, sharing', 'fmt.glb.h': 'One file for web viewers, AR and quick sharing.',
+    'fmt.glbtex': 'GLB + photo skin', 'fmt.glbtex.d': 'with your photo', 'fmt.glbtex.h': 'The GLB with your real photo wrapped onto the relief (viewing and renders).',
+    'fmt.obj': 'OBJ', 'fmt.obj.d': 'Blender, 3D apps', 'fmt.obj.h': 'For Blender and other 3D software.',
+    'fmt.objtex': 'OBJ + photo skin', 'fmt.objtex.d': 'with your photo', 'fmt.objtex.h': 'The OBJ with your real photo wrapped onto the relief (viewing and renders).',
+    'dl.tapTitle': 'Tap a format to save it', 'dl.writing': 'Writing…', 'dl.tapSave': 'Tap to save', 'dl.savedSize': '{s} · saved', 'dl.failed': 'Failed',
+    'dl.step': 'Writing {f} ({i} of {n})…', 'dl.building': 'Building exact files…', 'dl.confirmBtn': 'Confirm, then download .zip', 'dl.zipN': 'Download .zip ({n} formats)', 'dl.none': 'Pick at least one file',
+    'dl.confirmNote': 'You changed values that are not built yet. Downloading will first Confirm: it rebuilds the exact model, then writes your files.',
+    'dl.confirming': 'Rebuilding the exact model first…', 'dl.noModel': 'Generate the 3D relief first.', 'dl.rebuildFail': 'The exact model could not be rebuilt, so nothing was written.',
+    'dl.saved': 'Saved {name} · {s}', 'dl.fail': 'Could not write {f}: {e}', 'dl.noLib': 'Could not load the zip tool (needs an internet connection): {e}',
     'e.noApi': 'Set your Cloud Run backend URL first (top-right).', 'e.noPhoto': 'Load a tile photo first.', 'e.range': '{label}: enter a value between {min} and {max}.',
     'e.server': 'Server error {n}', 'e.cancelled': 'Cancelled / timed out.', 'e.modelFail': 'Model generation failed', 'e.closed': 'Connection closed before the files arrived — please try again.',
     'dl.ready0': 'Download .zip', 'qr.title': 'Open on your phone', 'qr.hide': 'Hide', 'qr.show': 'Show', 'qr.wifi': 'Same Wi-Fi', 'qr.cf': 'Anywhere (Cloudflare)',
@@ -572,7 +621,11 @@ const D = {
     'ft.title': 'Fine-tune (live)', 'ft.pad': 'Base thickness', 'ft.relief': 'Edge depth', 'ft.crown': 'Crown', 'ft.floor': 'Groove floor', 'ft.outline': 'Outline height',
     'ft.resetAll': 'Reset all', 'ft.confirm': 'Confirm', 'ft.reset': 'Reset', 'ft.cap': 'Stopped at the limit: groove floor + edge depth + crown can’t exceed {m} mm (tile width ÷ 10).',
     'ft.stale': 'Settings changed — Confirm to rebuild', 'ft.approx': 'Live preview is approximate (about ±0.3 mm). Confirm builds the exact model.', 'ft.same': 'Matches the built model.',
-    'ft.mm0': 'was off', 'rs.one': 'Reset to default', 'rs.all': 'Reset all to defaults', 'pv.reopen': 'Back to 3D preview',
+    'ft.mm0': 'was off', 'ft.apply': 'Apply', 'ft.exact': 'Exact rebuild (cloud)', 'pv.adjusted': 'adjusted in browser · within ~0.3 mm of an exact rebuild',
+    'ft.adjusted': 'Applied in your browser, within ~0.3 mm of an exact rebuild. Downloads use this adjusted model.',
+    'ft.applyHint': 'Apply updates the full model in your browser instantly (within ~0.3 mm of an exact rebuild). Edge roll, clearance, outline width, colours, corners and tile size change the shapes and need an exact cloud rebuild.',
+    'ft.shapeNote': 'Edge roll, clearance, outline width, colours, corners and tile size change the shapes, so they need the exact cloud rebuild.',
+    'dl.applyBtn': 'Apply, then download .zip', 'dl.applyNote': 'You moved the Fine-tune sliders. Downloading will first apply them to the full model in your browser (within ~0.3 mm of an exact rebuild), no cloud needed.', 'rs.one': 'Reset to default', 'rs.all': 'Reset all to defaults', 'pv.reopen': 'Back to 3D preview',
   },
   zh: {
     title: 'mixo-tile-gen · 花磚 3D 浮雕', desc: '把台灣花磚的照片變成可列印的多色 3D 浮雕（.3MF）。免費，在瀏覽器就能用。',
@@ -592,14 +645,20 @@ const D = {
     'a.stillLoading': 'AI 還在載入…載入完成後會自動吸附到磚的四個角。', 'a.finding': '正在尋找磚的邊緣…',
     'a.nolock': '無法鎖定花磚輪廓，請手動拖曳四個角，或點一下磚面再試一次。',
     'a.kept': '已保留你手動調整的四個角（自動偵測在你調整之後才完成）。', 'a.suggest': 'AI 建議：請確認四個角都落在釉面邊緣上，不準的請拖曳修正。',
-    's3.h': '03 顏色', 's3.meta': '點選釉色來挑色', 's3.canvas': '校正後的花磚。點一下顏色即可加入色盤。', 's3.how': '選色方式',
-    's3.mSuggest': '自動建議', 's3.dSuggest': '自動挑出主要釉色', 's3.mPick': '照片挑色', 's3.dPick': '點磚面上的顏色加入', 's3.mMapped': '對應預覽', 's3.dMapped': '只用色盤顏色重畫磚面',
+    's3.h': '03 顏色', 's3.meta': '釉色或照片貼面', 's3.canvas': '校正後的花磚。點一下顏色即可加入色盤。',
+    'm.aria': '磚面外觀', 'm.glaze': '釉色', 'm.glazeD': '多色列印機實際印出的顏色', 'm.photo': '照片貼面', 'm.photoD': '把真實照片貼在浮雕上',
+    'm.infoGlaze': '釉色就是多色列印機實際會印出的顏色：每個零件只有一種單色，各用一種線材。請檢查色盤，需要時可新增、移除或換色。',
+    'm.infoPhoto': '照片貼面會把你的真實照片貼在浮雕上，就像真正的花磚，適合檢視與渲染；列印機仍會印出釉色。下方的顏色只決定凹凸的位置。',
+    's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤',
     's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '最多顏色數', 's3.clear': '清除',
+    's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
+    's3.addHint': '從照片挑色：點左邊的磚面。自選顏色：自己選任何顏色。色票上的 − 可移除該色。還原建議色：放棄你的修改，重新由程式挑色。',
+    's3.maxD': '程式最多會建議幾種顏色（每種顏色用一種線材）。', 'c.countShape': '{n} 種形狀顏色・外觀由照片決定',
     'c.empty': '還沒有顏色，請點「自動建議」，或點磚面自行挑選（最多 {k} 種）。', 'c.max12': '最多 12 種顏色。', 'c.needPal': '請先挑選顏色（或按「自動建議」）才能看對應預覽。',
     'sw.colour': '第 {n} 個色票的顏色', 'sw.remove': '移除第 {n} 個色票', 'c.count': '{n} 種顏色・每種顏色使用一種線材',
     's4.h': '04 尺寸', 's4.meta': '尺寸・公釐', 's4.scale': '已依此磚尺寸重新調整浮雕（浮雕 ≤ 磚寬 ÷ 10）。可自行修改任何欄位。',
     's4.echo': '{s} × {s} 公釐・溝底 <b class="text-ink font-medium">{a}</b>・頂面 <b class="text-ink font-medium">{b} 公釐</b>',
-    's4.gen': '產生 3D 浮雕', 's4.genHint': '通常約 10 秒・閒置後第一次約 30–60 秒・下載 .zip 壓縮檔',
+    's4.gen': '產生 3D 浮雕', 's4.genHint': '通常約 10 秒・閒置後第一次約 30–60 秒・檔案在你按下載時於你的裝置上製作',
     'f.size': '磚寬', 'f.maxH': '最大浮雕', 'f.maxHt': '底座以上的最大浮雕高度（磚寬 ÷ 10）', 'f.pad': '底座', 'f.crown': '弧頂', 'f.crownt': '每個顏色頂面的微微隆起',
     'f.depth': '邊緣深度', 'f.deptht': '每個顏色往接縫處下滑的深度', 'f.clear': '間隙', 'f.cleart': '顏色塊之間的間隙（0 = 緊貼）',
     'f.fillet': '邊緣圓滑', 'f.filletT': '從接縫到完整高度的水平距離', 'f.outH': '輪廓線', 'f.outHt': '凸起的輪廓線（0 = 關閉）', 'f.adv': '進階',
@@ -614,11 +673,19 @@ const D = {
     'pv.title': '3D 預覽', 'pv.view': '視角', 'pv.top': '俯視', 'pv.iso': '斜視', 'pv.close': '關閉預覽', 'pv.surface': '表面', 'pv.colours': '釉色', 'pv.photo': '照片',
     'pv.photoTip': '從上方投影的原始照片', 'pv.loadingPhoto': '載入照片中…', 'pv.noPhoto': '沒有可用的照片', 'pv.help': '拖曳旋轉・右鍵拖曳平移・滾輪縮放',
     'pv.tweak': '調整', 'pv.stats': '{n} 種顏色・邊緣 {a} 公釐 + 弧頂 {b} 公釐・{k}k 個三角面', 'pv.failed': '3D 預覽載入失敗（{e}），仍可下載檔案。', 'pv.buildFail': '無法建立預覽：{e}',
-    'fm.title': '壓縮檔內容', 'fm.all': '全選', 'fm.none': '全不選', 'fm.note': '「+ 照片」：檢視軟體會顯示照片；3MF 仍依釉色列印。',
-    'fmt.3mf': '3MF', 'fmt.3mf.d': '釉色，供列印用', 'fmt.3mftex': '3MF + 照片', 'fmt.3mftex.d': '依釉色列印，檢視軟體顯示照片',
-    'fmt.glb': 'GLB', 'fmt.glb.d': '檢視器、網頁、AR', 'fmt.glbtex': 'GLB + 照片', 'fmt.glbtex.d': '含照片貼圖',
-    'fmt.obj': 'OBJ', 'fmt.obj.d': '釉色', 'fmt.objtex': 'OBJ + 照片', 'fmt.objtex.d': '含照片貼圖', 'fmt.stl': 'STL', 'fmt.stl.d': '每種顏色一個檔',
-    'dl.prep': '準備檔案中…', 'dl.prepN': '準備檔案中… {a}/{b}', 'dl.ready': '下載 .zip（{n} 個檔案）', 'dl.ready1': '下載 .zip（1 個檔案）', 'dl.make': '重新製作並下載', 'dl.none': '請至少勾選一種格式',
+    'fm.title': '壓縮檔內容', 'fm.all': '全選', 'fm.none': '全不選', 'fm.note': '「+ 照片貼面」：把你的真實照片貼在浮雕上，供檢視與渲染；列印機仍會印出釉色。',
+    'fmt.3mf': '3MF', 'fmt.3mf.d': '多色列印', 'fmt.3mf.h': '多色 3D 列印用：每種顏色一個零件，各設定一種線材（PrusaSlicer、OrcaSlicer、Bambu Studio）。',
+    'fmt.3mftex': '3MF + 照片貼面', 'fmt.3mftex.d': '列印同 3MF', 'fmt.3mftex.h': '列印結果與 3MF 完全相同；3D 檢視軟體還會在上面顯示你的照片。',
+    'fmt.stl': 'STL', 'fmt.stl.d': '每種顏色一個檔', 'fmt.stl.h': '每種顏色一個檔案；在任何切片軟體一起載入，各用一種線材（檔案內不含顏色）。',
+    'fmt.glb': 'GLB', 'fmt.glb.d': '網頁、AR、分享', 'fmt.glb.h': '單一檔案，適合網頁檢視、AR 與快速分享。',
+    'fmt.glbtex': 'GLB + 照片貼面', 'fmt.glbtex.d': '含你的照片', 'fmt.glbtex.h': '把你的真實照片貼在浮雕上的 GLB（供檢視與渲染）。',
+    'fmt.obj': 'OBJ', 'fmt.obj.d': 'Blender、3D 軟體', 'fmt.obj.h': '適用於 Blender 與其他 3D 軟體。',
+    'fmt.objtex': 'OBJ + 照片貼面', 'fmt.objtex.d': '含你的照片', 'fmt.objtex.h': '把你的真實照片貼在浮雕上的 OBJ（供檢視與渲染）。',
+    'dl.tapTitle': '點一下格式即可儲存', 'dl.writing': '製作中…', 'dl.tapSave': '點選儲存', 'dl.savedSize': '{s}・已儲存', 'dl.failed': '失敗',
+    'dl.step': '正在製作 {f}（第 {i} / {n} 個）…', 'dl.building': '正在產生精確檔案…', 'dl.confirmBtn': '先確認，再下載 .zip', 'dl.zipN': '下載 .zip（{n} 種格式）', 'dl.none': '請至少勾選一種格式',
+    'dl.confirmNote': '你調整了尚未產生的數值。下載時會先「確認」：重新產生精確模型，再製作你的檔案。',
+    'dl.confirming': '正在先重新產生精確模型…', 'dl.noModel': '請先產生 3D 浮雕。', 'dl.rebuildFail': '無法重新產生精確模型，所以沒有製作任何檔案。',
+    'dl.saved': '已儲存 {name}・{s}', 'dl.fail': '無法製作 {f}：{e}', 'dl.noLib': '無法載入壓縮工具（需要網路連線）：{e}',
     'e.noApi': '請先在右上角設定後端引擎網址。', 'e.noPhoto': '請先載入花磚照片。', 'e.range': '{label}：請輸入 {min} 到 {max} 之間的數值。',
     'e.server': '伺服器錯誤 {n}', 'e.cancelled': '已取消或逾時。', 'e.modelFail': '模型產生失敗', 'e.closed': '連線在檔案送達前中斷，請再試一次。',
     'dl.ready0': '下載 .zip', 'qr.title': '用手機開啟', 'qr.hide': '隱藏', 'qr.show': '顯示', 'qr.wifi': '同一個 Wi-Fi', 'qr.cf': '任何網路（Cloudflare）',
@@ -628,7 +695,11 @@ const D = {
     'ft.title': '微調（即時）', 'ft.pad': '底座厚度', 'ft.relief': '邊緣深度', 'ft.crown': '弧頂', 'ft.floor': '溝底', 'ft.outline': '輪廓線高度',
     'ft.resetAll': '全部還原', 'ft.confirm': '確認', 'ft.reset': '還原', 'ft.cap': '已到上限：溝底 + 邊緣深度 + 弧頂 不可超過 {m} 公釐（磚寬 ÷ 10）。',
     'ft.stale': '設定已變更，按「確認」重新產生', 'ft.approx': '即時預覽為近似值（約 ±0.3 公釐），按「確認」產生精確模型。', 'ft.same': '與已產生的模型相同。',
-    'ft.mm0': '原本關閉', 'rs.one': '還原預設值', 'rs.all': '全部還原為預設值', 'pv.reopen': '回到 3D 預覽',
+    'ft.mm0': '原本關閉', 'ft.apply': '套用', 'ft.exact': '精確重建（雲端）', 'pv.adjusted': '已在瀏覽器調整・與精確重建相差約 0.3 公釐以內',
+    'ft.adjusted': '已在瀏覽器套用，與精確重建相差約 0.3 公釐以內；下載會使用這個調整後的模型。',
+    'ft.applyHint': '「套用」會立即在瀏覽器更新完整模型（與精確重建相差約 0.3 公釐以內）。邊緣圓滑、間隙、輪廓線寬、顏色、四個角與磚寬會改變形狀，需要雲端精確重建。',
+    'ft.shapeNote': '邊緣圓滑、間隙、輪廓線寬、顏色、四個角與磚寬會改變形狀，所以需要雲端精確重建。',
+    'dl.applyBtn': '先套用，再下載 .zip', 'dl.applyNote': '你移動了微調滑桿。下載時會先在瀏覽器把它們套用到完整模型（與精確重建相差約 0.3 公釐以內），不需要雲端。', 'rs.one': '還原預設值', 'rs.all': '全部還原為預設值', 'pv.reopen': '回到 3D 預覽',
   },
 };
 const LANG_KEY = 'mixotile.lang';
@@ -673,13 +744,15 @@ function applyLang() {
   refreshDynamic();
 }
 function setLang(l) { LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch {} applyLang(); }
+const COLMODE_KEY = 'mixotile.colMode';
+const loadColMode = () => { try { return localStorage.getItem(COLMODE_KEY) === 'photo' ? 'photo' : 'glaze'; } catch { return 'glaze'; } };
 const S = {
   src: null, srcData: null, W: 0, H: 0, blob: null,
   corners: null, mode: 'corners', cropper: null,
   flat: null, view: 'photo', swatches: [],
   segmenter: null, aiState: 'loading', tapMode: false,
   model: null, stats: null, abort: null, lastPayloadKey: null, cornerEdits: 0, cropReady: false,
-  manualPalette: false, cmode: 'suggest', texState: 'idle', dl: { state: 'idle' }, aiMsg: null, aiPillState: 'loading', engine: { state: 'checking' },
+  manualPalette: false, colMode: loadColMode(), fst: {}, dlBusy: false, texState: 'idle', dl: { state: 'idle' }, aiMsg: null, aiPillState: 'loading', engine: { state: 'checking' },
 };
 
 // --------------------------------------------------------------------- backend URL + health
@@ -759,7 +832,7 @@ async function loadFileInner(file, { detect = true } = {}) {
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
-  S.manualPalette = false; S.swatches = []; S.cmode = 'suggest'; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
+  S.manualPalette = false; S.swatches = []; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
   scheduleSuggest();
   warmBackend();
   if (detect && S.aiState !== 'failed') autoDetect(undefined, true);
@@ -1096,7 +1169,7 @@ $('flatCanvas').addEventListener('click', (e) => {
   if (dup >= 0) { flashSwatch(dup); return; }
   if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
   takeManual();
-  S.swatches.push(c.map(Math.round)); renderSwatches(); S.cmode = 'pick'; S.view = 'photo'; renderFlat(); updateModeButtons();
+  S.swatches.push(c.map(Math.round)); renderSwatches(); S.view = 'photo'; renderFlat(); updateModeButtons();
 });
 $('flatCanvas').addEventListener('pointermove', (e) => {
   if (!S.flat || e.pointerType === 'touch') return;
@@ -1119,7 +1192,7 @@ function renderSwatches() {
     const hex = document.createElement('span'); hex.className = 'hex'; hex.textContent = toHex(c);
     const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(c); inp.setAttribute('aria-label', t('sw.colour', { n: i + 1 }));
     inp.oninput = () => { takeManual(); S.swatches[i] = fromHex(inp.value); d.style.background = inp.value; hex.textContent = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
-    const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.setAttribute('aria-label', t('sw.remove', { n: i + 1 }));
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '−'; x.setAttribute('aria-label', t('sw.remove', { n: i + 1 }));
     x.onclick = (ev) => { ev.stopPropagation(); takeManual(); S.swatches.splice(i, 1); renderSwatches(); renderFlat(); };
     d.append(inp, x); chip.append(d, hex); box.appendChild(chip);
   });
@@ -1131,7 +1204,7 @@ function renderTiers() {   // palette summary — every colour is an equal cushi
   const pal = S.swatches, box = $('tierList');
   updateHeightEcho();
   if (!pal.length) { box.innerHTML = ''; return; }
-  box.innerHTML = `<p class="mono text-[11px] uppercase tracking-wider text-mute">${t('c.count', { n: pal.length })}</p>`;
+  box.innerHTML = `<p class="mono text-[11px] uppercase tracking-wider text-mute">${t(S.colMode === 'photo' ? 'c.countShape' : 'c.count', { n: pal.length })}</p>`;
 }
 function renderFlat() {
   if (!S.flat) return;
@@ -1152,20 +1225,62 @@ function renderFlat() {
     g.putImageData(out, 0, 0);
   } else g.putImageData(S.flat, 0, 0);
 }
-// the three colour actions: Suggest (auto palette, mapped view) · Photo (tap the tile to pick) · Mapped (preview)
+// two big modes (Glaze colours / Photo skin) + a small Photo | In-your-colours view switch for the flattened tile
 function updateModeButtons() {
-  $('suggestBtn').setAttribute('aria-pressed', S.cmode === 'suggest');
-  $('viewPhoto').setAttribute('aria-pressed', S.cmode === 'pick');
-  $('viewMapped').setAttribute('aria-pressed', S.cmode === 'mapped');
+  $('modeGlaze').setAttribute('aria-pressed', S.colMode === 'glaze');
+  $('modePhoto').setAttribute('aria-pressed', S.colMode === 'photo');
+  $('viewPhoto').setAttribute('aria-pressed', S.view !== 'mapped');
+  $('viewMapped').setAttribute('aria-pressed', S.view === 'mapped');
 }
 function setView(v) {
   if (v === 'mapped' && !S.swatches.length) { showError(t('c.needPal')); v = 'photo'; }
   S.view = v; renderFlat(); updateModeButtons();
 }
-function setColorMode(m) { S.cmode = m; setView(m === 'pick' ? 'photo' : 'mapped'); }
-$('viewPhoto').onclick = () => setColorMode('pick');
-$('viewMapped').onclick = () => { if (!S.swatches.length) { showError(t('c.needPal')); return; } setColorMode('mapped'); };
-$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); S.cmode = 'pick'; setView('photo'); };
+$('viewPhoto').onclick = () => setView('photo');
+$('viewMapped').onclick = () => setView('mapped');
+$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); setView('photo'); };
+// eyedropper: the tile photo itself picks colours (any tap on it); the button just brings it into view
+$('addPick').onclick = () => {
+  setView('photo');
+  const c = $('flatCanvas'); c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  showNote(t('s3.pickNow'));
+};
+// custom colour: native colour picker; the chosen colour is added when the picker is confirmed
+$('addCustom').addEventListener('change', (e) => {
+  const c = fromHex(e.target.value), L = srgbToLab(c);
+  const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 3; });
+  if (dup >= 0) { flashSwatch(dup); return; }
+  if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
+  takeManual(); S.swatches.push(c); renderSwatches(); renderFlat(); updateModeButtons();
+});
+$('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; runSuggest(); };
+function showNote(msg) { const b = $('pickNote'); b.textContent = msg; b.classList.remove('hidden'); clearTimeout(showNote.t); showNote.t = setTimeout(() => b.classList.add('hidden'), 5000); }
+
+// ---- the two modes. Glaze colours = what a multi-colour printer prints (full colour controls);
+// Photo skin = the real photo on the relief (the same controls, folded under "Shapes"). The mode also sets the 3D
+// preview's first look and which download formats are ticked / listed first.
+function renderModeText() {
+  const photo = S.colMode === 'photo', box = $('shapesBox');
+  $('modeInfo').textContent = t(photo ? 'm.infoPhoto' : 'm.infoGlaze');
+  box.classList.toggle('plain', !photo);
+  box.open = photo ? !!S.shapesOpen : true;
+  renderTiers();
+}
+$('shapesBox').addEventListener('toggle', () => { if (S.colMode === 'photo') S.shapesOpen = $('shapesBox').open; });
+function followLook() {
+  const want = S.colMode === 'photo' ? 'photo' : 'colour';
+  if (!V.ready) return;
+  if (want === 'photo' && S.texState !== 'ready') { V.look = 'photo'; return; }     // applied when the texture lands
+  setLook(want);
+}
+function setColMode(m) {
+  if (m === S.colMode) return;
+  S.colMode = m; try { localStorage.setItem(COLMODE_KEY, m); } catch {}
+  updateModeButtons(); renderModeText(); presetFormats(); followLook();
+}
+$('modeGlaze').onclick = () => setColMode('glaze');
+$('modePhoto').onclick = () => setColMode('photo');
 $('numColors').addEventListener('input', renderEmpty);
 $('numColors').addEventListener('change', () => { if (!S.manualPalette && S.flat) runSuggest(); });
 
@@ -1194,10 +1309,9 @@ function runSuggest() {
   if (!S.flat) return;
   S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0)));
   renderSwatches();
-  if (S.cmode === 'suggest') S.view = 'mapped';
+  S.view = 'mapped';
   renderFlat(); updateModeButtons();
 }
-$('suggestBtn').onclick = () => { S.manualPalette = false; S.cmode = 'suggest'; runSuggest(); };
 let sugTimer = null;
 function scheduleSuggest() {   // after every photo load / corner change (debounced), unless the user took over the palette
   if (S.manualPalette) return;
@@ -1534,62 +1648,604 @@ function warmBackend() {
 }
 $('cancelBtn').onclick = () => S.abort?.abort();
 
-// ---- downloads: a checklist of formats, one .zip
+// ---- file writers: the cloud only builds the shapes (mesh.zip); this browser writes every format, on demand.
+// Faithful ports of tile_processor.py write_3mf / write_glb / write_obj_zip / write_stl_zip. Every writer streams
+// into fflate's Zip (or a plain chunk list) in ~1 MB pieces and yields to the UI between blocks, so even the biggest
+// file never exists as one giant string / array.
+const FFLATE_URL = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js';
+let FFP = null;
+function loadFflate() { if (!FFP) FFP = import(FFLATE_URL).catch((e) => { FFP = null; throw e; }); return FFP; }
+const ENC = new TextEncoder();
+const B8 = (s) => ENC.encode(s);
+let lastYield = 0;
+async function maybeYield(force) {
+  const n = performance.now();
+  if (force || n - lastYield > 25) { await new Promise((r) => setTimeout(r, 0)); lastYield = performance.now(); }
+}
+// byte writer with fixed-point number formatting (the equivalent of "%.3f" / "%d" without building strings)
+class BW {
+  constructor(push, cap = 1 << 20) { this.push = push; this.cap = cap; this.buf = new Uint8Array(cap + 4096); this.p = 0; }
+  b(a) { const u = this.buf; let p = this.p; for (let i = 0, n = a.length; i < n; i++) u[p++] = a[i]; this.p = p; }
+  s(str) { this.b(B8(str)); }
+  int(n) {
+    const u = this.buf; let p = this.p;
+    if (n < 10) { u[p++] = 48 + n; this.p = p; return; }
+    const T = BW.tmp; let q = n, len = 0;
+    while (q > 0) { const d = q % 10; T[len++] = 48 + d; q = (q - d) / 10; }
+    while (len > 0) u[p++] = T[--len];
+    this.p = p;
+  }
+  fx(v, dec) {
+    const sc = dec === 3 ? 1000 : 100000, n = Math.round((v < 0 ? -v : v) * sc), u = this.buf;
+    if (v < 0 && n > 0) u[this.p++] = 45;
+    const ip = Math.floor(n / sc); let fr = n - ip * sc;
+    this.int(ip);
+    let p = this.p, dv = sc / 10; u[p++] = 46;
+    for (let k = 0; k < dec; k++) { const d = Math.floor(fr / dv); u[p++] = 48 + d; fr -= d * dv; dv /= 10; }
+    this.p = p;
+  }
+  flush() { if (this.p) { this.push(this.buf.slice(0, this.p)); this.p = 0; } }
+  async pump() { if (this.p > this.cap >> 1) this.flush(); await maybeYield(); }
+}
+BW.tmp = new Uint8Array(24);
+
+// streaming zip: begin(name, level) -> {push, end}; put(name, bytes, level)
+function zipOut(FF, push) {
+  const z = new FF.Zip((err, chunk) => { if (err) throw err; push(chunk); });
+  const o = {
+    begin(name, level = 6) {
+      const f = level === 0 ? new FF.ZipPassThrough(name) : new FF.ZipDeflate(name, { level });
+      z.add(f);
+      return { push: (u8) => f.push(u8, false), end: () => f.push(new Uint8Array(0), true) };
+    },
+    put(name, u8, level = 6) { const h = o.begin(name, level); h.push(u8); h.end(); },
+    end() { z.end(); },
+  };
+  return o;
+}
+const prefixed = (z, pre) => ({ begin: (n, lv) => z.begin(pre + n, lv), put: (n, u8, lv) => z.put(pre + n, u8, lv) });
+
+// mesh.zip -> { size, parts: [{name, hex, rgb, extruder, nv, nt, pos: Float32Array, idx: Uint32Array}], tex: Uint8Array|null }
+async function loadMeshCtx(zipBytes, adj) {
+  const FF = await loadFflate();
+  const files = FF.unzipSync(zipBytes);
+  const meta = JSON.parse(new TextDecoder().decode(files['parts.json']));
+  let bin = files['mesh.bin']; if (bin.byteOffset % 4) bin = bin.slice();
+  let hts = files['heights.bin']; if (hts && hts.byteOffset % 4) hts = hts.slice();
+  const H = hts ? new Float32Array(hts.buffer, hts.byteOffset, hts.length >> 2) : null;
+  const parts = []; let off = bin.byteOffset, voff = 0;
+  for (const m of meta.parts) {
+    const pos = new Float32Array(bin.buffer, off, m.nv * 3); off += m.nv * 12;
+    const idx = new Uint32Array(bin.buffer, off, m.nt * 3); off += m.nt * 12;
+    parts.push({ ...m, pos, idx, hv: H ? H.subarray(voff * 5, (voff + m.nv) * 5) : null }); voff += m.nv;
+  }
+  if (adj && H && meta.params) applyHeights(parts, meta.params, adj);
+  return { FF, size: meta.size_mm, parts, tex: files['texture.jpg'] || null };
+}
+// Fine-tune sliders applied to the FULL mesh (x, y, triangles, UVs never change, so every part stays watertight).
+// per vertex t, A, B, R, resid; F(q) = q.pad + t*(q.floor + q.relief*A + q.crown*B + q.outline*R + resid).
+// pad: z' = t*pad'. Other parts: z' = z + F(new) - F(old) (resid cancels, the model is exact at the original settings).
+function applyHeights(parts, g, c) {
+  const dPad = c.pad - g.pad, dFl = c.floor - g.floor, dRl = c.relief - g.relief, dCr = c.crown - g.crown, dOl = c.outline - g.outline;
+  for (const p of parts) {
+    const a = p.pos, h = p.hv, n = p.nv;
+    if (isPadName(p.name)) for (let v = 0; v < n; v++) a[3 * v + 2] = h[5 * v] * c.pad;
+    else for (let v = 0, j = 0; v < n; v++, j += 5) a[3 * v + 2] += dPad + h[j] * (dFl + h[j + 1] * dRl + h[j + 2] * dCr + h[j + 3] * dOl);
+  }
+}
+
+const isPadName = (n) => /pad/i.test(n);
+const clip01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+// faces looking straight down (the pad's underside): normal z < -0.5 |n|
+function bottomMask(pos, idx) {
+  const nt = idx.length / 3, m = new Uint8Array(nt); let c = 0;
+  for (let t = 0; t < nt; t++) {
+    const a = idx[3 * t] * 3, b = idx[3 * t + 1] * 3, d = idx[3 * t + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[d] - pos[a], vy = pos[d + 1] - pos[a + 1], vz = pos[d + 2] - pos[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    if (nz < -0.5 * Math.hypot(nx, ny, nz)) { m[t] = 1; c++; }
+  }
+  return { m, c };
+}
+// stable, readable per-part names: 01_pad_e8e0d0, 02_colour_2_2a6b9c ...
+function partFiles(parts) {
+  return parts.map((p, i) => {
+    const nm = p.name.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, ''), hx = p.hex.slice(1).toLowerCase(), n2 = String(i + 1).padStart(2, '0');
+    return nm.toLowerCase().includes(hx) ? `${n2}_${nm}` : `${n2}_${nm}_${hx}`;
+  });
+}
+const xe = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const HEX2 = (rgb) => rgb.map((c) => c.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+// ---- 3MF (PrusaSlicer / OrcaSlicer / Bambu Studio part table; optional photo texture via the 3MF Materials extension)
+const CT3 = '<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/><Default Extension="config" ContentType="application/xml"/></Types>';
+const RELS3 = '<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>';
+const TEXRELS3 = '<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/Textures/texture.jpg" Id="tex0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dtexture"/></Relationships>';
+const IDENT = '1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1';
+const L_VX = B8('<vertex x="'), L_VY = B8('" y="'), L_VZ = B8('" z="'), L_END = B8('"/>\n');
+const L_TC0 = B8('<m:tex2coord u="'), L_TC1 = B8('" v="');
+const L_T0 = B8('<triangle v1="'), L_T1 = B8('" v2="'), L_T2 = B8('" v3="'), L_TTEX = B8('" pid="4" p1="'), L_P2 = B8('" p2="'), L_P3 = B8('" p3="'),
+  L_TP1 = B8('" p1="'), L_TMAT = B8('" pid="2" p1="');
+
+async function write3mf(ctx, push, textured) {
+  const { parts, size } = ctx, T = textured && ctx.tex, z = zipOut(ctx.FF, push);
+  z.put('[Content_Types].xml', B8(T ? CT3.replace('</Types>', '<Default Extension="jpg" ContentType="image/jpeg"/></Types>') : CT3));
+  z.put('_rels/.rels', B8(RELS3));
+  const f = z.begin('3D/3dmodel.model', 6), w = new BW((u) => f.push(u));
+  w.s('<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
+    + 'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n'
+    + '<metadata name="slic3rpe:Version3mf">1</metadata>\n<metadata name="Title">MixoTile relief</metadata>\n<metadata name="Application">MixoTile 3D Relief Generator</metadata>\n'
+    + '<resources>\n<basematerials id="2">\n');
+  for (const p of parts) w.s(`<base name="${xe(p.name)}" displaycolor="#${HEX2(p.rgb)}FF"/>\n`);
+  if (T) w.s('<base name="underside" displaycolor="#FFFFFFFF"/>\n');
+  w.s('</basematerials>\n');
+  const whiteIdx = parts.length;
+  if (T) {
+    w.s('<m:texture2d id="3" path="/3D/Textures/texture.jpg" contenttype="image/jpeg" tilestyleu="clamp" tilestylev="clamp"/>\n<m:texture2dgroup id="4" texid="3">\n');
+    for (const p of parts) {
+      const a = p.pos, n = p.nv;
+      for (let i0 = 0; i0 < n; i0 += 2048) {
+        const e = Math.min(n, i0 + 2048);
+        for (let v = i0; v < e; v++) { w.b(L_TC0); w.fx(clip01(a[3 * v] / size), 5); w.b(L_TC1); w.fx(clip01(a[3 * v + 1] / size), 5); w.b(L_END); }
+        await w.pump();
+      }
+    }
+    w.s('</m:texture2dgroup>\n');
+  }
+  w.s('<object id="1" type="model" name="MixoTile relief" pid="2" pindex="0">\n<mesh>\n<vertices>\n');
+  for (const p of parts) {
+    const a = p.pos, n = p.nv;
+    for (let i0 = 0; i0 < n; i0 += 2048) {
+      const e = Math.min(n, i0 + 2048);
+      for (let v = i0; v < e; v++) { w.b(L_VX); w.fx(a[3 * v], 3); w.b(L_VY); w.fx(a[3 * v + 1], 3); w.b(L_VZ); w.fx(a[3 * v + 2], 3); w.b(L_END); }
+      await w.pump();
+    }
+  }
+  w.s('</vertices>\n<triangles>\n');
+  const ranges = []; let vOff = 0, tOff = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i], f3 = p.idx, nt = p.nt;
+    if (T) {                                  // property per corner = that vertex's tex2coord; downward faces = white base
+      const dn = isPadName(p.name) ? bottomMask(p.pos, f3) : null;
+      for (let pass = 0; pass < 2; pass++) {
+        if (pass === 1 && !(dn && dn.c)) break;
+        for (let t0 = 0; t0 < nt; t0 += 2048) {
+          const e = Math.min(nt, t0 + 2048);
+          for (let t = t0; t < e; t++) {
+            const isDown = dn ? dn.m[t] === 1 : false;
+            if ((pass === 0) === isDown) continue;
+            const a = f3[3 * t] + vOff, b = f3[3 * t + 1] + vOff, c = f3[3 * t + 2] + vOff;
+            w.b(L_T0); w.int(a); w.b(L_T1); w.int(b); w.b(L_T2); w.int(c);
+            if (pass === 0) { w.b(L_TTEX); w.int(a); w.b(L_P2); w.int(b); w.b(L_P3); w.int(c); } else { w.b(L_TMAT); w.int(whiteIdx); }
+            w.b(L_END);
+          }
+          await w.pump();
+        }
+      }
+    } else {
+      for (let t0 = 0; t0 < nt; t0 += 2048) {
+        const e = Math.min(nt, t0 + 2048);
+        for (let t = t0; t < e; t++) {
+          w.b(L_T0); w.int(f3[3 * t] + vOff); w.b(L_T1); w.int(f3[3 * t + 1] + vOff); w.b(L_T2); w.int(f3[3 * t + 2] + vOff); w.b(L_TP1); w.int(i); w.b(L_END);
+        }
+        await w.pump();
+      }
+    }
+    ranges.push([tOff, tOff + nt - 1]); vOff += p.nv; tOff += nt;
+  }
+  w.s('</triangles>\n</mesh>\n</object>\n</resources>\n<build>\n<item objectid="1" printable="1"/>\n</build>\n</model>\n');
+  w.flush(); f.end();
+  if (T) { z.put('3D/Textures/texture.jpg', ctx.tex, 0); z.put('3D/_rels/3dmodel.model.rels', B8(TEXRELS3)); }
+  // PrusaSlicer-family part table. Extruder per colour: the pad shares colour 1's filament.
+  let cfg = '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n <object id="1" instances_count="1">\n  <metadata type="object" key="name" value="MixoTile relief"/>\n';
+  parts.forEach((p, i) => {
+    cfg += `  <volume firstid="${ranges[i][0]}" lastid="${ranges[i][1]}">\n   <metadata type="volume" key="name" value="${xe(p.name)}"/>\n`
+      + '   <metadata type="volume" key="volume_type" value="ModelPart"/>\n'
+      + `   <metadata type="volume" key="matrix" value="${IDENT}"/>\n   <metadata type="volume" key="extruder" value="${Math.max(1, i)}"/>\n  </volume>\n`;
+  });
+  cfg += ' </object>\n</config>\n';
+  z.put('Metadata/Slic3r_PE_model.config', B8(cfg));
+  z.end();
+}
+
+// ---- GLB (glTF 2.0 binary): Y-up metres (x, z, -y)/1000, one node per part, flat glaze colour or top-down photo
+function vertexNormalsYup(pos, idx) {     // area-weighted smooth normals, returned already rotated to Y-up
+  const nv = pos.length / 3, nrm = new Float32Array(nv * 3), nt = idx.length / 3;
+  for (let t = 0; t < nt; t++) {
+    const a = idx[3 * t] * 3, b = idx[3 * t + 1] * 3, c = idx[3 * t + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    for (const k of [a, b, c]) { nrm[k] += nx; nrm[k + 1] += ny; nrm[k + 2] += nz; }
+  }
+  for (let v = 0; v < nv; v++) {
+    const x = nrm[3 * v], y = nrm[3 * v + 1], zz = nrm[3 * v + 2], l = Math.hypot(x, y, zz) || 1;
+    nrm[3 * v] = x / l; nrm[3 * v + 1] = zz / l; nrm[3 * v + 2] = -y / l;
+  }
+  return nrm;
+}
+const srgb2lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+async function writeGlb(ctx, push, textured) {
+  const { parts, size } = ctx, T = textured && ctx.tex;
+  const views = [], accessors = [], meshes = [], nodes = [], materials = [], plan = [];
+  let off = 0;
+  const view = (bytes, target) => { views.push({ buffer: 0, byteOffset: off, byteLength: bytes, ...(target ? { target } : {}) }); off += bytes; return views.length - 1; };
+  const acc = (bv, componentType, count, type, extra) => { accessors.push({ bufferView: bv, componentType, count, type, ...extra }); return accessors.length - 1; };
+  if (T) {
+    materials.push({ name: 'photo', pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.5 } });
+    materials.push({ name: 'underside', pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 0.5 } });
+  }
+  parts.forEach((p, i) => {
+    const a = p.pos, n = p.nv; let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
+    for (let v = 0; v < n; v++) {
+      const x = a[3 * v], y = a[3 * v + 1], zz = a[3 * v + 2];
+      if (x < mnx) mnx = x; if (x > mxx) mxx = x; if (y < mny) mny = y; if (y > mxy) mxy = y; if (zz < mnz) mnz = zz; if (zz > mxz) mxz = zz;
+    }
+    const aPos = acc(view(n * 12, 34962), 5126, n, 'VEC3', { min: [mnx / 1000, mnz / 1000, -mxy / 1000], max: [mxx / 1000, mxz / 1000, -mny / 1000] });
+    const aNrm = acc(view(n * 12, 34962), 5126, n, 'VEC3');
+    const aUv = T ? acc(view(n * 8, 34962), 5126, n, 'VEC2') : -1;
+    let main = p.idx, down = null;
+    if (T && isPadName(p.name)) {
+      const dn = bottomMask(p.pos, p.idx);
+      if (dn.c) {
+        const up = new Uint32Array((p.nt - dn.c) * 3), dw = new Uint32Array(dn.c * 3); let u = 0, d = 0;
+        for (let t = 0; t < p.nt; t++) { const tgt = dn.m[t] ? dw : up, k = dn.m[t] ? (d += 3) - 3 : (u += 3) - 3; tgt[k] = p.idx[3 * t]; tgt[k + 1] = p.idx[3 * t + 1]; tgt[k + 2] = p.idx[3 * t + 2]; }
+        main = up; down = dw;
+      }
+    }
+    let matIdx;
+    if (T) matIdx = 0;
+    else { const lin = p.rgb.map(srgb2lin); materials.push({ name: p.name, pbrMetallicRoughness: { baseColorFactor: [lin[0], lin[1], lin[2], 1], metallicFactor: 0, roughnessFactor: 0.5 } }); matIdx = materials.length - 1; }
+    const prims = [];
+    const aMain = acc(view(main.length * 4, 34963), 5125, main.length, 'SCALAR');
+    prims.push({ attributes: { POSITION: aPos, NORMAL: aNrm, ...(T ? { TEXCOORD_0: aUv } : {}) }, indices: aMain, material: matIdx });
+    meshes.push({ name: p.name, primitives: [prims[0]] }); nodes.push({ name: p.name, mesh: meshes.length - 1 });
+    let aDown = -1;
+    if (down) {
+      aDown = acc(view(down.length * 4, 34963), 5125, down.length, 'SCALAR');
+      meshes.push({ name: p.name + ' underside', primitives: [{ attributes: { POSITION: aPos, NORMAL: aNrm, TEXCOORD_0: aUv }, indices: aDown, material: 1 }] });
+      nodes.push({ name: p.name + ' underside', mesh: meshes.length - 1 });
+    }
+    plan.push({ main, down });
+  });
+  let imgView = -1, texLen = 0;
+  if (T) { texLen = ctx.tex.length; imgView = view((texLen + 3) & ~3); }
+  const gltf = {
+    asset: { version: '2.0', generator: 'MixoTile (browser)' }, scene: 0, scenes: [{ nodes: nodes.map((_, i) => i) }], nodes, meshes, materials,
+    ...(T ? { textures: [{ source: 0, sampler: 0 }], images: [{ bufferView: imgView, mimeType: 'image/jpeg' }], samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 33071, wrapT: 33071 }] } : {}),
+    accessors, bufferViews: views, buffers: [{ byteLength: off }],
+  };
+  const jb = B8(JSON.stringify(gltf)), jlen = (jb.length + 3) & ~3, binLen = off;
+  const head = new Uint8Array(12 + 8 + jlen + 8), dv = new DataView(head.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, 12 + 8 + jlen + 8 + binLen, true);
+  dv.setUint32(12, jlen, true); dv.setUint32(16, 0x4E4F534A, true); head.set(jb, 20); head.fill(0x20, 20 + jb.length, 20 + jlen);
+  dv.setUint32(20 + jlen, binLen, true); dv.setUint32(24 + jlen, 0x004E4942, true);
+  push(head);
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i], a = p.pos, n = p.nv, pp = new Float32Array(n * 3);
+    for (let v = 0; v < n; v++) { pp[3 * v] = a[3 * v] / 1000; pp[3 * v + 1] = a[3 * v + 2] / 1000; pp[3 * v + 2] = -a[3 * v + 1] / 1000; }
+    push(new Uint8Array(pp.buffer));
+    push(new Uint8Array(vertexNormalsYup(a, p.idx).buffer));
+    if (T) {
+      const uv = new Float32Array(n * 2);
+      for (let v = 0; v < n; v++) { uv[2 * v] = clip01(a[3 * v] / size); uv[2 * v + 1] = 1 - clip01(a[3 * v + 1] / size); }   // glTF v runs top-down
+      push(new Uint8Array(uv.buffer));
+    }
+    push(new Uint8Array(plan[i].main.buffer, plan[i].main.byteOffset, plan[i].main.length * 4));
+    if (plan[i].down) push(new Uint8Array(plan[i].down.buffer));
+    await maybeYield();
+  }
+  if (T) { push(ctx.tex); if (texLen & 3) push(new Uint8Array(4 - (texLen & 3))); }
+}
+
+// ---- STL: one binary file per colour; vertices that share a position (surface pinches) are nudged apart by 0.002 mm
+function splitPinches(pos, idx, eps = 0.002) {
+  const nv = pos.length / 3, bits = new Uint32Array(nv * 3), fl = new Float32Array(1), fu = new Uint32Array(fl.buffer);
+  for (let i = 0; i < pos.length; i++) { fl[0] = pos[i] + 0; bits[i] = fu[0]; }       // +0 folds -0 into 0
+  let size = 2; while (size < nv * 2) size <<= 1;
+  const mask = size - 1, tab = new Int32Array(size).fill(-1), rep = new Int32Array(nv), cnt = new Int32Array(nv);
+  for (let v = 0; v < nv; v++) {
+    const b0 = bits[3 * v], b1 = bits[3 * v + 1], b2 = bits[3 * v + 2];
+    let h = Math.imul(b0, 0x9E3779B1) ^ Math.imul(b1, 0x85EBCA6B) ^ Math.imul(b2, 0xC2B2AE35);
+    h ^= h >>> 15; h = Math.imul(h, 0x2C1B3C6D); h ^= h >>> 12; h &= mask;
+    let j;
+    while ((j = tab[h]) >= 0 && !(bits[3 * j] === b0 && bits[3 * j + 1] === b1 && bits[3 * j + 2] === b2)) h = (h + 1) & mask;
+    if (j < 0) { tab[h] = v; rep[v] = v; } else rep[v] = j;
+    cnt[rep[v]]++;
+  }
+  const dup = new Uint8Array(nv); let nd = 0;
+  for (let v = 0; v < nv; v++) if (cnt[rep[v]] > 1) { dup[v] = 1; nd++; }
+  if (!nd) return pos;
+  const out = new Float32Array(pos), acc = new Float64Array(nv * 3), n = new Int32Array(nv), nt = idx.length / 3;
+  for (let t = 0; t < nt; t++) {
+    const a = idx[3 * t], b = idx[3 * t + 1], c = idx[3 * t + 2];
+    if (!(dup[a] | dup[b] | dup[c])) continue;
+    const cx = (pos[3 * a] + pos[3 * b] + pos[3 * c]) / 3, cy = (pos[3 * a + 1] + pos[3 * b + 1] + pos[3 * c + 1]) / 3, cz = (pos[3 * a + 2] + pos[3 * b + 2] + pos[3 * c + 2]) / 3;
+    for (const k of [a, b, c]) if (dup[k]) { acc[3 * k] += cx; acc[3 * k + 1] += cy; acc[3 * k + 2] += cz; n[k]++; }
+  }
+  for (let v = 0; v < nv; v++) {
+    if (!dup[v]) continue;
+    const dx = acc[3 * v] / Math.max(n[v], 1) - pos[3 * v], dy = acc[3 * v + 1] / Math.max(n[v], 1) - pos[3 * v + 1], dz = acc[3 * v + 2] / Math.max(n[v], 1) - pos[3 * v + 2];
+    const l = Math.max(Math.hypot(dx, dy, dz), 1e-9);
+    out[3 * v] += eps * dx / l; out[3 * v + 1] += eps * dy / l; out[3 * v + 2] += eps * dz / l;
+  }
+  return out;
+}
+async function writeStl(ctx, files) {
+  const names = partFiles(ctx.parts);
+  for (let pi = 0; pi < ctx.parts.length; pi++) {
+    const P = ctx.parts[pi], v = splitPinches(P.pos, P.idx), f = P.idx, nt = P.nt;
+    const h = files.begin(names[pi] + '.stl', 4);
+    const head = new Uint8Array(84), hs = B8('mixo-tile-gen ' + names[pi]).slice(0, 80);
+    head.fill(32, 0, 80); head.set(hs); new DataView(head.buffer).setUint32(80, nt, true);
+    h.push(head);
+    const BLK = 4096, blk = new Uint8Array(BLK * 50), dv = new DataView(blk.buffer);
+    for (let t0 = 0; t0 < nt; t0 += BLK) {
+      const e = Math.min(nt, t0 + BLK);
+      for (let t = t0, o = 0; t < e; t++, o += 50) {
+        const a = f[3 * t] * 3, b = f[3 * t + 1] * 3, c = f[3 * t + 2] * 3;
+        const ux = v[b] - v[a], uy = v[b + 1] - v[a + 1], uz = v[b + 2] - v[a + 2], vx = v[c] - v[a], vy = v[c + 1] - v[a + 1], vz = v[c + 2] - v[a + 2];
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const l = Math.max(Math.hypot(nx, ny, nz), 1e-12); nx /= l; ny /= l; nz /= l;
+        dv.setFloat32(o, nx, true); dv.setFloat32(o + 4, ny, true); dv.setFloat32(o + 8, nz, true);
+        dv.setFloat32(o + 12, v[a], true); dv.setFloat32(o + 16, v[a + 1], true); dv.setFloat32(o + 20, v[a + 2], true);
+        dv.setFloat32(o + 24, v[b], true); dv.setFloat32(o + 28, v[b + 1], true); dv.setFloat32(o + 32, v[b + 2], true);
+        dv.setFloat32(o + 36, v[c], true); dv.setFloat32(o + 40, v[c + 1], true); dv.setFloat32(o + 44, v[c + 2], true);
+        dv.setUint16(o + 48, 0, true);
+      }
+      h.push(blk.slice(0, (e - t0) * 50));
+      await maybeYield();
+    }
+    h.end();
+  }
+}
+
+// ---- OBJ + MTL (+ texture.jpg): one object per colour body, Z-up mm; textured = top-down photo, pad underside plain white
+const L_V = B8('v '), L_VT = B8('vt '), L_F = B8('f '), L_SP = B8(' '), L_SL = B8('/'), L_NL = B8('\n');
+async function writeObj(ctx, files, textured) {
+  const { parts, size } = ctx, T = textured && ctx.tex, names = partFiles(parts), mtl = [];
+  const h = files.begin('model.obj', 6), w = new BW((u) => h.push(u));
+  w.s('mtllib model.mtl\n');
+  if (T) {
+    mtl.push('newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n');
+    mtl.push('newmtl underside\nKa 1 1 1\nKd 1 1 1\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n');
+  }
+  let base = 1, vtBase = 1;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i], a = p.pos, n = p.nv, f = p.idx, nt = p.nt, nm = names[i];
+    if (!T) { const [r, g, b] = p.rgb.map((c) => c / 255); mtl.push(`newmtl ${nm}\nKa ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKd ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKs 0.08 0.08 0.08\nNs 40\nillum 2\n`); }
+    w.s(`o ${nm}\nusemtl ${T ? 'photo' : nm}\n`);
+    for (let i0 = 0; i0 < n; i0 += 2048) {
+      const e = Math.min(n, i0 + 2048);
+      for (let v = i0; v < e; v++) { w.b(L_V); w.fx(a[3 * v], 3); w.b(L_SP); w.fx(a[3 * v + 1], 3); w.b(L_SP); w.fx(a[3 * v + 2], 3); w.b(L_NL); }
+      await w.pump();
+    }
+    if (T) {
+      for (let i0 = 0; i0 < n; i0 += 2048) {
+        const e = Math.min(n, i0 + 2048);
+        for (let v = i0; v < e; v++) { w.b(L_VT); w.fx(clip01(a[3 * v] / size), 5); w.b(L_SP); w.fx(clip01(a[3 * v + 1] / size), 5); w.b(L_NL); }
+        await w.pump();
+      }
+      const dn = isPadName(p.name) ? bottomMask(a, f) : null;
+      for (let t0 = 0; t0 < nt; t0 += 2048) {
+        const e = Math.min(nt, t0 + 2048);
+        for (let t = t0; t < e; t++) {
+          if (dn && dn.m[t]) continue;
+          w.b(L_F);
+          for (let k = 0; k < 3; k++) { if (k) w.b(L_SP); w.int(f[3 * t + k] + base); w.b(L_SL); w.int(f[3 * t + k] + vtBase); }
+          w.b(L_NL);
+        }
+        await w.pump();
+      }
+      if (dn && dn.c) {                                           // underside: plain white
+        w.s('usemtl underside\n');
+        for (let t0 = 0; t0 < nt; t0 += 2048) {
+          const e = Math.min(nt, t0 + 2048);
+          for (let t = t0; t < e; t++) {
+            if (!dn.m[t]) continue;
+            w.b(L_F); w.int(f[3 * t] + base); w.b(L_SP); w.int(f[3 * t + 1] + base); w.b(L_SP); w.int(f[3 * t + 2] + base); w.b(L_NL);
+          }
+          await w.pump();
+        }
+      }
+      vtBase += n;
+    } else {
+      for (let t0 = 0; t0 < nt; t0 += 2048) {
+        const e = Math.min(nt, t0 + 2048);
+        for (let t = t0; t < e; t++) { w.b(L_F); w.int(f[3 * t] + base); w.b(L_SP); w.int(f[3 * t + 1] + base); w.b(L_SP); w.int(f[3 * t + 2] + base); w.b(L_NL); }
+        await w.pump();
+      }
+    }
+    base += n;
+  }
+  w.flush(); h.end();
+  files.put('model.mtl', B8(mtl.join('')));
+  if (T) files.put('texture.jpg', ctx.tex, 0);
+}
+
+// format -> how it is written. kind 'file': one file (3MF itself is a zip); kind 'zip': several files (a folder in the bundle).
+const FMT = {
+  '3mf': { ext: '3mf', kind: 'file', level: 0, run: (c, sink) => write3mf(c, sink, false) },
+  '3mftex': { ext: 'textured.3mf', kind: 'file', level: 0, run: (c, sink) => write3mf(c, sink, true) },
+  glb: { ext: 'glb', kind: 'file', level: 4, run: (c, sink) => writeGlb(c, sink, false) },
+  glbtex: { ext: 'textured.glb', kind: 'file', level: 4, run: (c, sink) => writeGlb(c, sink, true) },
+  stl: { ext: 'stl.zip', kind: 'zip', dir: 'stl', run: (c, z) => writeStl(c, z) },
+  obj: { ext: 'obj.zip', kind: 'zip', dir: 'obj', run: (c, z) => writeObj(c, z, false) },
+  objtex: { ext: 'textured.obj.zip', kind: 'zip', dir: 'obj_textured', run: (c, z) => writeObj(c, z, true) },
+};
+const MIME = { '3mf': 'application/vnd.ms-package.3dmanufacturing-3dmodel+xml', glb: 'model/gltf-binary', zip: 'application/zip' };
+const mimeOf = (code) => (FMT[code].ext.endsWith('3mf') ? MIME['3mf'] : FMT[code].ext.endsWith('glb') ? MIME.glb : MIME.zip);
+
+// one format -> one file (phone buttons); same names as the server's single downloads
+async function buildSingle(meshZip, code, adj) {
+  const ctx = await loadMeshCtx(meshZip, adj), F = FMT[code], chunks = [];
+  if (F.kind === 'file') await F.run(ctx, (u) => chunks.push(u));
+  else { const z = zipOut(ctx.FF, (u) => chunks.push(u)); await F.run(ctx, z); z.end(); }
+  const blob = new Blob(chunks, { type: mimeOf(code) });
+  chunks.length = 0;
+  return { blob, name: `mixotile_${Math.round(ctx.size)}mm.${F.ext}` };
+}
+// several formats -> one .zip, built one format at a time (each format's source bytes are released before the next)
+async function buildBundle(meshZip, codes, step, adj) {
+  const ctx = await loadMeshCtx(meshZip, adj), stem = `mixotile_${Math.round(ctx.size)}mm`, chunks = [];
+  const out = zipOut(ctx.FF, (u) => chunks.push(u));
+  for (let i = 0; i < codes.length; i++) {
+    step && step(i, codes.length, codes[i]);
+    await maybeYield(true);
+    const F = FMT[codes[i]];
+    if (F.kind === 'file') { const h = out.begin(`${stem}.${F.ext}`, F.level); await F.run(ctx, (u) => h.push(u)); h.end(); }
+    else await F.run(ctx, prefixed(out, `${stem}_${F.dir}/`));
+  }
+  out.end();
+  const blob = new Blob(chunks, { type: 'application/zip' });
+  chunks.length = 0;
+  return { blob, name: `${stem}.zip` };
+}
+
+// ---- downloads: a checklist + one .zip on computers, one button per format on phones/tablets. Nothing is written until asked.
 const FORMATS = ['3mf', '3mftex', 'glb', 'glbtex', 'obj', 'objtex', 'stl'];
-const FMT_KEY = 'mixotile.formats';
+const ORDER = { glaze: ['3mf', 'stl', 'glb', 'obj', '3mftex', 'glbtex', 'objtex'], photo: ['3mftex', 'glbtex', 'objtex', '3mf', 'glb', 'obj', 'stl'] };
+const PRESET = { glaze: ['3mf', 'stl', 'glb', 'obj'], photo: ['3mftex', 'glbtex', 'objtex'] };
+const FMT_KEY = 'mixotile.formats2';
+const fmtOrder = () => ORDER[S.colMode];
 S.formats = (() => {
-  try { const j = JSON.parse(localStorage.getItem(FMT_KEY)); if (Array.isArray(j)) return new Set(j.filter((x) => FORMATS.includes(x))); } catch {}
-  return new Set(FORMATS);
+  try { const j = JSON.parse(localStorage.getItem(FMT_KEY)); if (j && j.mode === S.colMode && Array.isArray(j.list)) return new Set(j.list.filter((x) => FORMATS.includes(x))); } catch {}
+  return new Set(PRESET[S.colMode]);
 })();
-const fmtList = () => FORMATS.filter((c) => S.formats.has(c));
-function saveFormats() { try { localStorage.setItem(FMT_KEY, JSON.stringify(fmtList())); } catch {} }
+const fmtList = () => fmtOrder().filter((c) => S.formats.has(c));
+function saveFormats() { try { localStorage.setItem(FMT_KEY, JSON.stringify({ mode: S.colMode, list: fmtList() })); } catch {} }
+function presetFormats() { S.formats = new Set(PRESET[S.colMode]); saveFormats(); renderFormats(); updateDownloadBtn(); }
+// phone / tablet: no checklist, one button per format. Works on github.io too (no server involved).
+const isPhone = () => !!(navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  || (matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 820);
+
 function renderFormats() {
+  const phone = isPhone();
+  $('dlDesk').classList.toggle('hidden', phone); $('dlPhone').classList.toggle('hidden', !phone);
+  $('downloadBtn').classList.toggle('hidden', phone); $('tweakBtn').classList.toggle('flex-1', phone);
   const box = $('fmList'); box.innerHTML = '';
-  for (const code of FORMATS) {
-    const l = document.createElement('label'); l.className = 'fmt'; l.title = `${t('fmt.' + code)} — ${t('fmt.' + code + '.d')}`;
+  const help = (code) => { $('fmHelp').innerHTML = ''; const b = document.createElement('b'); b.className = 'font-medium text-ink2'; b.textContent = code ? t('fmt.' + code) + ': ' : ''; $('fmHelp').append(b, code ? t('fmt.' + code + '.h') : t('fm.note')); };
+  for (const code of fmtOrder()) {
+    const l = document.createElement('label'); l.className = 'fmt'; l.title = `${t('fmt.' + code)} — ${t('fmt.' + code + '.h')}`;
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = S.formats.has(code); cb.dataset.code = code;
-    cb.onchange = () => { cb.checked ? S.formats.add(code) : S.formats.delete(code); saveFormats(); updateDownloadBtn(); };
+    cb.onchange = () => { cb.checked ? S.formats.add(code) : S.formats.delete(code); saveFormats(); updateDownloadBtn(); help(code); };
     const n = document.createElement('span'); n.textContent = t('fmt.' + code);
     const d = document.createElement('small'); d.textContent = t('fmt.' + code + '.d');
     l.append(cb, n, d); box.appendChild(l);
+    l.addEventListener('pointerenter', () => help(code)); l.addEventListener('pointerleave', () => help(null));
+    cb.addEventListener('focus', () => help(code)); cb.addEventListener('blur', () => help(null));
   }
+  help(null);
 }
 function setAllFormats(on) { S.formats = new Set(on ? FORMATS : []); saveFormats(); renderFormats(); updateDownloadBtn(); }
 $('fmAll').onclick = () => setAllFormats(true);
 $('fmNone').onclick = () => setAllFormats(false);
 
-function zipCount(buf) {   // entries counted from the zip's end-of-central-directory record
-  const dv = new DataView(buf);
-  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65600); i--) if (dv.getUint32(i, true) === 0x06054b50) return dv.getUint16(i + 10, true);
-  return 0;
+// What a download needs first. Slider-only edits are applied to the full mesh in the browser (heights.bin, instant);
+// anything that changes the shapes (edge roll, clearance, outline width, colours, corners, tile size), or an older engine
+// without heights.bin, needs the exact cloud rebuild (Confirm).
+function ftState() {
+  const hasH = S.dl.state === 'ready' && !!S.dl.hasHeights;
+  const live = FT_KEYS.some((it) => Math.abs(FT.cur[it.k] - FT.gen[it.k]) > 1e-9);
+  const stale = !!S.model?.snap && S.model.snap !== snapKey();
+  const base = S.dl.adj || FT.gen, dirty = FT_KEYS.some((it) => Math.abs(FT.cur[it.k] - base[it.k]) > 1e-9);
+  return { hasH, live, stale, dirty, adj: !!S.dl.adj };
+}
+function needsCloud() { if (!FT.on || !S.model) return false; const x = ftState(); return x.stale || (x.live && !x.hasH); }
+function needsApply() { if (!FT.on || !S.model) return false; const x = ftState(); return !x.stale && x.hasH && x.dirty; }
+function applyInBrowser() {
+  const c = {}; for (const it of FT_KEYS) c[it.k] = FT.cur[it.k];
+  S.dl.adj = FT_KEYS.every((it) => Math.abs(c[it.k] - FT.gen[it.k]) < 1e-9) ? null : c;
+  S.fst = {}; renderPvStats(); ftUpdateUI(); updateDownloadBtn();
+}
+function setDlNote(msg) { S.dlNote = msg || ''; renderDlNote(); }
+function renderDlNote() {
+  const el = $('dlNote'); if (!el) return;
+  const msg = S.dlNote || (S.dl.state === 'ready' ? (needsCloud() ? t('dl.confirmNote') : needsApply() ? t('dl.applyNote') : '') : '');
+  el.textContent = msg; el.classList.toggle('hidden', !msg);
 }
 function updateDownloadBtn() {
-  const b = $('downloadBtn'), d = S.dl, key = fmtList().join(',');
+  const b = $('downloadBtn'), d = S.dl, list = fmtList();
   let label, off = false;
-  if (d.state === 'preparing') { label = d.n ? t('dl.prepN', { a: d.n, b: d.N }) : t('dl.prep'); off = true; }
-  else if (!key) { label = t('dl.none'); off = true; }
-  else if (d.state === 'ready' && d.key === key) label = d.count > 1 ? t('dl.ready', { n: d.count }) : d.count === 1 ? t('dl.ready1') : t('dl.ready0');
-  else { label = t('dl.make'); off = !S.blob; }
+  if (S.dlBusy) { label = S.dlConfirming ? t('dl.confirming') : S.dlStep ? t('dl.step', { f: t('fmt.' + S.dlStep.code), i: S.dlStep.i + 1, n: S.dlStep.n }) : t('dl.writing'); off = true; }
+  else if (d.state !== 'ready') { label = d.state === 'error' ? t('dl.zipN', { n: list.length }) : t('dl.building'); off = true; }
+  else if (!list.length) { label = t('dl.none'); off = true; }
+  else label = needsCloud() ? t('dl.confirmBtn') : needsApply() ? t('dl.applyBtn') : t('dl.zipN', { n: list.length });
   b.textContent = label; b.disabled = off;
+  renderPhoneBtns(); renderDlNote();
 }
-function noteWriting(msg) {   // "Writing .GLB + photo (3 of 7)" -> Preparing files… 3/7
-  const m = /^Writing .+ \((\d+) of (\d+)\)$/.exec(msg || '');
-  if (m && S.dl.state === 'preparing') { S.dl.n = +m[1]; S.dl.N = +m[2]; updateDownloadBtn(); }
-}
-function saveZip() { saveBlob(S.dl.buf, `mixotile_${Math.round(S.dl.size)}mm.zip`, 'application/zip'); }
-$('downloadBtn').onclick = async () => {
-  const list = fmtList(), key = list.join(',');
-  if (!list.length) return;
-  if (S.dl.state === 'ready' && S.dl.key === key) { saveZip(); return; }
-  // the checklist changed since Generate: re-run the engine for the new list (no preview needed)
-  S.dl = { state: 'preparing', n: 0, N: list.length, key }; updateDownloadBtn(); showLoading(true);
-  try {
-    const r = await requestModel({ format: 'bundle', formats: list }, { onMsg: noteWriting });
-    S.dl = { state: 'ready', key, buf: r.buf, count: zipCount(r.buf), size: r.size };
-    showLoading(false); updateDownloadBtn(); saveZip();
-  } catch (e) {
-    showLoading(false); S.dl = { state: 'error' }; updateDownloadBtn(); alertInModal(t('e.makeFail', { e: errText(e) }));
+function renderPhoneBtns() {
+  const box = $('dlBtns'); if (!box || $('dlPhone').classList.contains('hidden')) return;
+  box.innerHTML = '';
+  for (const code of fmtOrder()) {
+    const st = S.fst[code] || { state: 'idle' }, b = document.createElement('button');
+    b.type = 'button'; b.className = 'dlb'; b.dataset.code = code; b.dataset.state = st.state;
+    b.disabled = S.dl.state !== 'ready' || S.dlBusy;
+    const left = document.createElement('span'); left.className = 'min-w-0';
+    const nm = document.createElement('span'); nm.className = 'nm block'; nm.textContent = t('fmt.' + code);
+    const ds = document.createElement('span'); ds.className = 'ds block'; ds.textContent = t('fmt.' + code + '.h');
+    left.append(nm, ds);
+    const r = document.createElement('span'); r.className = 'st';
+    if (st.state === 'busy') { r.innerHTML = '<span class="spinner"></span>'; r.append(t('dl.writing')); }
+    else if (st.state === 'done') r.textContent = t('dl.savedSize', { s: fmtSize(st.size) });
+    else if (st.state === 'err') r.textContent = t('dl.failed');
+    else r.textContent = S.dl.state === 'ready' ? t('dl.tapSave') : t('dl.building');
+    b.append(left, r); b.onclick = () => downloadOne(code); box.appendChild(b);
   }
+}
+const fmtSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+function saveBlobFile(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+// the exact model must be the one on screen: unconfirmed slider / setting changes are Confirmed (rebuilt) first
+async function ensureExact() {
+  if (S.dl.state !== 'ready') throw new Error(t('dl.noModel'));
+  if (!needsCloud()) { if (needsApply()) { ftFlush(); applyInBrowser(); } return; }
+  S.dlConfirming = true; setDlNote(t('dl.confirming')); updateDownloadBtn();
+  ftFlush();
+  try {
+    const ok = await runGenerate(true);
+    if (!ok || S.dl.state !== 'ready') throw new Error(t('dl.rebuildFail'));
+  } finally { S.dlConfirming = false; }
+  setDlNote('');
+}
+const ZIPERR = (e) => (/import|fetch|module|network|Failed/i.test(e?.message || '') ? t('dl.noLib', { e: e.message }) : e?.message || String(e));
+// phone: one format -> one file
+async function downloadOne(code) {
+  if (S.dlBusy || S.dl.state !== 'ready') return;
+  S.dlBusy = true; setDlNote(''); renderPhoneBtns(); updateDownloadBtn();
+  try {
+    await ensureExact();
+    S.fst[code] = { state: 'busy' }; renderPhoneBtns();
+    await maybeYield(true);
+    const t0 = performance.now(), { blob, name } = await buildSingle(S.dl.mesh, code, S.dl.adj);
+    const size = blob.size;
+    saveBlobFile(blob, name);
+    S.fst[code] = { state: 'done', size, ms: Math.round(performance.now() - t0), name };
+    setDlNote(t('dl.saved', { name, s: fmtSize(size) }));
+  } catch (e) {
+    console.warn('[MixoTile] write failed', code, e);
+    S.fst[code] = { state: 'err' }; setDlNote(t('dl.fail', { f: t('fmt.' + code), e: ZIPERR(e) }));
+  } finally { S.dlBusy = false; renderPhoneBtns(); updateDownloadBtn(); }
+}
+// computer: the checked formats -> one .zip, built one format at a time
+$('downloadBtn').onclick = async () => {
+  const list = fmtList();
+  if (!list.length || S.dlBusy || S.dl.state !== 'ready') return;
+  S.dlBusy = true; S.dlStep = null; setDlNote(''); updateDownloadBtn();
+  try {
+    await ensureExact();
+    const t0 = performance.now();
+    const { blob, name } = await buildBundle(S.dl.mesh, list, (i, n, code) => { S.dlStep = { i, n, code }; updateDownloadBtn(); }, S.dl.adj);
+    const size = blob.size;
+    saveBlobFile(blob, name);
+    S.lastZip = { ms: Math.round(performance.now() - t0), size, name };
+    setDlNote(t('dl.saved', { name, s: fmtSize(size) }));
+  } catch (e) {
+    console.warn('[MixoTile] zip failed', e);
+    setDlNote(t('dl.fail', { f: '.zip', e: ZIPERR(e) }));
+  } finally { S.dlBusy = false; S.dlStep = null; updateDownloadBtn(); }
 };
 
 // everything that decides the built model except the five live height settings (those are compared separately)
@@ -1605,29 +2261,37 @@ $('generateBtn').onclick = () => runGenerate(false);
 async function runGenerate(fromModal) {
   $('errorBox').classList.add('hidden');
   $('generateBtn').disabled = true; S.busy = true; ftUpdateUI(); showLoading(true);
-  let previewShown = false;
-  const prevLook = V.look, run = ++runId, snap = snapKey();
-  const list = fmtList().length ? fmtList() : ['3mf'], key = list.join(',');
-  S.dl = { state: 'preparing', n: 0, N: list.length, key }; updateDownloadBtn();
+  let previewShown = false, ok = false;
+  const prevLook = V.look, run = ++runId, snap = snapKey(), prevDl = S.dl;
+  // the first build opens in the look of the chosen mode; a Confirm rebuild keeps whatever look is on screen
+  const wantLook = fromModal && prevLook ? prevLook : S.colMode === 'photo' ? 'photo' : 'colour';
+  S.dl = { state: 'building' }; S.fst = {}; S.dlNote = ''; updateDownloadBtn();
   S.photoTex = null; S.texState = 'loading'; setLook('colour'); renderLookState();
-  if (fromModal && prevLook === 'photo') V.look = 'photo';      // keep the look; re-applied when the texture arrives
+  if (wantLook === 'photo') V.look = 'photo';                   // applied as soon as the texture arrives
   let pendingH = null;
   try {
-    const res = await requestModel({ format: 'bundle', formats: list }, {
-      // preview first: open the 3D view right away; the zip keeps streaming in behind it
+    // the cloud only builds the shapes (mesh.zip); the browser writes the files you ask for
+    const res = await requestModel({ format: 'mesh' }, {
+      // preview first: open the 3D view right away; the mesh keeps streaming in behind it
       onPreview: (pv) => { S.model = { ...pv, id: run, snap, heights: pendingH }; previewShown = true; showLoading(false); openPreview(); },
       onHeights: (h) => { pendingH = h; if (previewShown && S.model?.id === run) { S.model.heights = h; ftAttach(); } },
       onTexture: (jpg) => { S.photoTex = jpg; applyPhotoTexture(); },
-      onMsg: noteWriting,
     });
     S.model = { ...(S.model || {}), size: res.size };
-    S.dl = { state: 'ready', key, buf: res.buf, count: zipCount(res.buf), size: res.size };
+    S.dl = { state: 'ready', mesh: new Uint8Array(res.buf), size: res.size };
+    const dl = S.dl;                                             // warm the zip tool; read which extras the mesh carries
+    loadFflate().then((FF) => {
+      const names = [], f = FF.unzipSync(dl.mesh, { filter: (x) => { names.push(x.name); return x.name === 'parts.json'; } });
+      dl.params = JSON.parse(new TextDecoder().decode(f['parts.json'])).params || null;
+      dl.hasHeights = names.includes('heights.bin') && !!dl.params;
+      ftUpdateUI(); updateDownloadBtn();
+    }).catch(() => {});
     if (S.texState === 'loading' && !S.photoTex) { S.texState = 'none'; renderLookState(); }
     if (!previewShown) { showLoading(false); await openPreview(); }
-    updateDownloadBtn();
+    ok = true;
   } catch (e) {
     showLoading(false);
-    S.dl = { state: 'error' }; updateDownloadBtn();
+    S.dl = fromModal && prevDl?.state === 'ready' ? prevDl : { state: 'error' };
     if (S.texState === 'loading') { S.texState = 'none'; renderLookState(); }
     if (previewShown) alertInModal(t('e.zipFail', { e: errText(e) }));
     else if (fromModal) alertInModal(errText(e));
@@ -1635,8 +2299,9 @@ async function runGenerate(fromModal) {
   } finally {
     $('generateBtn').disabled = false; S.busy = false;
     if (S.texState === 'none' && V.look === 'photo') { V.look = 'colour'; setLook('colour'); }
-    ftUpdateUI();
+    ftUpdateUI(); updateDownloadBtn();
   }
+  return ok;
 }
 
 // --------------------------------------------------------------------- 3D preview (Three.js)
@@ -1730,7 +2395,7 @@ function buildPreviewGroup(m) {
 function renderPvStats() {
   const st = S.model?.stats;
   $('pvStats').innerHTML = st ? `${st.colours.map((c) => `<span title="${c.hex} · extruder ${c.extruder}" style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:2px;background:${c.hex};box-shadow:0 0 0 1px #0002"></span>`).join('')}
-    <br>${t('pv.stats', { n: st.colours.length, a: FT.on ? +(st.relief_height_mm + FT.cur.relief - FT.gen.relief).toFixed(2) : st.relief_height_mm, b: FT.on ? +(st.dome_height_mm + FT.cur.crown - FT.gen.crown).toFixed(2) : st.dome_height_mm, k: (st.triangles / 1000).toFixed(0) })}
+    ${S.dl.adj ? `<br><i>${t('pv.adjusted')}</i>` : ''}<br>${t('pv.stats', { n: st.colours.length, a: FT.on ? +(st.relief_height_mm + FT.cur.relief - FT.gen.relief).toFixed(2) : st.relief_height_mm, b: FT.on ? +(st.dome_height_mm + FT.cur.crown - FT.gen.crown).toFixed(2) : st.dome_height_mm, k: (st.triangles / 1000).toFixed(0) })}
 ` : '';
 }
 async function openPreview() {
@@ -1875,7 +2540,8 @@ function ftBuild() {
   ftSetOpen(open);
   $('ftToggle').onclick = () => { const o = $('ftBody').classList.contains('hidden'); ftSetOpen(o); try { localStorage.setItem(FT_OPEN_KEY, o ? '1' : '0'); } catch {} };
   $('ftReset').onclick = () => { for (const it of FT_KEYS) { FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; } ftRenderAll(); ftSchedule(); };
-  $('ftConfirm').onclick = () => { ftFlush(); runGenerate(true); };
+  $('ftConfirm').onclick = () => { ftFlush(); const x = ftState(); if (x.hasH && !x.stale) applyInBrowser(); else runGenerate(true); };
+  $('ftExact').onclick = () => { ftFlush(); runGenerate(true); };
   ftRenderText();
 }
 function ftSetOpen(o) {
@@ -1988,14 +2654,18 @@ function ftAttach() {
 }
 function ftUpdateUI() {
   const btn = $('ftConfirm'); if (!btn) return;
-  if (!FT.on) { btn.disabled = true; return; }
-  const live = FT_KEYS.some((it) => Math.abs(FT.cur[it.k] - FT.gen[it.k]) > 1e-9);
-  const stale = !!S.model?.snap && S.model.snap !== snapKey();
-  btn.disabled = S.busy || !(live || stale);
-  $('ftReset').disabled = !live || S.busy;
-  $('ftStatus').textContent = stale ? t('ft.stale') : live ? t('ft.approx') : t('ft.same');
-  $('ftStatus').style.fontWeight = stale ? '600' : '';
-  $('ftStatus').style.color = stale ? 'var(--ink)' : '';
+  const ex = $('ftExact');
+  if (!FT.on) { btn.disabled = true; ex.classList.add('hidden'); updateDownloadBtn(); return; }
+  const x = ftState(), apply = x.hasH && !x.stale;
+  btn.textContent = t(apply ? 'ft.apply' : 'ft.confirm');
+  btn.disabled = S.busy || (apply ? !x.dirty : !(x.live || x.stale));
+  ex.classList.toggle('hidden', !(apply && (x.live || x.adj))); ex.disabled = !!S.busy;
+  $('ftReset').disabled = !x.live || S.busy;
+  $('ftStatus').textContent = x.stale ? t('ft.stale') + ' ' + t('ft.shapeNote')
+    : x.adj && !x.dirty ? t('ft.adjusted') : x.dirty ? (apply ? t('ft.applyHint') : t('ft.approx')) : t('ft.same');
+  $('ftStatus').style.fontWeight = x.stale ? '600' : '';
+  $('ftStatus').style.color = x.stale ? 'var(--ink)' : '';
+  updateDownloadBtn();
 }
 
 // --------------------------------------------------------------------- phone QR panel (only on the PC, via the local launcher)
@@ -2048,7 +2718,7 @@ if (isLocalHost()) { pollLocalInfo(); QR.timer = setInterval(pollLocalInfo, 2000
 // --------------------------------------------------------------------- language + dynamic text
 function refreshDynamic() {
   renderEngine(); setAiPill(S.aiPillState); renderAiStatus(); renderOutlineHint();
-  renderSwatches(); updateModeButtons(); renderFormats(); updateDownloadBtn(); renderLookState(); renderPvStats(); rsText(); ftRenderText();
+  renderSwatches(); updateModeButtons(); renderModeText(); renderFormats(); updateDownloadBtn(); renderLookState(); renderPvStats(); rsText(); ftRenderText();
   if (S.corners) drawOverlay();
   if (QR.info) renderQr(QR.info);
   const lbl = QR.info; void lbl;

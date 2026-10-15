@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import functools
 import io
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -1274,6 +1275,7 @@ EXPORT_FORMATS = {
     "obj": ("obj.zip", "application/zip"),
     "objtex": ("textured.obj.zip", "application/zip"),
     "bundle": ("all.zip", "application/zip"),    # several formats from ONE run (TileConfig.formats)
+    "mesh": ("mesh.zip", "application/zip"),     # raw shapes + photo: the browser writes the formats itself
 }
 BUNDLE_DEFAULT = ("3mf", "3mftex", "glb", "glbtex", "obj", "objtex", "stl")
 # inside the bundle zip: single files as they are, the zipped formats unpacked into folders
@@ -1297,6 +1299,33 @@ def write_bundle(parts, formats, texture, size_mm: float, stem: str, progress=No
     return buf.getvalue()
 
 
+def write_mesh_zip(parts, texture: np.ndarray | None, size_mm: float, heights=None, params=None) -> bytes:
+    """Everything the browser needs to write every download format itself (offloads the server):
+      parts.json  {"size_mm", "parts": [{name, hex, rgb, extruder, nv, nt}]}  (same order as the 3MF)
+      mesh.bin    per part: nv*3 float32 xyz (mm, Z-up), then nt*3 uint32 indices (little-endian),
+                  exactly the vertices/triangles the server-side writers use
+      texture.jpg the flattened photo (top-down: u = x/size, v = y/size), 2048 px
+      heights.bin per vertex of mesh.bin (same order) 5 float32 t, A, B, R, resid — lets the browser
+                  apply height-only edits to the full model without a rebuild (see preview_heights);
+                  parts.json "params" = the settings these factors were computed with"""
+    meta, blobs = [], []
+    for i, (name, rgb, v, f) in enumerate(parts):
+        v = np.ascontiguousarray(v, "<f4"); f = np.ascontiguousarray(f, "<u4")
+        meta.append({"name": name, "hex": "#%02x%02x%02x" % tuple(int(c) for c in rgb),
+                     "rgb": [int(c) for c in rgb], "extruder": max(1, i), "nv": int(len(v)), "nt": int(len(f))})
+        blobs += [v.tobytes(), f.tobytes()]
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=4) as z:
+        z.writestr("parts.json", json.dumps({"size_mm": size_mm, "parts": meta, "params": params}))
+        if heights is not None:
+            z.writestr("heights.bin", preview_heights([(n, v) for n, _, v, _ in parts], heights))
+        z.writestr("mesh.bin", b"".join(blobs))
+        if texture is not None:
+            ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 90])
+            z.writestr("texture.jpg", jpg.tobytes())
+    return buf.getvalue()
+
+
 def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
     if fmt in ("3mf", "3mftex"):
         return write_3mf(parts, texture if fmt == "3mftex" else None, size_mm)
@@ -1306,6 +1335,8 @@ def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: fl
         return write_stl_zip(parts)
     if fmt in ("obj", "objtex"):
         return write_obj_zip(parts, texture if fmt == "objtex" else None, size_mm)
+    if fmt == "mesh":
+        return write_mesh_zip(parts, texture, size_mm)
     raise ValueError(f"unknown format {fmt!r}")
 
 
@@ -1328,7 +1359,7 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     # photo texture = the same warp as the geometry (inset, symmetry), projected top-down:
     # 2048 px for the textured OBJ, 1024 px for the browser preview's "Photo" view
     texture = preview_tex = None
-    want_tex = cfg.output_format.endswith("tex") or (
+    want_tex = cfg.output_format.endswith("tex") or cfg.output_format == "mesh" or (
         cfg.output_format == "bundle" and any(x.endswith("tex") for x in cfg.bundle_formats()))
     if want_tex or on_parts:
         texture = warp_tile(rgb, corners, 2048 if want_tex else 1024, corners_scale, inset=0.015)
@@ -1377,10 +1408,11 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     def body_done(_):
         done[0] += 1
         report(0.22 + 0.66 * done[0] / max(n_bodies, 1), f"Carving colour {done[0]} of {n_bodies}")
-    parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done, want_heights=on_parts is not None)
+    parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done,
+                                want_heights=on_parts is not None or cfg.output_format == "mesh")
     if on_parts:                         # e.g. stream a light preview mesh before the slow file export
         on_parts(parts, stats, preview_tex)
-    stats.pop("_heights", None)            # big rasters: only the preview needs them
+    heights = stats.pop("_heights", None)  # big rasters: only the preview / mesh export need them
     report(0.90, "Writing the 3D file")
     t2 = time.monotonic()
     if cfg.output_format == "bundle":
@@ -1389,6 +1421,11 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
                  "obj": ".OBJ", "objtex": ".OBJ + photo", "stl": ".STL"}
         data = write_bundle(parts, fmts, texture, cfg.tile_size_mm, f"mixotile_{int(round(cfg.tile_size_mm))}mm",
                             progress=lambda i, n, f: report(0.90 + 0.09 * i / n, f"Writing {names[f]} ({i + 1} of {n})"))
+    elif cfg.output_format == "mesh":       # browser writes the formats; also send the height recipe
+        params = {"pad": cfg.pad_thickness_mm, "floor": cfg.groove_floor_mm, "relief": cfg.relief_height_mm,
+                  "crown": min(cfg.dome_height_mm, cfg.relief_height_mm + cfg.dome_height_mm),
+                  "outline": cfg.outline_height_mm}
+        data = write_mesh_zip(parts, texture, cfg.tile_size_mm, heights=heights, params=params)
     else:
         data = export_parts(parts, cfg.output_format, texture, cfg.tile_size_mm)
     t3 = time.monotonic()
