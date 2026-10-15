@@ -7,7 +7,7 @@
 **線上版：** https://mixocreative.github.io/mixo-tile-gen/
 **引擎：** Python，跑在 Google Cloud Run 上（設有硬性花費上限）。你也可以只要雙擊一下，就在自己的電腦上執行整個應用程式，連手機也能一起用；請見[逐步指南](#自己架設逐步指南零基礎也能上手)。
 
-![一張照片，五個樣子：原始照片 → 裁切拉正 → 釉色 3D → 換色 3D → 照片貼面 3D](docs/readme/showcase_zh.jpg)
+![一張照片，三種玩法：自動裁切拉正、自動分色並可換色、照片貼面 3D](docs/readme/showcase_zh.jpg)
 
 ---
 

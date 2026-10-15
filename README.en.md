@@ -7,7 +7,7 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 **Live app:** https://mixocreative.github.io/mixo-tile-gen/
 **Engine:** Python, running on Google Cloud Run (with a hard spending cap). You can also run the whole app on your own computer with one double-click, phone included; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
-![One photo, five looks: original → cropped → 3D glaze colours → 3D recoloured → 3D photo skin](docs/readme/showcase_en.jpg)
+![One photo, three ways to play: auto crop and straighten, automatic colours you can change, 3D photo skin](docs/readme/showcase_en.jpg)
 
 ---
 

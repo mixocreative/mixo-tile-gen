@@ -572,7 +572,7 @@ const D = {
     'm.aria': 'Look of the tile', 'm.glaze': 'Glaze colours', 'm.glazeD': 'What a multi-colour printer prints', 'm.photo': 'Photo skin', 'm.photoD': 'Your real photo on the relief',
     'm.infoGlaze': 'Glaze colours are what a multi-colour printer prints: every part is one flat colour, one filament each. Check the palette, then add, remove or recolour as you like.',
     'm.infoPhoto': 'Photo skin wraps your real photo onto the relief, like the real tile. It is for viewing and renders; a printer still prints the glaze colours. The colours below only decide where the bumps and valleys go.',
-    's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour',
+    's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour', 'f.capSkin': 'Your photo · used as the model’s skin',
     's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Colours', 's3.fewer': 'Fewer colours', 's3.more': 'More colours', 's3.clear': 'Clear',
     's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
     's3.addHint': 'Pick from photo: tap the tile to add a colour the split missed; it stays pinned 📌 when you change the number of colours. Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: splits the tile again and drops picks and colour changes.',
@@ -648,7 +648,7 @@ const D = {
     'm.aria': '磚面外觀', 'm.glaze': '釉色', 'm.glazeD': '多色列印機實際印出的顏色', 'm.photo': '照片貼面', 'm.photoD': '把真實照片貼在浮雕上',
     'm.infoGlaze': '釉色就是多色列印機實際會印出的顏色：每個零件只有一種單色，各用一種線材。請檢查色盤，需要時可新增、移除或換色。',
     'm.infoPhoto': '照片貼面會把你的真實照片貼在浮雕上，就像真正的花磚，適合檢視與渲染；列印機仍會印出釉色。下方的顏色只決定凹凸的位置。',
-    's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色',
+    's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色', 'f.capSkin': '你的照片 · 直接當作模型的表面',
     's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '顏色數', 's3.fewer': '減少顏色', 's3.more': '增加顏色', 's3.clear': '清除',
     's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
     's3.addHint': '從照片挑色：點磚面，加入自動分色漏掉的顏色；改變顏色數時它會固定保留 📌。點色票可更換它的顏色（區域不變）。− 會把該顏色的區域併入最接近的顏色。還原建議色：重新分色，並放棄挑選的顏色與顏色修改。',
@@ -1163,14 +1163,21 @@ function flatCoords(e) {
   const r = $('flatCanvas').getBoundingClientRect();
   return [Math.floor((e.clientX - r.left) * FLAT / r.width), Math.floor((e.clientY - r.top) * FLAT / r.height)];
 }
+$('flatCanvas').addEventListener('pointerenter', (e) => {
+  if (!S.flat || e.pointerType === 'touch' || S.colMode !== 'glaze') return;
+  clearTimeout(S.pickBackT); S.hoverPhoto = true; S.view = 'photo'; renderFlat(); updateModeButtons();
+});
 $('flatCanvas').addEventListener('pointermove', (e) => {
-  if (!S.flat || e.pointerType === 'touch') return;
+  if (!S.flat || e.pointerType === 'touch' || S.colMode !== 'glaze') return;
   const [u, v] = flatCoords(e), chip = $('hoverChip'), c = sampleAt(u, v), r = $('flatCanvas').getBoundingClientRect();
   chip.classList.remove('hidden'); chip.textContent = toHex(c);
   chip.style.background = toHex(c); chip.style.color = srgbToLab(c)[0] > 60 ? '#1f2430' : '#fff';
   chip.style.left = Math.min(e.clientX - r.left + 14, r.width - 80) + 'px'; chip.style.top = (e.clientY - r.top + 14) + 'px';
 });
-$('flatCanvas').addEventListener('pointerleave', () => $('hoverChip').classList.add('hidden'));
+$('flatCanvas').addEventListener('pointerleave', () => {
+  $('hoverChip').classList.add('hidden');
+  if (S.hoverPhoto) { S.hoverPhoto = false; S.view = viewForMode(); renderFlat(); updateModeButtons(); }
+});
 
 function flashSwatch(i) { const el = $('swatches').children[i]?.querySelector('.swatch'); el?.classList.remove('flash'); void el?.offsetWidth; el?.classList.add('flash'); }
 // Once the user edits the palette by hand, automatic suggestions never overwrite it (like S.cornerEdits for corners).
@@ -1245,7 +1252,7 @@ function updateModeButtons() {
   $('modeGlaze').setAttribute('aria-pressed', S.colMode === 'glaze');
   $('modePhoto').setAttribute('aria-pressed', S.colMode === 'photo');
   const cap = $('flatCaption');
-  if (cap) cap.textContent = t(S.view === 'mapped' && S.swatches.length ? 'f.capMapped' : 'f.capPhoto');
+  if (cap) cap.textContent = t(S.colMode === 'photo' ? 'f.capSkin' : S.view === 'mapped' && S.swatches.length ? 'f.capMapped' : 'f.capPhoto');
 }
 // the flattened picture follows the mode: Glaze colours shows the tile in your palette, Photo skin the real
 // photo. While picking colours it shows the real photo (you pick from it); it returns to the mode after.
@@ -1258,7 +1265,7 @@ $('clearSwatches').onclick = () => { takeManual(); S.swatches = []; S.paint = []
 $('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; S.paint = []; S.pinned = S.swatches.map(() => false); runSuggest(); };
 // pick from photo: tapping the picture adds that colour as a pinned area (count + 1)
 function pickAt(e) {
-  if (!S.flat) return;
+  if (!S.flat || S.colMode !== 'glaze') return;
   const [u, v] = flatCoords(e), c = sampleAt(u, v).map(Math.round), L = srgbToLab(c);
   syncPaint();
   const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 6; });
@@ -1267,7 +1274,8 @@ function pickAt(e) {
   S.swatches.push(c); S.paint.push(null); S.pinned.push(true);
   $('numColors').value = S.swatches.length; saveSettings();
   renderSwatches(); S.view = 'photo'; renderFlat(); updateModeButtons();
-  clearTimeout(S.pickBackT); S.pickBackT = setTimeout(() => { S.view = viewForMode(); renderFlat(); updateModeButtons(); }, 2000);
+  clearTimeout(S.pickBackT);
+  if (!S.hoverPhoto) S.pickBackT = setTimeout(() => { S.view = viewForMode(); renderFlat(); updateModeButtons(); }, 2000);
 }
 $('flatCanvas').addEventListener('click', pickAt);
 $('addPick').onclick = () => {
@@ -1293,8 +1301,10 @@ function showNote(msg) { const b = $('pickNote'); b.textContent = msg; b.classLi
 function renderModeText() {
   const photo = S.colMode === 'photo', box = $('shapesBox');
   $('modeInfo').textContent = t(photo ? 'm.infoPhoto' : 'm.infoGlaze');
-  box.classList.add('plain');                // owner: modes only switch the picture, nothing folds away
+  box.classList.add('plain');
   box.open = true;
+  box.classList.toggle('hidden', photo);    // owner: Photo skin shows no swatches or colour controls
+  $('flatCanvas').style.cursor = photo ? 'default' : 'crosshair';
   renderTiers();
 }
 $('shapesBox').addEventListener('toggle', () => { if (S.colMode === 'photo') S.shapesOpen = $('shapesBox').open; });
