@@ -1,4 +1,4 @@
-# tw-tile-gen · 花磚 3D relief generator
+# mixo-tile-gen · 花磚 3D relief generator
 
 Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, optional `.GLB`) ready for multi-material 3D printing.
 
@@ -114,7 +114,7 @@ You only need a web browser.
    - `tile_processor.py`
    - `requirements.txt`
 3. **Create the Space.** Go to https://huggingface.co/new-space:
-   - **Space name:** `tw-tile-gen`
+   - **Space name:** `mixo-tile-gen`
    - **License:** your choice
    - **Select the Space SDK:** **Docker**, then **Blank**
    - **Hardware:** *CPU basic · free*
@@ -130,7 +130,7 @@ You only need a web browser.
    - **Value:** `https://mixocreative.github.io`. If you made your own website copy (Option D), use `https://YOUR-GITHUB-NAME.github.io`.
    - Save. The Space rebuilds by itself.
 7. **Wait for "Running".** The status badge next to the name goes *Building → Running*. The first build takes about 5–10 minutes.
-8. **Find your engine address.** It's `https://YOUR-HF-NAME-tw-tile-gen.hf.space`, in lower case. To test it, open `https://YOUR-HF-NAME-tw-tile-gen.hf.space/health`. You should see `{"status":"ok", …}`.
+8. **Find your engine address.** It's `https://YOUR-HF-NAME-mixo-tile-gen.hf.space`, in lower case. To test it, open `https://YOUR-HF-NAME-mixo-tile-gen.hf.space/health`. You should see `{"status":"ok", …}`.
 9. **Connect the website.** See [Connect the website to your engine](#connect-the-website-to-your-engine) below.
 
 > **Note:** a free Space goes to sleep after about 2 days with no visitors. The next visitor wakes it up, which takes about 1 minute; the progress bar says "Waking up the server".
@@ -141,7 +141,7 @@ You only need a web browser.
 
 You need a Google account, and Google requires a credit card on file even for its free tier. Normal use of this app stays within the free tier, but check your billing page now and then.
 
-1. **Create a project.** Open https://console.cloud.google.com, click the project picker at the top, choose **New Project**, name it `tw-tile-gen`, and click **Create**.
+1. **Create a project.** Open https://console.cloud.google.com, click the project picker at the top, choose **New Project**, name it `mixo-tile-gen`, and click **Create**.
 2. **Turn on billing.** Go to **☰ Menu → Billing** and link a billing account (card) to the project. Optionally, under **Budgets & alerts**, set a budget of US$1 so Google emails you if anything is ever charged.
 3. **Open Cloud Shell.** Click the **>_** icon at the top right of the console. A terminal opens in your browser, so nothing needs installing.
 4. **Paste these lines** into Cloud Shell, one block at a time. Press **Enter** after each, and click **Authorize** if asked.
@@ -151,13 +151,13 @@ You need a Google account, and Google requires a credit card on file even for it
    gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
    ```
    ```bash
-   gcloud run deploy tw-tile-gen --source backend --region asia-east1 \
+   gcloud run deploy mixo-tile-gen --source backend --region asia-east1 \
      --allow-unauthenticated --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 \
      --min-instances 0 --max-instances 3 \
      --set-env-vars ALLOWED_ORIGINS=https://mixocreative.github.io
    ```
    If it asks *"Allow unauthenticated invocations?"*, answer **y**. If it asks to create an Artifact Registry repository, answer **y**.
-5. **Copy the address.** After 5–10 minutes the last line shows `Service URL: https://tw-tile-gen-xxxxx.asia-east1.run.app`. Open it with `/health` added on the end; you should see `{"status":"ok", …}`.
+5. **Copy the address.** After 5–10 minutes the last line shows `Service URL: https://mixo-tile-gen-xxxxx.asia-east1.run.app`. Open it with `/health` added on the end; you should see `{"status":"ok", …}`.
 6. **Connect the website.** See the next section.
 
 `asia-east1` is Taiwan. Pick a region near your users. `--memory 2Gi` is required; the engine needs it.
@@ -171,8 +171,8 @@ You need a Google account, and Google requires a credit card on file even for it
 2. Download the project ZIP (Option A, step 2) and unzip it.
 3. Open a terminal *inside the unzipped folder*. On Windows: open the folder, then right-click → **Open in Terminal**. On macOS: right-click the folder → **New Terminal at Folder**. Then run:
    ```bash
-   docker build -t tw-tile-gen backend
-   docker run --rm -p 8088:8080 tw-tile-gen
+   docker build -t mixo-tile-gen backend
+   docker run --rm -p 8088:8080 mixo-tile-gen
    ```
    Leave that window open; it is the engine.
 4. In a **second** terminal, in the same folder, start the website:
@@ -196,11 +196,11 @@ Then do steps 4 and 5 above.
 **Way 1, for yourself (no coding):**
 1. Open the website (https://mixocreative.github.io/mixo-tile-gen/, or your own copy).
 2. Click the pill at the **top right** that says *Backend: …*.
-3. Paste your engine address, e.g. `https://YOUR-HF-NAME-tw-tile-gen.hf.space`, with no `/health` on the end.
+3. Paste your engine address, e.g. `https://YOUR-HF-NAME-mixo-tile-gen.hf.space`, with no `/health` on the end.
 4. Click **Save & test**. The dot turns green and says *Backend: ready*. Your browser remembers the address.
 
 **Way 2, a link to share:** add `?api=` and your engine address to the website link, e.g.
-`https://mixocreative.github.io/mixo-tile-gen/?api=https://YOUR-HF-NAME-tw-tile-gen.hf.space`
+`https://mixocreative.github.io/mixo-tile-gen/?api=https://YOUR-HF-NAME-mixo-tile-gen.hf.space`
 
 **Way 3, make it the default for everyone (your own copy):** in `frontend/index.html`, find `const DEFAULT_API = '…';` and put your engine address between the quotes. Then commit; your website updates in about a minute.
 
@@ -238,7 +238,7 @@ The owner's **16 real tile photos are a permanent regression set**: `backend/tes
 
 ```bash
 # in the image, with Cloud Run limits (one tile per process)
-docker run --rm -m 2g --memory-swap 2g --cpus 2 -v "$PWD:/repo" -w /repo/backend tw-tile-gen \
+docker run --rm -m 2g --memory-swap 2g --cpus 2 -v "$PWD:/repo" -w /repo/backend mixo-tile-gen \
   python tests/check_borders.py 09_single_rose 0     # watertight + puzzle-fit (gap/overlap) + time
 python tests/run_local.py        # synthetic sample, end to end
 python tests/lines_sheet.py      # visual sheet: photo | outlines | colours | height map

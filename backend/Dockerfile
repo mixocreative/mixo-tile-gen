@@ -1,4 +1,4 @@
-# tw-tile-gen backend — FastAPI + OpenCV + scikit-image (marching cubes) for Google Cloud Run
+# mixo-tile-gen backend: FastAPI + OpenCV + scikit-image (marching cubes); runs on Hugging Face Spaces or Google Cloud Run
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
