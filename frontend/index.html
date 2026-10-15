@@ -359,18 +359,16 @@
       </button>
     </div>
     <p id="modeInfo" class="hint mt-2.5 max-w-2xl" role="status"></p>
-    <details id="shapesBox" class="plain mt-3" open>
-      <summary id="shapesSum" class="mono text-[11.5px] text-ink2 flex items-center gap-1.5 py-1"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="s3.shapes">Shapes (colours still decide where the bumps and valleys go)</span></summary>
       <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5 mt-3">
         <div class="relative">
-          <div class="seg mb-2" role="group" aria-label="Tile view" data-i18n-aria="s3.viewAria">
-            <button id="viewPhoto" aria-pressed="false" data-i18n="s3.viewPhoto">Tile photo</button><button id="viewMapped" aria-pressed="true" data-i18n="s3.viewMapped">In your colours</button>
-          </div>
+          <p id="flatCaption" class="mono text-[11px] uppercase tracking-wider text-mute mb-2"></p>
           <div class="relative">
             <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette." data-i18n-aria="s3.canvas"></canvas>
             <div id="hoverChip" class="hidden absolute pointer-events-none px-1.5 py-0.5 rounded text-[11px] mono bg-ink text-white"></div>
           </div>
         </div>
+        <details id="shapesBox" class="plain" open>
+      <summary id="shapesSum" class="mono text-[11.5px] text-ink2 flex items-center gap-1.5 py-1"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="s3.shapes">Shapes (colours still decide where the bumps and valleys go)</span></summary>
         <div>
           <div class="card p-3">
             <div class="flex items-center justify-between gap-2 mono text-[11px] uppercase tracking-wider text-mute"><span data-i18n="s3.palette">Glaze palette</span><span data-i18n="s3.edit">Tap swatch to edit</span></div>
@@ -391,8 +389,8 @@
           <p class="hint mt-1.5" data-i18n="s3.maxD">Most colours the app will suggest (each colour is one filament).</p>
           <div id="tierList" class="mt-3"></div>
         </div>
+        </details>
       </div>
-    </details>
   </section>
 
   <!-- ============================================================ 4. size -->
@@ -575,7 +573,7 @@ const D = {
     'm.aria': 'Look of the tile', 'm.glaze': 'Glaze colours', 'm.glazeD': 'What a multi-colour printer prints', 'm.photo': 'Photo skin', 'm.photoD': 'Your real photo on the relief',
     'm.infoGlaze': 'Glaze colours are what a multi-colour printer prints: every part is one flat colour, one filament each. Check the palette, then add, remove or recolour as you like.',
     'm.infoPhoto': 'Photo skin wraps your real photo onto the relief, like the real tile. It is for viewing and renders; a printer still prints the glaze colours. The colours below only decide where the bumps and valleys go.',
-    's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours',
+    's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour',
     's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Max colours', 's3.clear': 'Clear',
     's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
     's3.addHint': 'Pick from photo: tap the tile on the left. Custom colour: choose any colour. − on a swatch removes it. Restore suggested: drops your edits and lets the app pick again.',
@@ -649,7 +647,7 @@ const D = {
     'm.aria': '磚面外觀', 'm.glaze': '釉色', 'm.glazeD': '多色列印機實際印出的顏色', 'm.photo': '照片貼面', 'm.photoD': '把真實照片貼在浮雕上',
     'm.infoGlaze': '釉色就是多色列印機實際會印出的顏色：每個零件只有一種單色，各用一種線材。請檢查色盤，需要時可新增、移除或換色。',
     'm.infoPhoto': '照片貼面會把你的真實照片貼在浮雕上，就像真正的花磚，適合檢視與渲染；列印機仍會印出釉色。下方的顏色只決定凹凸的位置。',
-    's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤',
+    's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色',
     's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '最多顏色數', 's3.clear': '清除',
     's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
     's3.addHint': '從照片挑色：點左邊的磚面。自選顏色：自己選任何顏色。色票上的 − 可移除該色。還原建議色：放棄你的修改，重新由程式挑色。',
@@ -1170,6 +1168,7 @@ $('flatCanvas').addEventListener('click', (e) => {
   if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
   takeManual();
   S.swatches.push(c.map(Math.round)); renderSwatches(); S.view = 'photo'; renderFlat(); updateModeButtons();
+  clearTimeout(S.pickBackT); S.pickBackT = setTimeout(() => { S.view = viewForMode(); renderFlat(); updateModeButtons(); }, 2000);
 });
 $('flatCanvas').addEventListener('pointermove', (e) => {
   if (!S.flat || e.pointerType === 'touch') return;
@@ -1229,16 +1228,17 @@ function renderFlat() {
 function updateModeButtons() {
   $('modeGlaze').setAttribute('aria-pressed', S.colMode === 'glaze');
   $('modePhoto').setAttribute('aria-pressed', S.colMode === 'photo');
-  $('viewPhoto').setAttribute('aria-pressed', S.view !== 'mapped');
-  $('viewMapped').setAttribute('aria-pressed', S.view === 'mapped');
+  const cap = $('flatCaption');
+  if (cap) cap.textContent = t(S.view === 'mapped' && S.swatches.length ? 'f.capMapped' : 'f.capPhoto');
 }
+// the flattened picture follows the mode: Glaze colours shows the tile in your palette, Photo skin the real
+// photo. While picking colours it shows the real photo (you pick from it); it returns to the mode after.
+function viewForMode() { return S.colMode === 'photo' || !S.swatches.length ? 'photo' : 'mapped'; }
 function setView(v) {
   if (v === 'mapped' && !S.swatches.length) { showError(t('c.needPal')); v = 'photo'; }
   S.view = v; renderFlat(); updateModeButtons();
 }
-$('viewPhoto').onclick = () => setView('photo');
-$('viewMapped').onclick = () => setView('mapped');
-$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); setView('photo'); };
+$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); setView(viewForMode()); };
 // eyedropper: the tile photo itself picks colours (any tap on it); the button just brings it into view
 $('addPick').onclick = () => {
   setView('photo');
@@ -1252,7 +1252,7 @@ $('addCustom').addEventListener('change', (e) => {
   const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 3; });
   if (dup >= 0) { flashSwatch(dup); return; }
   if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
-  takeManual(); S.swatches.push(c); renderSwatches(); renderFlat(); updateModeButtons();
+  takeManual(); S.swatches.push(c); renderSwatches(); S.view = viewForMode(); renderFlat(); updateModeButtons();
 });
 $('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; runSuggest(); };
 function showNote(msg) { const b = $('pickNote'); b.textContent = msg; b.classList.remove('hidden'); clearTimeout(showNote.t); showNote.t = setTimeout(() => b.classList.add('hidden'), 5000); }
@@ -1263,8 +1263,8 @@ function showNote(msg) { const b = $('pickNote'); b.textContent = msg; b.classLi
 function renderModeText() {
   const photo = S.colMode === 'photo', box = $('shapesBox');
   $('modeInfo').textContent = t(photo ? 'm.infoPhoto' : 'm.infoGlaze');
-  box.classList.toggle('plain', !photo);
-  box.open = photo ? !!S.shapesOpen : true;
+  box.classList.add('plain');                // owner: modes only switch the picture, nothing folds away
+  box.open = true;
   renderTiers();
 }
 $('shapesBox').addEventListener('toggle', () => { if (S.colMode === 'photo') S.shapesOpen = $('shapesBox').open; });
@@ -1277,6 +1277,7 @@ function followLook() {
 function setColMode(m) {
   if (m === S.colMode) return;
   S.colMode = m; try { localStorage.setItem(COLMODE_KEY, m); } catch {}
+  clearTimeout(S.pickBackT); S.view = viewForMode(); renderFlat();
   updateModeButtons(); renderModeText(); presetFormats(); followLook();
 }
 $('modeGlaze').onclick = () => setColMode('glaze');
@@ -1309,7 +1310,7 @@ function runSuggest() {
   if (!S.flat) return;
   S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0)));
   renderSwatches();
-  S.view = 'mapped';
+  S.view = viewForMode();
   renderFlat(); updateModeButtons();
 }
 let sugTimer = null;
