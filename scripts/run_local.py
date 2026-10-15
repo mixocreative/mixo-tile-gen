@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import platform
+import random
 import re
 import shutil
 import socket
@@ -29,6 +31,7 @@ BACKEND, FRONTEND, TOOLS = ROOT / "backend", ROOT / "frontend", ROOT / "tools"
 VENV = ROOT / ".venv"
 REQS = BACKEND / "requirements.txt"
 CF_BASE = "https://github.com/cloudflare/cloudflared/releases/latest/download/"
+PHONE_FILE = TOOLS / "phone.json"          # read by the engine's /local-info (QR panel on the home page)
 
 
 def say(msg: str) -> None:
@@ -71,19 +74,30 @@ def port_free(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) != 0
 
 
-def wait_health(url: str, proc: subprocess.Popen, secs: int = 120) -> None:
+def wait_health(url: str, proc: subprocess.Popen, secs: int = 120) -> bool:
+    """True once /health answers; False if the engine process exits first (e.g. port taken)."""
     t0 = time.time()
     while time.time() - t0 < secs:
         if proc.poll() is not None:
-            fail("the engine stopped while starting (see the messages above).")
+            return False
         try:
             with urllib.request.urlopen(url + "/health", timeout=2) as r:
                 if r.status == 200:
-                    return
+                    return True
         except OSError:
             pass
         time.sleep(1)
     fail("the engine did not start within 2 minutes.")
+
+
+def port_candidates(fixed: int | None):
+    """8088 first, then random high ports for as long as it takes (a --port given by hand is tried alone)."""
+    if fixed:
+        yield fixed
+        return
+    yield 8088
+    while True:
+        yield random.randint(20000, 60999)
 
 
 def lan_ip() -> str | None:
@@ -137,11 +151,30 @@ def start_tunnel(port: int) -> tuple[subprocess.Popen, str]:
     t0 = time.time()
     while not found and time.time() - t0 < 60:
         if proc.poll() is not None:
-            fail("the Cloudflare tunnel stopped. Check your internet connection and try again.")
+            fail("the Cloudflare tunnel stopped. Check your internet connection.")
         time.sleep(0.5)
     if not found:
-        fail("no tunnel address after 60 s. Try again in a minute.")
+        proc.terminate()
+        fail("no Cloudflare address after 60 s.")
     return proc, found[0]
+
+
+def write_phone_links(links: list[tuple[str, str]], phone_mode: bool) -> None:
+    TOOLS.mkdir(exist_ok=True)
+    tmp = PHONE_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"links": [{"label": t, "url": u} for t, u in links],
+                               "phone_mode": phone_mode, "updated": int(time.time())}), encoding="utf-8")
+    tmp.replace(PHONE_FILE)                   # atomic: the engine never reads half a file
+
+
+def tunnel_ok(pub: str, proc: subprocess.Popen) -> bool:
+    if proc.poll() is not None:
+        return False
+    try:
+        with urllib.request.urlopen(pub + "/health", timeout=10) as r:
+            return r.status == 200
+    except OSError:
+        return False
 
 
 def phone_page(links: list[tuple[str, str]]) -> Path:
@@ -165,45 +198,88 @@ h2{{font-size:15px;margin:0 0 12px}} .qr{{display:inline-block}} p{{max-width:26
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--phone", action="store_true", help="also make a free Cloudflare link + QR code for phones")
-    ap.add_argument("--port", type=int, default=8088)
+    ap.add_argument("--port", type=int, default=None, help="default: first free port from 8088")
     ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
 
     py = ensure_env()
-    if not port_free(a.port):
-        fail(f"port {a.port} is busy (is mixo-tile-gen already running?). Close it or use --port 8090.")
-    env = dict(os.environ, FRONTEND_DIR=str(FRONTEND), ALLOWED_ORIGINS="*", PYTHONUNBUFFERED="1")
+    TOOLS.mkdir(exist_ok=True)
+    PHONE_FILE.unlink(missing_ok=True)
+    env = dict(os.environ, FRONTEND_DIR=str(FRONTEND), ALLOWED_ORIGINS="*", PYTHONUNBUFFERED="1",
+               MIXO_PHONE_FILE=str(PHONE_FILE))
     say("Starting the engine ...")
-    engine = subprocess.Popen([str(py), "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(a.port),
-                               "--workers", "1", "--log-level", "warning"], cwd=BACKEND, env=env)
+    engine, failed_starts = None, 0
+    for port in port_candidates(a.port):    # keep trying ports until one works
+        if not port_free(port):
+            if a.port:
+                fail(f"port {port} is busy. Leave out --port and the app picks a free one.")
+            continue
+        engine = subprocess.Popen([str(py), "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(port),
+                                   "--workers", "1", "--log-level", "warning"], cwd=BACKEND, env=env)
+        if wait_health(f"http://localhost:{port}", engine):
+            a.port = port
+            break
+        failed_starts += 1
+        if a.port or failed_starts >= 5:     # not a port problem: show the engine's own error above
+            fail("the engine stopped while starting (see the messages above).")
+        say(f"Port {port} didn't work, trying another one ...")
+    if a.port != 8088:
+        say(f"Using port {a.port} (8088 was busy).")
     procs = [engine]
     try:
         local = f"http://localhost:{a.port}"
-        wait_health(local, engine)
         app_url = local + "/?api=self"
         print()
         say(f"READY  ->  open {app_url}")
         if not a.no_browser:
             webbrowser.open(app_url)
+        ip = lan_ip()
+        wifi = [("Same Wi-Fi", f"http://{ip}:{a.port}/?api=self")] if ip else []
+        tunnel = pub = None
         if a.phone:
-            links = []
-            ip = lan_ip()
-            if ip:
-                links.append(("Same Wi-Fi (fastest)", f"http://{ip}:{a.port}/?api=self"))
             say("Opening a free Cloudflare tunnel for your phone ...")
-            tunnel, pub = start_tunnel(a.port)
-            procs.append(tunnel)
-            links.append(("Anywhere (Cloudflare link)", pub + "/?api=self"))
-            for title, url in links:
-                say(f"PHONE  {title}:  {url}")
+            try:
+                tunnel, pub = start_tunnel(a.port)
+                procs.append(tunnel)
+            except SystemExit:                  # no internet / blocked: keep going with Wi-Fi, retry below
+                say("Couldn't open a Cloudflare link yet. Same Wi-Fi works; retrying every 30 s.")
+        links = wifi + ([("Anywhere (Cloudflare)", pub + "/?api=self")] if pub else [])
+        write_phone_links(links, a.phone)
+        phone_page(links)                       # tools/phone.html: the same QR codes as a standalone page
+        for title, url in links:
+            say(f"PHONE  {title}:  {url}")
+        if a.phone:
             say("The Cloudflare link is public while this window is open; it changes every run.")
-            page = phone_page(links)
-            if not a.no_browser:
-                webbrowser.open(page.as_uri())
+        say("The QR codes for your phone are on the app's home page (on this PC).")
         print()
         say("Keep this window open while you use the app. Press Ctrl+C to stop.")
+        misses, last_check = 0, time.time()
         while engine.poll() is None:
             time.sleep(1)
+            if not a.phone or time.time() - last_check < 30:
+                continue
+            last_check = time.time()
+            if tunnel is not None:
+                misses = 0 if tunnel_ok(pub, tunnel) else misses + 1
+                if misses < 2:
+                    continue
+                say("The Cloudflare link stopped answering, opening a new one ...")
+                if tunnel.poll() is None:
+                    tunnel.terminate()
+                procs.remove(tunnel)
+            try:
+                tunnel, pub = start_tunnel(a.port)
+            except SystemExit:                  # start_tunnel calls fail(); keep the app running, retry later
+                tunnel = None
+                say("Couldn't open a new Cloudflare link (internet down?). Same Wi-Fi still works; retrying in 30 s.")
+                misses = 0
+                continue
+            procs.append(tunnel)
+            misses = 0
+            links = wifi + [("Anywhere (Cloudflare)", pub + "/?api=self")]
+            write_phone_links(links, True)
+            phone_page(links)
+            say(f"PHONE  new Cloudflare link:  {pub}/?api=self  (the home page updates by itself)")
         fail("the engine stopped.")
     except KeyboardInterrupt:
         say("Stopping ...")

@@ -241,7 +241,7 @@ A page with **QR codes** opens. Scan one with your phone's camera:
 |---|---|
 | **"Python is not installed"** but you did install it | Restart the computer, or re-run the installer and tick "Add python.exe to PATH". On Windows also check the Microsoft Store alias note in [Basics](#basics-python-and-the-terminal). |
 | **Windows asks "Allow Python on networks?"** | Tick **Private networks** and click **Allow**. The same-Wi-Fi QR code needs this. |
-| **"port 8088 is busy"** | The app is already running. Look for another black window titled **mixo-tile-gen** (check the taskbar) and use that one, or close it first. |
+| **"Using port 36189 (8088 was busy)"** (any number) | Fine: something else uses 8088, so the app keeps trying random free ports until one works. The READY line, the browser tab and the QR page all use the port it picked. |
 | **Install failed halfway** (internet dropped) | Delete the `.venv` folder inside the app folder and start again. |
 | **Antivirus blocks `tools\cloudflared.exe`** (phone link) | Allow that file in your antivirus, or use the same-Wi-Fi QR code instead. |
 | **Same-Wi-Fi QR doesn't load** | Guest Wi-Fi and some routers stop devices from seeing each other ("AP isolation"). Use the Cloudflare QR instead, or join your normal Wi-Fi. |

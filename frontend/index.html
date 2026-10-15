@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>mixo-tile-gen · 花磚 3D relief</title>
+<title data-i18n="title">mixo-tile-gen · 花磚 3D relief</title>
 <meta name="description" content="Turn a photo of a Taiwanese majolica tile into a watertight multi-colour 3D relief (.3MF) — free, in your browser.">
 <meta name="theme-color" content="#faf8f5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23fffaf0'/%3E%3Crect x='5' y='5' width='54' height='54' rx='6' fill='none' stroke='%2323408e' stroke-width='5'/%3E%3Cg fill='%233a8a5c'%3E%3Cellipse cx='16' cy='16' rx='7' ry='3.2' transform='rotate(45 16 16)'/%3E%3Cellipse cx='48' cy='48' rx='7' ry='3.2' transform='rotate(45 48 48)'/%3E%3Cellipse cx='48' cy='16' rx='7' ry='3.2' transform='rotate(-45 48 16)'/%3E%3Cellipse cx='16' cy='48' rx='7' ry='3.2' transform='rotate(-45 16 48)'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='13' fill='%23e58e73'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23f2c94c'/%3E%3C/svg%3E">
@@ -66,8 +66,8 @@
           border-radius: 6px; background: #fff; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px;
           text-transform: uppercase; letter-spacing: .04em; color: var(--ink2); white-space: nowrap; }
   @media (max-width: 640px) { .pill-long { display: none; } }
-  .btn.touch-only { display: none; }
-  @media (pointer: coarse) { .btn.touch-only { display: inline-flex; } .fine-only { display: none; } }
+  .t-only { display: none; }
+  @media (pointer: coarse) { .t-only { display: inline; } .fine-only { display: none !important; } }
   #dropOverlay { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(28,26,23,.45);
                  color: #faf8f5; font-size: 15px; pointer-events: none; }
   body.dragging #dropOverlay { display: grid; }
@@ -89,7 +89,7 @@
 
   /* segmented control */
   .seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r); padding: 2px; }
-  .seg button { height: 26px; padding: 0 10px; border-radius: 4px; font: 400 12px/1 "Geist Mono", monospace; color: var(--mute); }
+  .seg button { white-space: nowrap; height: 26px; padding: 0 10px; border-radius: 4px; font: 400 12px/1 "Geist Mono", monospace; color: var(--mute); }
   .seg button[aria-pressed="true"] { background: var(--white); color: var(--ink); box-shadow: 0 0 0 1px var(--line2); }
 
   /* inline-label numeric field:  [ Label        150 mm ] */
@@ -137,6 +137,64 @@
     .field label, .field > span { flex: 0 0 100%; font-size: 10.5px; }
     .field .unit, .field > input, .field > select { margin-left: auto; }
   }
+
+  /* language toggle */
+  .lang { display: inline-flex; height: 28px; padding: 2px; background: var(--soft); border: 1px solid var(--line); border-radius: 6px; flex: none; }
+  .lang button { min-width: 26px; padding: 0 6px; border-radius: 4px; font: 500 11px/1 "Geist Mono", "Noto Sans TC", monospace; color: var(--mute); }
+  .lang button[aria-pressed="true"] { background: var(--white); color: var(--ink); box-shadow: 0 0 0 1px var(--line2); }
+
+  /* step 3: three big colour actions */
+  .cmode { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 10px 9px; min-height: 92px;
+           background: var(--white); border: 1px solid var(--line2); border-radius: 8px; color: var(--ink2); transition: background-color .12s, border-color .12s, color .12s; }
+  .cmode:hover { border-color: var(--faint); background: var(--soft); }
+  .cmode svg { width: 22px; height: 22px; margin-bottom: 2px; }
+  .cmode b { font: 600 13px/1.15 Geist, "Noto Sans TC", sans-serif; }
+  .cmode small { font: 400 11px/1.3 Geist, "Noto Sans TC", sans-serif; color: var(--mute); }
+  .cmode[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); box-shadow: 0 0 0 3px rgba(28,26,23,.12); }
+  .cmode[aria-pressed="true"] small { color: #cfc8bf; }
+  .cmode:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .chip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .chip .hex { font: 400 10px/1 "Geist Mono", monospace; color: var(--mute); text-transform: uppercase; }
+
+  /* 3D preview: big Colours / Photo switch over the viewer */
+  .look { display: inline-flex; padding: 3px; gap: 3px; background: rgba(255,255,255,.96); border: 1.5px solid var(--ink); border-radius: 9999px; box-shadow: 0 4px 16px rgba(28,26,23,.2); }
+  .look button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; min-width: 112px; padding: 0 18px; border-radius: 9999px;
+                 font: 600 14px/1 Geist, "Noto Sans TC", sans-serif; color: var(--ink2); }
+  .look button svg { width: 18px; height: 18px; flex: none; }
+  .look button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .look button:disabled { color: var(--faint); cursor: not-allowed; }
+  .look button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (pointer: coarse), (max-width: 640px) { .look button { height: 42px; min-width: 120px; } }
+  .look-hint { font: 500 11px/1 "Geist Mono", "Noto Sans TC", monospace; color: var(--ink2); background: rgba(255,255,255,.9); border: 1px solid var(--line); border-radius: 9999px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px; }
+
+  /* download checklist */
+  .fmt { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 8px; border: 1px solid var(--line2); border-radius: 6px; background: #fff; cursor: pointer; font: 500 12px/1 Geist, "Noto Sans TC", sans-serif; color: var(--ink2); user-select: none; }
+  .fmt input { width: 15px; height: 15px; accent-color: #1c1a17; margin: 0; flex: none; }
+  .fmt:has(input:checked) { border-color: var(--ink); background: var(--soft); color: var(--ink); }
+  .fmt:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .fmt small { display: none; font-weight: 400; color: var(--mute); font-size: 11px; }
+  @media (min-width: 900px) { .fmt small { display: inline; } }
+  @media (pointer: coarse) { .fmt { height: 36px; } .fmt input { width: 18px; height: 18px; } }
+
+  /* phone QR */
+  .qr-item { width: 140px; max-width: 100%; }
+  .qr-code { padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 6px; width: fit-content; }
+  .qr-code img, .qr-code canvas { display: block; max-width: 100%; }
+  .dg .ov { fill: #d2522a; opacity: 0; pointer-events: none; }
+  .dg .ov.hl { opacity: .45; }
+  .dg .ovs { fill: none; stroke: #d2522a; stroke-width: 2.2; opacity: 0; pointer-events: none; }
+  .dg .ovs.hl { opacity: 1; }
+  /* step 4 cross-section diagram */
+  .dg { width: 100%; height: auto; display: block; color: var(--ink2); }
+  .dg text { font: 500 9px "Geist Mono", "Noto Sans TC", monospace; fill: currentColor; }
+  .dg .ln { stroke: currentColor; stroke-width: 1; fill: none; }
+  .dg .dot { stroke-dasharray: 2 2; stroke-width: .8; opacity: .7; }
+  .dg .shape { stroke: var(--ink); stroke-width: 1; }
+  .dg [data-p] { color: var(--ink2); transition: color .12s; }
+  .dg [data-p].hl { color: #d2522a; }
+  .dg .shape.hl { stroke: #d2522a; stroke-width: 2; }
+  .dg text.hl, .dg g.hl text { font-weight: 700; }
+  .dg .fillhl.hl { fill: #d2522a; }
   /* phone: bottom step bar + touch sizes (still compact) */
   #stepNav a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font: 400 10px/1 "Geist Mono", monospace; letter-spacing: .06em; color: var(--mute); }
   #stepNav a svg { width: 18px; height: 18px; }
@@ -155,16 +213,16 @@
 
 <body class="font-sans antialiased min-h-screen">
 <!-- ================================================================ header -->
-<div id="dropOverlay" aria-hidden="true"><span>Drop the tile photo</span></div>
+<div id="dropOverlay" aria-hidden="true"><span data-i18n="drop">Drop the tile photo</span></div>
 <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur border-b border-line">
-  <div class="max-w-[1100px] mx-auto px-4 h-12 flex items-center justify-between gap-3">
+  <div class="max-w-[1100px] mx-auto px-4 h-12 flex items-center justify-between gap-2">
     <div class="flex items-center gap-2 min-w-0">
-      <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#fffaf0"/><rect x="5" y="5" width="54" height="54" rx="6" fill="none" stroke="#23408e" stroke-width="5"/><g fill="#3a8a5c"><ellipse cx="16" cy="16" rx="7" ry="3.2" transform="rotate(45 16 16)"/><ellipse cx="48" cy="48" rx="7" ry="3.2" transform="rotate(45 48 48)"/><ellipse cx="48" cy="16" rx="7" ry="3.2" transform="rotate(-45 48 16)"/><ellipse cx="16" cy="48" rx="7" ry="3.2" transform="rotate(-45 16 48)"/></g><circle cx="32" cy="32" r="13" fill="#e58e73"/><circle cx="32" cy="32" r="5" fill="#f2c94c"/></svg>
-      <h1 class="font-semibold text-[15px] tracking-tight whitespace-nowrap">mixo-tile-gen</h1>
-      <span class="text-[11px] px-1.5 py-0.5 rounded border border-line text-mute" style="font-family:'Noto Sans TC',sans-serif">花磚</span>
+      <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true" class="shrink-0"><rect width="64" height="64" rx="10" fill="#fffaf0"/><rect x="5" y="5" width="54" height="54" rx="6" fill="none" stroke="#23408e" stroke-width="5"/><g fill="#3a8a5c"><ellipse cx="16" cy="16" rx="7" ry="3.2" transform="rotate(45 16 16)"/><ellipse cx="48" cy="48" rx="7" ry="3.2" transform="rotate(45 48 48)"/><ellipse cx="48" cy="16" rx="7" ry="3.2" transform="rotate(-45 48 16)"/><ellipse cx="16" cy="48" rx="7" ry="3.2" transform="rotate(-45 16 48)"/></g><circle cx="32" cy="32" r="13" fill="#e58e73"/><circle cx="32" cy="32" r="5" fill="#f2c94c"/></svg>
+      <h1 class="font-semibold text-[15px] tracking-tight whitespace-nowrap truncate">mixo-tile-gen</h1>
+      <span class="hidden sm:inline text-[11px] px-1.5 py-0.5 rounded border border-line text-mute" style="font-family:'Noto Sans TC',sans-serif">花磚</span>
     </div>
-    <div class="flex items-center gap-1.5">
-    <span id="aiPill" class="pill" title="On-device AI (Google MediaPipe) finds the tile outline for you. Without it you drag the 4 corners yourself.">
+    <div class="flex items-center gap-1.5 shrink-0">
+    <span id="aiPill" class="pill" data-i18n-title="ai.tip" title="On-device AI (Google MediaPipe) finds the tile outline for you. Without it you drag the 4 corners yourself.">
       <span id="aiDot" class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" aria-hidden="true"></span>
       <span id="aiLabel">AI<span class="pill-long">: loading</span></span>
     </span>
@@ -174,65 +232,75 @@
         <span id="apiLabel">Engine: checking…</span>
       </summary>
       <div class="api-pop card">
-        <label for="apiUrl" class="mono text-[11px] uppercase tracking-wider text-mute">Engine URL</label>
+        <label for="apiUrl" class="mono text-[11px] uppercase tracking-wider text-mute" data-i18n="api.url">Engine URL</label>
         <input id="apiUrl" type="url" placeholder="https://mixo-tile-gen-xxxx.run.app" class="w-full mt-1.5 h-9 border border-line rounded-md px-2.5 mono text-[12px] bg-white outline-none focus:border-ink">
         <div class="flex items-center gap-2 mt-2.5">
-          <button id="apiSave" class="btn btn-primary">Save &amp; test</button>
-          <span class="hint">Saved in this browser · <code class="mono">?api=</code> works too</span>
+          <button id="apiSave" class="btn btn-primary" data-i18n="api.save">Save &amp; test</button>
+          <span class="hint" data-i18n-html="api.hint">Saved in this browser · <code class="mono">?api=</code> works too</span>
         </div>
       </div>
     </details>
+    <div class="lang" role="group" aria-label="Language"><button id="langZh" lang="zh-Hant" aria-pressed="false">中</button><button id="langEn" lang="en" aria-pressed="false">EN</button></div>
     </div>
   </div>
 </header>
 
 <main class="max-w-[1100px] mx-auto px-4 pb-28 sm:pb-16">
 
+  <!-- ============================================================ phone QR (PC + local launcher only) -->
+  <section id="qrPanel" class="hidden card p-3 mt-4 max-w-md" aria-labelledby="qrTitle">
+    <div class="flex items-center justify-between gap-2">
+      <h2 id="qrTitle" class="mono text-[12px] uppercase tracking-wider" data-i18n="qr.title">Open on your phone</h2>
+      <button id="qrToggle" class="btn-text btn" aria-expanded="true">Hide</button>
+    </div>
+    <div id="qrBody">
+      <p class="hint mt-1.5" data-i18n="qr.hint"></p>
+      <div id="qrLinks" class="flex flex-wrap gap-x-5 gap-y-3 mt-3"></div>
+      <p id="qrPhoneHint" class="hint mt-3 hidden" data-i18n="qr.phoneHint"></p>
+    </div>
+  </section>
+
   <!-- ============================================================ 1. capture -->
   <section class="sec" id="step1" aria-labelledby="h1s">
-    <div class="sec-h"><h2 id="h1s">01 Capture</h2><span class="meta">Photo of one tile</span></div>
-    <div class="flex gap-2 max-w-md [&>label]:flex-1">
-      <label class="btn btn-primary btn-lg touch-only">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        Take photo
-        <input id="camInput" type="file" accept="image/*" capture="environment" class="sr-only">
-      </label>
-      <label class="btn btn-ghost btn-lg">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
-        Upload
+    <div class="sec-h"><h2 id="h1s" data-i18n="s1.h">01 Capture</h2><span class="meta" data-i18n="s1.meta">Photo of one tile</span></div>
+    <div class="max-w-md">
+      <label class="btn btn-primary btn-lg w-full cursor-pointer">
+        <svg class="t-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <svg class="fine-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+        <span class="t-only" data-i18n="s1.take">Take or choose photo</span><span class="fine-only" data-i18n="s1.upload">Upload photo</span>
         <input id="fileInput" type="file" accept="image/*" class="sr-only">
       </label>
     </div>
     <div class="flex items-center justify-between gap-3 mt-2.5 max-w-md">
-      <p class="hint">Even light, no glare. Angled shots are fine.<span class="fine-only"> Or drop / paste (Ctrl+V) an image here.</span></p>
-      <button id="sampleBtn" class="link shrink-0">Try a sample</button>
+      <p class="hint"><span data-i18n="s1.hint">Even light, no glare. Angled shots are fine.</span><span class="fine-only" data-i18n="s1.drop"> Or drop / paste (Ctrl+V) an image here.</span></p>
+      <button id="sampleBtn" class="link shrink-0" data-i18n="s1.sample">Try a sample</button>
     </div>
   </section>
 
   <!-- ============================================================ 2. outline -->
   <section class="sec hidden" id="step2" aria-labelledby="h2s">
-    <div class="sec-h"><h2 id="h2s">02 Outline</h2><span class="meta">Flatten to 1:1</span></div>
+    <div class="sec-h"><h2 id="h2s" data-i18n="s2.h">02 Outline</h2><span class="meta" data-i18n="s2.meta">Flatten to 1:1</span></div>
     <div class="grid lg:grid-cols-[1fr_260px] gap-5">
       <div>
         <div id="cornerStage" class="stage">
           <canvas id="srcView" class="src"></canvas>
-          <svg id="overlay" preserveAspectRatio="none" aria-label="Drag the four corner handles onto the tile corners"></svg>
+          <svg id="overlay" preserveAspectRatio="none" aria-label="Drag the four corner handles onto the tile corners" data-i18n-aria="s2.overlay"></svg>
           <canvas id="loupe" width="132" height="132"></canvas>
         </div>
         <div id="cropStage" class="hidden rounded-lg overflow-hidden bg-[#2a2723]" style="max-height:70vh">
-          <img id="cropImg" alt="Tile photo for square cropping" class="block max-w-full">
+          <img id="cropImg" alt="Tile photo for square cropping" data-i18n-alt="s2.cropAlt" class="block max-w-full">
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
-          <div class="seg" role="group" aria-label="Outline mode">
-            <button id="modeCorners" aria-pressed="true">4-corner</button>
-            <button id="modeCrop" aria-pressed="false">Square crop</button>
+          <div class="seg" role="group" aria-label="Outline mode" data-i18n-aria="s2.modeAria">
+            <button id="modeCorners" aria-pressed="true" data-i18n="s2.corners">4-corner</button>
+            <button id="modeCrop" aria-pressed="false" data-i18n="s2.crop">Square crop</button>
           </div>
           <div class="flex items-center gap-3" id="cornerTools">
-            <button id="tapDetectBtn" class="btn-text btn">Tap to detect</button>
+            <button id="tapDetectBtn" class="btn-text btn" data-i18n="s2.tap">Tap to detect</button>
             <span class="text-faint">·</span>
-            <button id="autoBtn" class="btn-text btn">Detect again</button>
+            <button id="autoBtn" class="btn-text btn" data-i18n="s2.again">Detect again</button>
             <span class="text-faint">·</span>
-            <button id="resetCornersBtn" class="btn-text btn">Reset</button>
+            <button id="resetCornersBtn" class="btn-text btn" data-i18n="s2.reset">Reset</button>
           </div>
         </div>
         <div id="aiStatus" class="mono text-[11.5px] text-mute mt-2 flex items-center gap-2" role="status" aria-live="polite"></div>
@@ -240,7 +308,7 @@
       <div class="flex lg:block items-center gap-3">
         <canvas id="warpThumb" width="320" height="320" class="w-20 lg:w-full aspect-square rounded-md border border-line bg-white shrink-0"></canvas>
         <div class="lg:mt-2">
-          <p class="mono text-[11px] uppercase tracking-wider text-ink">Rectified 1:1</p>
+          <p class="mono text-[11px] uppercase tracking-wider text-ink" data-i18n="s2.rect">Rectified 1:1</p>
           <p class="hint mt-0.5" id="outlineHint">Drag the handles onto the four glazed corners.</p>
         </div>
       </div>
@@ -249,31 +317,36 @@
 
   <!-- ============================================================ 3. colours -->
   <section class="sec hidden" id="step3" aria-labelledby="h3s">
-    <div class="sec-h"><h2 id="h3s">03 Colours</h2><span class="meta">Tap glazes to pick</span></div>
+    <div class="sec-h"><h2 id="h3s" data-i18n="s3.h">03 Colours</h2><span class="meta" data-i18n="s3.meta">Tap glazes to pick</span></div>
     <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5">
       <div class="relative">
-        <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette."></canvas>
+        <canvas id="flatCanvas" width="600" height="600" class="w-full aspect-square rounded-lg border border-line bg-white" aria-label="Flattened tile. Tap a colour to add it to the palette." data-i18n-aria="s3.canvas"></canvas>
         <div id="hoverChip" class="hidden absolute pointer-events-none px-1.5 py-0.5 rounded text-[11px] mono bg-ink text-white"></div>
       </div>
       <div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="hint">Preview</span>
-          <div class="seg" role="group" aria-label="Preview">
-            <button id="viewPhoto" aria-pressed="true">Photo</button>
-            <button id="viewMapped" aria-pressed="false">Mapped</button>
-          </div>
+        <p class="mono text-[11px] uppercase tracking-wider text-mute" data-i18n="s3.how">How to choose colours</p>
+        <div class="grid grid-cols-3 gap-2 mt-2" role="group" aria-label="How to choose colours" data-i18n-aria="s3.how">
+          <button id="suggestBtn" class="cmode" aria-pressed="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.5-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.2" r="1"/><circle cx="14.5" cy="7.2" r="1"/></svg>
+            <b data-i18n="s3.mSuggest">Suggest</b><small data-i18n="s3.dSuggest">App picks the main glaze colours</small>
+          </button>
+          <button id="viewPhoto" class="cmode" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4zM14.5 7.5L5 17l-1 4 4-1 9.5-9.5"/></svg>
+            <b data-i18n="s3.mPick">Photo</b><small data-i18n="s3.dPick">Tap the tile to pick a colour</small>
+          </button>
+          <button id="viewMapped" class="cmode" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+            <b data-i18n="s3.mMapped">Mapped</b><small data-i18n="s3.dMapped">Tile redrawn in your colours only</small>
+          </button>
         </div>
         <div class="card p-3 mt-3">
-          <div class="flex items-center justify-between mono text-[11px] uppercase tracking-wider text-mute"><span>Glaze palette</span><span>Tap swatch to edit</span></div>
-          <div id="swatches" class="flex flex-wrap gap-2 mt-2.5 min-h-[34px]" aria-live="polite"></div>
-          <p id="swatchEmpty" class="hint mt-1">Auto — up to <b id="kEcho" class="mono font-medium text-ink">8</b> colours. Or tap the tile to pick your own.</p>
+          <div class="flex items-center justify-between mono text-[11px] uppercase tracking-wider text-mute"><span data-i18n="s3.palette">Glaze palette</span><span data-i18n="s3.edit">Tap swatch to edit</span></div>
+          <div id="swatches" class="flex flex-wrap gap-x-2.5 gap-y-2 mt-2.5 min-h-[34px]" aria-live="polite"></div>
+          <p id="swatchEmpty" class="hint mt-1"></p>
         </div>
         <div class="flex items-center justify-between gap-3 mt-3">
-          <div class="field w-40"><label for="numColors">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
-          <div class="flex items-center gap-3">
-            <button id="suggestBtn" class="link">Suggest</button>
-            <button id="clearSwatches" class="btn-text btn">Clear</button>
-          </div>
+          <div class="field w-44"><label for="numColors" data-i18n="s3.max">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
+          <button id="clearSwatches" class="btn-text btn" data-i18n="s3.clear">Clear</button>
         </div>
         <div id="tierList" class="mt-3"></div>
       </div>
@@ -282,102 +355,119 @@
 
   <!-- ============================================================ 4. size -->
   <section class="sec hidden" id="step4" aria-labelledby="h4s">
-    <div class="sec-h"><h2 id="h4s">04 Size</h2><span class="meta">Dimensions · mm</span></div>
-    <form id="settingsForm" class="grid grid-cols-2 lg:grid-cols-4 gap-2" onsubmit="return false">
-      <div class="field"><label for="tileSize">Tile width</label><div class="unit" data-unit="mm"><input id="tileSize" type="number" min="20" max="400" step="0.5" value="150.0"></div></div>
-      <div class="field"><label for="maxH" title="Max relief above the base (width ÷ 10)">Max relief</label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
-      <div class="field"><label for="padThick">Base</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="15.0"></div></div>
-      <div class="field"><label for="domeH" title="Gentle crown on top of each colour">Crown</label><div class="unit" data-unit="mm"><input id="domeH" type="number" min="0" max="20" step="0.1" value="1.0"></div></div>
-      <div class="field"><label for="reliefH" title="How far each colour rolls down into its seams">Edge depth</label><div class="unit" data-unit="mm"><input id="reliefH" type="number" min="0.1" max="40" step="0.1" value="3.0"></div></div>
-      <div class="field"><label for="clearance" title="Gap between colour pieces (0 = flush)">Clearance</label><div class="unit" data-unit="mm"><input id="clearance" type="number" min="0" max="2" step="0.05" value="0"></div></div>
-      <div class="field col-span-2 lg:col-span-1"><label for="fillet" title="Seam to full height">Edge roll</label><div class="unit" data-unit="mm"><input id="fillet" type="number" min="0.5" max="60" step="0.5" value="6.0"></div></div>
-      <div class="field col-span-2 lg:col-span-1"><label for="outlineH" title="Raised tube-lining ridge (0 = off)">Outlines</label><div class="unit" data-unit="mm"><input id="outlineH" type="number" min="0" max="3" step="0.1" value="0.8"></div></div>
+    <div class="sec-h"><h2 id="h4s" data-i18n="s4.h">04 Size</h2><span class="meta" data-i18n="s4.meta">Dimensions · mm</span></div>
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_400px] gap-5 items-start">
+    <div class="lg:order-1">
+    <form id="settingsForm" class="grid grid-cols-2 gap-2" onsubmit="return false">
+      <div class="field"><label for="tileSize" data-i18n="f.size">Tile width</label><div class="unit" data-unit="mm"><input id="tileSize" type="number" min="20" max="400" step="0.5" value="150.0"></div></div>
+      <div class="field"><label for="maxH" data-i18n="f.maxH" data-i18n-title="f.maxHt" title="Max relief above the base (width ÷ 10)">Max relief</label><div class="unit" data-unit="mm"><input id="maxH" type="number" min="1" max="60" step="0.5" value="15.0"></div></div>
+      <div class="field"><label for="padThick" data-i18n="f.pad">Base</label><div class="unit" data-unit="mm"><input id="padThick" type="number" min="0.4" max="40" step="0.1" value="15.0"></div></div>
+      <div class="field"><label for="domeH" data-i18n="f.crown" data-i18n-title="f.crownt" title="Gentle crown on top of each colour">Crown</label><div class="unit" data-unit="mm"><input id="domeH" type="number" min="0" max="20" step="0.1" value="1.0"></div></div>
+      <div class="field"><label for="reliefH" data-i18n="f.depth" data-i18n-title="f.deptht" title="How far each colour rolls down into its seams">Edge depth</label><div class="unit" data-unit="mm"><input id="reliefH" type="number" min="0.1" max="40" step="0.1" value="3.0"></div></div>
+      <div class="field"><label for="clearance" data-i18n="f.clear" data-i18n-title="f.cleart" title="Gap between colour pieces (0 = flush)">Clearance</label><div class="unit" data-unit="mm"><input id="clearance" type="number" min="0" max="2" step="0.05" value="0"></div></div>
+      <div class="field"><label for="fillet" data-i18n="f.fillet" data-i18n-title="f.filletT" title="Seam to full height">Edge roll</label><div class="unit" data-unit="mm"><input id="fillet" type="number" min="0.5" max="60" step="0.5" value="6.0"></div></div>
+      <div class="field"><label for="outlineH" data-i18n="f.outH" data-i18n-title="f.outHt" title="Raised tube-lining ridge (0 = off)">Outlines</label><div class="unit" data-unit="mm"><input id="outlineH" type="number" min="0" max="3" step="0.1" value="0.8"></div></div>
     </form>
     <details class="mt-3">
-      <summary class="mono text-[11.5px] text-ink2 flex items-center gap-1.5"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>Advanced</summary>
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2.5">
-        <div class="field"><label for="pxPerMm">Detail</label><div class="unit" data-unit="px/mm"><input id="pxPerMm" type="number" min="1" max="6" step="0.5" value="4"></div></div>
-        <div class="field"><label for="smoothing">Smoothing</label><div class="unit" data-unit="mm"><input id="smoothing" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="minFeature">Min speck</label><div class="unit" data-unit="mm²"><input id="minFeature" type="number" min="0" max="100" step="0.5" value="2.0"></div></div>
-        <div class="field"><label for="grooveFloor">Groove floor</label><div class="unit" data-unit="mm"><input id="grooveFloor" type="number" min="0.1" max="5" step="0.05" value="0.4"></div></div>
-        <div class="field"><label for="cornerR">Corner radius</label><div class="unit" data-unit="mm"><input id="cornerR" type="number" min="0" max="20" step="0.5" value="2.0"></div></div>
-        <div class="field"><label for="meshRes">Mesh grid</label><div class="unit" data-unit="mm"><input id="meshRes" type="number" min="0.05" max="1" step="0.01" value="0.16"></div></div>
-        <div class="field"><label for="mergeDE">Merge shades</label><div class="unit" data-unit="ΔE"><input id="mergeDE" type="number" min="0" max="50" step="1" value="12"></div></div>
-        <div class="field"><label for="beadH">Thin-line min</label><div class="unit" data-unit="mm"><input id="beadH" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="outlineW">Outline width</label><div class="unit" data-unit="mm"><input id="outlineW" type="number" min="0.4" max="4" step="0.1" value="1.2"></div></div>
-        <div class="field"><label for="symmetry">Symmetry</label><select id="symmetry"><option value="off" selected>Off</option><option value="auto">Auto</option><option value="d4">8-fold</option><option value="c4">4-fold</option></select></div>
-        <label class="field cursor-pointer col-span-2 lg:col-span-1"><span class="flex-1 mono text-[11.5px] text-mute">Groove along edge</span><input id="edgeSeam" type="checkbox" class="w-4 h-4 accent-[#1c1a17]"></label>
+      <summary class="mono text-[11.5px] text-ink2 flex items-center gap-1.5"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="f.adv">Advanced</span></summary>
+      <div class="grid grid-cols-2 gap-2 mt-2.5">
+        <div class="field"><label for="pxPerMm" data-i18n="f.px">Detail</label><div class="unit" data-unit="px/mm"><input id="pxPerMm" type="number" min="1" max="6" step="0.5" value="4"></div></div>
+        <div class="field"><label for="smoothing" data-i18n="f.smooth">Smoothing</label><div class="unit" data-unit="mm"><input id="smoothing" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
+        <div class="field"><label for="minFeature" data-i18n="f.speck">Min speck</label><div class="unit" data-unit="mm²"><input id="minFeature" type="number" min="0" max="100" step="0.5" value="2.0"></div></div>
+        <div class="field"><label for="grooveFloor" data-i18n="f.floor">Groove floor</label><div class="unit" data-unit="mm"><input id="grooveFloor" type="number" min="0.1" max="5" step="0.05" value="0.4"></div></div>
+        <div class="field"><label for="cornerR" data-i18n="f.corner">Corner radius</label><div class="unit" data-unit="mm"><input id="cornerR" type="number" min="0" max="20" step="0.5" value="2.0"></div></div>
+        <div class="field"><label for="meshRes" data-i18n="f.mesh">Mesh grid</label><div class="unit" data-unit="mm"><input id="meshRes" type="number" min="0.05" max="1" step="0.01" value="0.16"></div></div>
+        <div class="field"><label for="mergeDE" data-i18n="f.merge">Merge shades</label><div class="unit" data-unit="ΔE"><input id="mergeDE" type="number" min="0" max="50" step="1" value="12"></div></div>
+        <div class="field"><label for="beadH" data-i18n="f.bead">Thin-line min</label><div class="unit" data-unit="mm"><input id="beadH" type="number" min="0" max="5" step="0.1" value="1.2"></div></div>
+        <div class="field"><label for="outlineW" data-i18n="f.outW">Outline width</label><div class="unit" data-unit="mm"><input id="outlineW" type="number" min="0.4" max="4" step="0.1" value="1.2"></div></div>
+        <div class="field"><label for="symmetry" data-i18n="f.sym">Symmetry</label><select id="symmetry"><option value="off" selected data-i18n="o.off">Off</option><option value="auto" data-i18n="o.auto">Auto</option><option value="d4" data-i18n="o.d4">8-fold</option><option value="c4" data-i18n="o.c4">4-fold</option></select></div>
+        <label class="field cursor-pointer col-span-2"><span class="flex-1 mono text-[11.5px] text-mute" data-i18n="f.edgeSeam">Groove along edge</span><input id="edgeSeam" type="checkbox" class="w-4 h-4 accent-[#1c1a17]"></label>
       </div>
     </details>
-    <p id="scaleNote" class="hidden hint mt-3">Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.</p>
+    <p id="scaleNote" class="hidden hint mt-3" data-i18n="s4.scale">Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.</p>
     <p class="mono text-[11.5px] text-mute mt-3 px-3 py-2 rounded-md bg-soft border border-line" id="heightEcho"></p>
+    </div>
+    <aside class="card p-3 max-lg:order-first lg:order-2 lg:sticky lg:top-16" aria-labelledby="dgTitle">
+      <div class="flex items-baseline justify-between gap-2">
+        <p id="dgTitle" class="mono text-[11px] uppercase tracking-wider text-ink" data-i18n="dg.title">Cross-section</p>
+        <p class="mono text-[10.5px] text-mute" data-i18n="dg.note">values in mm</p>
+      </div>
+      <svg id="dgSvg" class="dg mt-1.5" role="img" aria-label="Cross-section of the tile" data-i18n-aria="dg.aria"></svg>
+    </aside>
+    </div>
     <button id="generateBtn" class="btn btn-peach btn-lg w-full mt-4">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
-      Generate 3D relief
+      <span data-i18n="s4.gen">Generate 3D relief</span>
     </button>
-    <p class="hint mono text-center mt-2 text-[11px]">Usually ~10 s · first run after idle ~30–60 s · outputs .3MF</p>
+    <p class="hint mono text-center mt-2 text-[11px]" data-i18n="s4.genHint">Usually ~10 s · first run after idle ~30–60 s · downloads a .zip</p>
     <div id="errorBox" class="hidden mt-3 rounded-md border border-[#e3b8b0] bg-[#fbf1ef] text-[#7a2a1e] text-[12.5px] p-2.5" role="alert"></div>
   </section>
 
-  <footer class="hint mono text-[11px] text-center pt-6 border-t border-line">
+  <footer class="hint mono text-[11px] text-center pt-6 border-t border-line" data-i18n="foot">
     Built for Taiwan's 花磚 heritage · free · photos are processed in memory, never stored
   </footer>
 </main>
 
 <!-- phone step bar (shown after a photo is loaded) -->
-<nav id="stepNav" class="hidden sm:!hidden fixed bottom-0 inset-x-0 z-30 bg-paper/95 backdrop-blur border-t border-line grid grid-cols-4" aria-label="Steps" style="padding-bottom: env(safe-area-inset-bottom)">
-  <a href="#step1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>01 CAPTURE</a>
-  <a href="#step2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>02 OUTLINE</a>
-  <a href="#step3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="14" cy="9" r="1.2"/><circle cx="15.5" cy="13.5" r="1.2"/></svg>03 COLOURS</a>
-  <a href="#step4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>04 SIZE</a>
+<nav id="stepNav" class="hidden sm:!hidden fixed bottom-0 inset-x-0 z-30 bg-paper/95 backdrop-blur border-t border-line grid grid-cols-4" aria-label="Steps" data-i18n-aria="nav.aria" style="padding-bottom: env(safe-area-inset-bottom)">
+  <a href="#step1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="nav.1">01 CAPTURE</span></a>
+  <a href="#step2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span data-i18n="nav.2">02 OUTLINE</span></a>
+  <a href="#step3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="14" cy="9" r="1.2"/><circle cx="15.5" cy="13.5" r="1.2"/></svg><span data-i18n="nav.3">03 COLOURS</span></a>
+  <a href="#step4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span data-i18n="nav.4">04 SIZE</span></a>
 </nav>
 
 <!-- ================================================================ loading -->
 <div id="loading" class="hidden fixed inset-0 z-[60] bg-ink/40 backdrop-blur-[2px] grid place-items-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="loadTitle">
   <div class="card p-5 w-full max-w-[320px]">
-    <div class="flex items-center gap-2"><span class="spinner"></span><p id="loadTitle" class="font-medium text-[14px]">Carving your tile</p></div>
+    <div class="flex items-center gap-2"><span class="spinner"></span><p id="loadTitle" class="font-medium text-[14px]" data-i18n="ld.title">Carving your tile</p></div>
     <p id="loadMsg" class="mono text-[11.5px] text-mute mt-2" aria-live="polite">Uploading photo</p>
     <div class="mt-3 h-1 w-full rounded-full bg-line overflow-hidden" role="progressbar" aria-labelledby="loadMsg" aria-valuemin="0" aria-valuemax="100" id="loadBarWrap" aria-valuenow="0">
       <div id="loadBar" class="h-full rounded-full bg-ink" style="width:0%;transition:width .45s ease"></div>
     </div>
     <div class="flex justify-between mt-1.5 mono text-[11px] text-mute"><span id="loadPct">0%</span><span id="loadTimer">0 s</span></div>
-    <button id="cancelBtn" class="btn btn-ghost w-full mt-4">Cancel</button>
+    <button id="cancelBtn" class="btn btn-ghost w-full mt-4" data-i18n="ld.cancel">Cancel</button>
+  </div>
+</div>
+
+<div id="photoBusy" class="hidden fixed inset-0 z-[65] bg-ink/40 backdrop-blur-[2px] grid place-items-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="pbMsg">
+  <div class="card p-5 w-full max-w-[300px]">
+    <div class="flex items-center gap-2"><span id="pbSpin" class="spinner"></span><p id="pbMsg" class="font-medium text-[14px]" data-i18n="ld.photo">Loading photo…</p></div>
+    <p id="pbErr" class="hidden text-[12.5px] text-[#7a2a1e] mt-2"></p>
+    <button id="pbOk" class="hidden btn btn-ghost w-full mt-3" data-i18n="ld.ok">OK</button>
   </div>
 </div>
 
 <!-- ================================================================ 3D preview modal -->
 <div id="previewModal" class="hidden fixed inset-0 z-50 bg-ink/50 backdrop-blur-[2px] p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
   <div class="bg-paper h-full max-w-[1100px] mx-auto flex flex-col overflow-hidden sm:rounded-xl sm:border sm:border-line">
-    <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-4 py-2 sm:py-0 sm:h-12 border-b border-line">
-      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap mr-auto">3D preview <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
-      <!-- phones: title + close on the first row, the view controls on a row of their own -->
-      <div class="flex gap-1.5 max-sm:order-last max-sm:w-full max-sm:justify-between">
-        <div class="seg" role="group" aria-label="Surface"><button id="pvColour" aria-pressed="true">Colours</button><button id="pvPhoto" aria-pressed="false" disabled title="Your photo projected from the top">Photo</button></div>
-        <div class="seg"><button id="pvTop">Top</button><button id="pvIso" aria-pressed="true">3/4</button></div>
-      </div>
-      <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="flex items-center gap-x-2 px-4 h-12 border-b border-line">
+      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap mr-auto"><span data-i18n="pv.title">3D preview</span> <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
+      <div class="seg" role="group" aria-label="View" data-i18n-aria="pv.view"><button id="pvTop" data-i18n="pv.top">Top</button><button id="pvIso" aria-pressed="true" data-i18n="pv.iso">3/4</button></div>
+      <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview" data-i18n-aria="pv.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="relative flex-1 min-h-0" style="background: linear-gradient(#faf8f5, #ece8e2)">
       <div id="viewer" class="absolute inset-0"></div>
+      <div class="absolute top-3 inset-x-0 flex flex-col items-center gap-1.5 pointer-events-none px-3">
+        <div class="look pointer-events-auto" role="group" aria-label="Surface" data-i18n-aria="pv.surface">
+          <button id="pvColour" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.5-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.2" r="1"/><circle cx="14.5" cy="7.2" r="1"/></svg><span data-i18n="pv.colours">Colours</span></button>
+          <button id="pvPhoto" aria-pressed="false" disabled data-i18n-title="pv.photoTip" title="Your photo projected from the top"><svg id="pvPhotoIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M21 16l-5-5-9 9"/></svg><span id="pvPhotoSpin" class="spinner hidden" aria-hidden="true"></span><span data-i18n="pv.photo">Photo</span></button>
+        </div>
+        <p id="pvLookHint" class="look-hint hidden pointer-events-none" role="status"></p>
+      </div>
       <div id="pvStats" class="absolute left-3 bottom-3 mono text-[11px] text-ink2 bg-white/90 border border-line rounded-md px-2.5 py-1.5 max-w-[80%]"></div>
-      <p class="absolute right-3 bottom-3 mono text-[10.5px] text-mute hidden sm:block">drag orbit · right-drag pan · scroll zoom</p>
+      <p class="absolute right-3 bottom-3 mono text-[10.5px] text-mute hidden sm:block" data-i18n="pv.help">drag orbit · right-drag pan · scroll zoom</p>
     </div>
-    <div class="flex items-center gap-2 px-4 py-3 border-t border-line" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
-      <select id="moreFormats" class="mr-auto h-8 max-w-[44%] sm:max-w-none border border-line rounded-md bg-white px-2 text-[12.5px] text-ink2" aria-label="Download another format">
-        <option value="">Other formats…</option>
-        <optgroup label="Glaze colours">
-          <option value="glb">.GLB · colours (viewers, web, AR)</option>
-          <option value="stl">.STL · one file per colour (.zip)</option>
-          <option value="obj">.OBJ · colours (.zip)</option>
-        </optgroup>
-        <optgroup label="Photo texture">
-          <option value="3mftex">.3MF · photo (prints in colours)</option>
-          <option value="glbtex">.GLB · photo</option>
-          <option value="objtex">.OBJ · photo (.zip)</option>
-        </optgroup>
-      </select>
-      <button id="tweakBtn" class="btn btn-ghost">Tweak</button>
-      <button id="downloadBtn" class="btn btn-primary">Download .3MF</button>
+    <div class="border-t border-line px-4 pt-2.5" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
+      <div class="flex items-center justify-between gap-2">
+        <p class="mono text-[11px] uppercase tracking-wider text-mute" id="fmTitle" data-i18n="fm.title">Files in the .zip</p>
+        <span class="flex items-center gap-2"><button id="fmAll" class="btn-text btn" data-i18n="fm.all">All</button><span class="text-faint">·</span><button id="fmNone" class="btn-text btn" data-i18n="fm.none">None</button></span>
+      </div>
+      <div id="fmList" class="flex flex-wrap gap-1.5 mt-1.5" role="group" aria-labelledby="fmTitle"></div>
+      <p class="hint text-[11px] mt-1.5 min-[900px]:hidden" data-i18n="fm.note">+ photo: viewers show the photo; 3MF still prints in glaze colours.</p>
+      <div class="flex items-center gap-2 mt-2.5">
+        <button id="tweakBtn" class="btn btn-ghost" data-i18n="pv.tweak">Tweak</button>
+        <button id="downloadBtn" class="btn btn-primary flex-1" disabled>Download .zip</button>
+      </div>
     </div>
   </div>
 </div>
@@ -394,12 +484,161 @@ const MAX_SRC_SIDE = 2000;   // px — photo is normalised (EXIF-rotated, downsc
 const FLAT = 600;            // px — flattened preview / eyedropper canvas
 
 const $ = (id) => document.getElementById(id);
+
+// --------------------------------------------------------------------- i18n (English / 繁體中文)
+const D = {
+  en: {
+    title: 'mixo-tile-gen · 花磚 3D relief', desc: 'Turn a photo of a Taiwanese majolica tile into a watertight multi-colour 3D relief (.3MF) — free, in your browser.',
+    drop: 'Drop the tile photo',
+    'ai.tip': 'On-device AI (Google MediaPipe) finds the tile outline for you. Without it you drag the 4 corners yourself.',
+    'ai.loading': ': loading', 'ai.on': ': on', 'ai.off': ': off · manual',
+    'eng.prefix': 'Engine: ', 'eng.checking': 'checking…', 'eng.waking': 'waking…', 'eng.ready': 'ready', 'eng.err': 'error {n}', 'eng.unreach': 'unreachable', 'eng.notset': 'not set',
+    'api.url': 'Engine URL', 'api.save': 'Save & test', 'api.hint': 'Saved in this browser · <code class="mono">?api=</code> works too',
+    's1.h': '01 Capture', 's1.meta': 'Photo of one tile', 's1.take': 'Take or choose photo', 's1.upload': 'Upload photo',
+    's1.hint': 'Even light, no glare. Angled shots are fine.', 's1.drop': ' Or drop / paste (Ctrl+V) an image here.', 's1.sample': 'Try a sample',
+    's2.h': '02 Outline', 's2.meta': 'Flatten to 1:1', 's2.overlay': 'Drag the four corner handles onto the tile corners', 's2.cropAlt': 'Tile photo for square cropping',
+    's2.modeAria': 'Outline mode', 's2.corners': '4-corner', 's2.crop': 'Square crop', 's2.tap': 'Tap to detect', 's2.again': 'Detect again', 's2.reset': 'Reset',
+    's2.rect': 'Rectified 1:1', 'o.hintCorners': 'Drag the handles onto the four glazed corners.', 'o.hintCrop': 'Square crop: move / resize the box around the tile. Best for straight-on photos.',
+    'corner.TL': 'Top-left corner', 'corner.TR': 'Top-right corner', 'corner.BR': 'Bottom-right corner', 'corner.BL': 'Bottom-left corner',
+    'a.sample': 'Sample photo: corners already placed on the glaze. Drag them to adjust.', 'a.unavailable': 'AI unavailable — drag corners manually.', 'a.tap': 'Tap anywhere on the tile…',
+    'a.loadingMP': 'Loading on-device AI (MediaPipe)…', 'a.ready': 'On-device AI ready.', 'a.off': 'AI off: manual mode. Drag the 4 corners onto the tile (or use Square crop).',
+    'a.stillLoading': 'AI still loading… corners will snap automatically.', 'a.finding': 'Finding tile edges…',
+    'a.nolock': 'Couldn’t lock onto the tile outline — drag the corners, or tap the tile to retry.',
+    'a.kept': 'Kept your manual corners (auto-detect finished after you edited them).', 'a.suggest': 'AI suggestion: check that the 4 corners sit on the glaze edges, and drag any that don’t.',
+    's3.h': '03 Colours', 's3.meta': 'Tap glazes to pick', 's3.canvas': 'Flattened tile. Tap a colour to add it to the palette.', 's3.how': 'How to choose colours',
+    's3.mSuggest': 'Suggest', 's3.dSuggest': 'App picks the main glaze colours', 's3.mPick': 'Photo', 's3.dPick': 'Tap the tile to pick a colour', 's3.mMapped': 'Mapped', 's3.dMapped': 'Tile redrawn in your colours only',
+    's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Max colours', 's3.clear': 'Clear',
+    'c.empty': 'No colours yet — tap Suggest, or tap the tile to pick up to {k} of your own.', 'c.max12': 'Maximum 12 colours.', 'c.needPal': 'Pick colours (or tap Suggest) to see the mapped preview.',
+    'sw.colour': 'Swatch {n} colour', 'sw.remove': 'Remove swatch {n}', 'c.count': '{n} colours · one filament each',
+    's4.h': '04 Size', 's4.meta': 'Dimensions · mm', 's4.scale': 'Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.',
+    's4.echo': '{s} × {s} mm · seams <b class="text-ink font-medium">{a}</b> · top <b class="text-ink font-medium">{b} mm</b>',
+    's4.gen': 'Generate 3D relief', 's4.genHint': 'Usually ~10 s · first run after idle ~30–60 s · downloads a .zip',
+    'f.size': 'Tile width', 'f.maxH': 'Max relief', 'f.maxHt': 'Max relief above the base (width ÷ 10)', 'f.pad': 'Base', 'f.crown': 'Crown', 'f.crownt': 'Gentle crown on top of each colour',
+    'f.depth': 'Edge depth', 'f.deptht': 'How far each colour rolls down into its seams', 'f.clear': 'Clearance', 'f.cleart': 'Gap between colour pieces (0 = flush)',
+    'f.fillet': 'Edge roll', 'f.filletT': 'Seam to full height', 'f.outH': 'Outlines', 'f.outHt': 'Raised tube-lining ridge (0 = off)', 'f.adv': 'Advanced',
+    'f.px': 'Detail', 'f.smooth': 'Smoothing', 'f.speck': 'Min speck', 'f.floor': 'Groove floor', 'f.corner': 'Corner radius', 'f.mesh': 'Mesh grid', 'f.merge': 'Merge shades',
+    'f.bead': 'Thin-line min', 'f.outW': 'Outline width', 'f.sym': 'Symmetry', 'o.off': 'Off', 'o.auto': 'Auto', 'o.d4': '8-fold', 'o.c4': '4-fold', 'f.edgeSeam': 'Groove along edge',
+    'dg.title': 'Cross-section', 'dg.note': 'values in mm', 'dg.aria': 'Live cross-section of the tile', 'dg.size': 'Tile width', 'dg.pad': 'Base', 'dg.floor': 'Floor', 'dg.depth': 'Edge depth',
+    'dg.crown': 'Crown', 'dg.maxH': 'Max relief', 'dg.fillet': 'Edge roll', 'dg.out': 'Outline', 'dg.clear': 'Clearance', 'dg.corner': 'Corner R', 'dg.ex': 'height ×{n}',
+    foot: 'Built for Taiwan\'s 花磚 heritage · free · photos are processed in memory, never stored',
+    'nav.aria': 'Steps', 'nav.1': '01 CAPTURE', 'nav.2': '02 OUTLINE', 'nav.3': '03 COLOURS', 'nav.4': '04 SIZE',
+    'ld.title': 'Carving your tile', 'ld.cancel': 'Cancel', 'ld.upload': 'Uploading photo…', 'ld.wake': 'Waking up the server — the first run after a quiet spell takes ~30 s…',
+    'ld.dl': 'Downloading files… {a} / {b} MB', 'ld.done': 'Done', 'ld.photo': 'Loading photo…', 'ld.ok': 'OK', 'ld.uploadN': 'Uploading photo ({mb} MB)…', 'e.photo': 'Could not read this photo. Try a JPEG or PNG.', 'ld.left': ' · ~{n} s left', 'ld.sec': '{n} s',
+    'pv.title': '3D preview', 'pv.view': 'View', 'pv.top': 'Top', 'pv.iso': '3/4', 'pv.close': 'Close preview', 'pv.surface': 'Surface', 'pv.colours': 'Colours', 'pv.photo': 'Photo',
+    'pv.photoTip': 'Your photo projected from the top', 'pv.loadingPhoto': 'Loading photo…', 'pv.noPhoto': 'Photo not available', 'pv.help': 'drag orbit · right-drag pan · scroll zoom',
+    'pv.tweak': 'Tweak', 'pv.stats': '{n} colours · edge {a} mm + crown {b} mm · {k}k tris', 'pv.failed': '3D preview failed to load ({e}). You can still download the files.', 'pv.buildFail': 'Could not build the preview: {e}',
+    'fm.title': 'Files in the .zip', 'fm.all': 'All', 'fm.none': 'None', 'fm.note': '+ photo: viewers show the photo; 3MF still prints in glaze colours.',
+    'fmt.3mf': '3MF', 'fmt.3mf.d': 'glaze colours, for printing', 'fmt.3mftex': '3MF + photo', 'fmt.3mftex.d': 'prints in colours, viewers show the photo',
+    'fmt.glb': 'GLB', 'fmt.glb.d': 'viewers, web, AR', 'fmt.glbtex': 'GLB + photo', 'fmt.glbtex.d': 'with the photo',
+    'fmt.obj': 'OBJ', 'fmt.obj.d': 'glaze colours', 'fmt.objtex': 'OBJ + photo', 'fmt.objtex.d': 'with the photo', 'fmt.stl': 'STL', 'fmt.stl.d': 'one per colour',
+    'dl.prep': 'Preparing files…', 'dl.prepN': 'Preparing files… {a}/{b}', 'dl.ready': 'Download .zip ({n} files)', 'dl.ready1': 'Download .zip (1 file)', 'dl.make': 'Make & download', 'dl.none': 'Pick at least one file',
+    'e.noApi': 'Set your Cloud Run backend URL first (top-right).', 'e.noPhoto': 'Load a tile photo first.', 'e.range': '{label}: enter a value between {min} and {max}.',
+    'e.server': 'Server error {n}', 'e.cancelled': 'Cancelled / timed out.', 'e.modelFail': 'Model generation failed', 'e.closed': 'Connection closed before the files arrived — please try again.',
+    'dl.ready0': 'Download .zip', 'qr.title': 'Open on your phone', 'qr.hide': 'Hide', 'qr.show': 'Show', 'qr.wifi': 'Same Wi-Fi', 'qr.cf': 'Anywhere (Cloudflare)',
+    'qr.hint': 'Scan with your phone\'s camera. Same Wi-Fi is fastest; the Cloudflare link works on any network while this PC window is open.',
+    'qr.phoneHint': 'For phones on another network, start the app with start-windows-phone.bat (Mac/Linux: bash start-mac-linux.sh phone).',
+    'e.zipFail': 'The files failed: {e} — tap Tweak, then Generate again.', 'e.makeFail': 'Could not make the files: {e}',
+  },
+  zh: {
+    title: 'mixo-tile-gen · 花磚 3D 浮雕', desc: '把台灣花磚的照片變成可列印的多色 3D 浮雕（.3MF）。免費，在瀏覽器就能用。',
+    drop: '放開以載入花磚照片',
+    'ai.tip': '裝置端 AI（Google MediaPipe）會自動找出花磚輪廓；若無法使用，請自行拖曳四個角。',
+    'ai.loading': '：載入中', 'ai.on': '：啟用', 'ai.off': '：關閉・手動',
+    'eng.prefix': '引擎：', 'eng.checking': '檢查中…', 'eng.waking': '喚醒中…', 'eng.ready': '就緒', 'eng.err': '錯誤 {n}', 'eng.unreach': '無法連線', 'eng.notset': '未設定',
+    'api.url': '引擎網址', 'api.save': '儲存並測試', 'api.hint': '儲存在此瀏覽器・也可用 <code class="mono">?api=</code> 參數',
+    's1.h': '01 拍攝', 's1.meta': '拍一塊磚', 's1.take': '拍照或選擇照片', 's1.upload': '上傳照片',
+    's1.hint': '光線均勻、避免反光；斜拍也沒問題。', 's1.drop': '也可以直接拖放或貼上（Ctrl+V）圖片。', 's1.sample': '試用範例',
+    's2.h': '02 輪廓', 's2.meta': '校正成 1:1', 's2.overlay': '把四個角的控制點拖到磚的四個角上', 's2.cropAlt': '用於方形裁切的花磚照片',
+    's2.modeAria': '輪廓模式', 's2.corners': '四角點', 's2.crop': '方形裁切', 's2.tap': '點選偵測', 's2.again': '重新偵測', 's2.reset': '重設',
+    's2.rect': '校正後 1:1', 'o.hintCorners': '把控制點拖到釉面的四個角上。', 'o.hintCrop': '方形裁切：移動並調整方框，框住整塊花磚。適合正面拍攝的照片。',
+    'corner.TL': '左上角', 'corner.TR': '右上角', 'corner.BR': '右下角', 'corner.BL': '左下角',
+    'a.sample': '範例照片：四個角已對齊釉面，可拖曳微調。', 'a.unavailable': 'AI 無法使用，請手動拖曳四個角。', 'a.tap': '請點一下花磚上的任意位置…',
+    'a.loadingMP': '正在載入裝置端 AI（MediaPipe）…', 'a.ready': '裝置端 AI 已就緒。', 'a.off': 'AI 未啟用，改用手動模式：請把四個角拖到磚上（或使用方形裁切）。',
+    'a.stillLoading': 'AI 還在載入…載入完成後會自動吸附到磚的四個角。', 'a.finding': '正在尋找磚的邊緣…',
+    'a.nolock': '無法鎖定花磚輪廓，請手動拖曳四個角，或點一下磚面再試一次。',
+    'a.kept': '已保留你手動調整的四個角（自動偵測在你調整之後才完成）。', 'a.suggest': 'AI 建議：請確認四個角都落在釉面邊緣上，不準的請拖曳修正。',
+    's3.h': '03 顏色', 's3.meta': '點選釉色來挑色', 's3.canvas': '校正後的花磚。點一下顏色即可加入色盤。', 's3.how': '選色方式',
+    's3.mSuggest': '自動建議', 's3.dSuggest': '自動挑出主要釉色', 's3.mPick': '照片挑色', 's3.dPick': '點磚面上的顏色加入', 's3.mMapped': '對應預覽', 's3.dMapped': '只用色盤顏色重畫磚面',
+    's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '最多顏色數', 's3.clear': '清除',
+    'c.empty': '還沒有顏色，請點「自動建議」，或點磚面自行挑選（最多 {k} 種）。', 'c.max12': '最多 12 種顏色。', 'c.needPal': '請先挑選顏色（或按「自動建議」）才能看對應預覽。',
+    'sw.colour': '第 {n} 個色票的顏色', 'sw.remove': '移除第 {n} 個色票', 'c.count': '{n} 種顏色・每種顏色使用一種線材',
+    's4.h': '04 尺寸', 's4.meta': '尺寸・公釐', 's4.scale': '已依此磚尺寸重新調整浮雕（浮雕 ≤ 磚寬 ÷ 10）。可自行修改任何欄位。',
+    's4.echo': '{s} × {s} 公釐・溝底 <b class="text-ink font-medium">{a}</b>・頂面 <b class="text-ink font-medium">{b} 公釐</b>',
+    's4.gen': '產生 3D 浮雕', 's4.genHint': '通常約 10 秒・閒置後第一次約 30–60 秒・下載 .zip 壓縮檔',
+    'f.size': '磚寬', 'f.maxH': '最大浮雕', 'f.maxHt': '底座以上的最大浮雕高度（磚寬 ÷ 10）', 'f.pad': '底座', 'f.crown': '弧頂', 'f.crownt': '每個顏色頂面的微微隆起',
+    'f.depth': '邊緣深度', 'f.deptht': '每個顏色往接縫處下滑的深度', 'f.clear': '間隙', 'f.cleart': '顏色塊之間的間隙（0 = 緊貼）',
+    'f.fillet': '邊緣圓滑', 'f.filletT': '從接縫到完整高度的水平距離', 'f.outH': '輪廓線', 'f.outHt': '凸起的輪廓線（0 = 關閉）', 'f.adv': '進階',
+    'f.px': '細節', 'f.smooth': '平滑', 'f.speck': '最小斑點', 'f.floor': '溝底', 'f.corner': '轉角半徑', 'f.mesh': '網格精度', 'f.merge': '合併相近色',
+    'f.bead': '細線下限', 'f.outW': '輪廓線寬', 'f.sym': '對稱', 'o.off': '關閉', 'o.auto': '自動', 'o.d4': '8 重', 'o.c4': '4 重', 'f.edgeSeam': '沿邊緣設溝',
+    'dg.title': '剖面圖', 'dg.note': '數值單位：公釐', 'dg.aria': '花磚即時剖面圖', 'dg.size': '磚寬', 'dg.pad': '底座', 'dg.floor': '溝底', 'dg.depth': '邊緣深度',
+    'dg.crown': '弧頂', 'dg.maxH': '最大浮雕', 'dg.fillet': '邊緣圓滑', 'dg.out': '輪廓線', 'dg.clear': '間隙', 'dg.corner': '轉角 R', 'dg.ex': '高度放大 ×{n}',
+    foot: '為台灣花磚文化而做・免費・照片只在記憶體中處理，不會保存',
+    'nav.aria': '步驟', 'nav.1': '01 拍攝', 'nav.2': '02 輪廓', 'nav.3': '03 顏色', 'nav.4': '04 尺寸',
+    'ld.title': '正在雕刻你的花磚', 'ld.cancel': '取消', 'ld.upload': '上傳照片中…', 'ld.wake': '正在喚醒伺服器，閒置後第一次約需 30 秒…',
+    'ld.dl': '下載檔案中… {a} / {b} MB', 'ld.done': '完成', 'ld.photo': '正在載入照片…', 'ld.ok': '好', 'ld.uploadN': '正在上傳照片（{mb} MB）…', 'e.photo': '無法讀取這張照片，請改用 JPEG 或 PNG。', 'ld.left': '・約剩 {n} 秒', 'ld.sec': '{n} 秒',
+    'pv.title': '3D 預覽', 'pv.view': '視角', 'pv.top': '俯視', 'pv.iso': '斜視', 'pv.close': '關閉預覽', 'pv.surface': '表面', 'pv.colours': '釉色', 'pv.photo': '照片',
+    'pv.photoTip': '從上方投影的原始照片', 'pv.loadingPhoto': '載入照片中…', 'pv.noPhoto': '沒有可用的照片', 'pv.help': '拖曳旋轉・右鍵拖曳平移・滾輪縮放',
+    'pv.tweak': '調整', 'pv.stats': '{n} 種顏色・邊緣 {a} 公釐 + 弧頂 {b} 公釐・{k}k 個三角面', 'pv.failed': '3D 預覽載入失敗（{e}），仍可下載檔案。', 'pv.buildFail': '無法建立預覽：{e}',
+    'fm.title': '壓縮檔內容', 'fm.all': '全選', 'fm.none': '全不選', 'fm.note': '「+ 照片」：檢視軟體會顯示照片；3MF 仍依釉色列印。',
+    'fmt.3mf': '3MF', 'fmt.3mf.d': '釉色，供列印用', 'fmt.3mftex': '3MF + 照片', 'fmt.3mftex.d': '依釉色列印，檢視軟體顯示照片',
+    'fmt.glb': 'GLB', 'fmt.glb.d': '檢視器、網頁、AR', 'fmt.glbtex': 'GLB + 照片', 'fmt.glbtex.d': '含照片貼圖',
+    'fmt.obj': 'OBJ', 'fmt.obj.d': '釉色', 'fmt.objtex': 'OBJ + 照片', 'fmt.objtex.d': '含照片貼圖', 'fmt.stl': 'STL', 'fmt.stl.d': '每種顏色一個檔',
+    'dl.prep': '準備檔案中…', 'dl.prepN': '準備檔案中… {a}/{b}', 'dl.ready': '下載 .zip（{n} 個檔案）', 'dl.ready1': '下載 .zip（1 個檔案）', 'dl.make': '重新製作並下載', 'dl.none': '請至少勾選一種格式',
+    'e.noApi': '請先在右上角設定後端引擎網址。', 'e.noPhoto': '請先載入花磚照片。', 'e.range': '{label}：請輸入 {min} 到 {max} 之間的數值。',
+    'e.server': '伺服器錯誤 {n}', 'e.cancelled': '已取消或逾時。', 'e.modelFail': '模型產生失敗', 'e.closed': '連線在檔案送達前中斷，請再試一次。',
+    'dl.ready0': '下載 .zip', 'qr.title': '用手機開啟', 'qr.hide': '隱藏', 'qr.show': '顯示', 'qr.wifi': '同一個 Wi-Fi', 'qr.cf': '任何網路（Cloudflare）',
+    'qr.hint': '用手機相機掃描。同一個 Wi-Fi 最快；Cloudflare 連結在這台電腦的視窗開著時，任何網路都能使用。',
+    'qr.phoneHint': '手機若在其他網路，請用 start-windows-phone.bat 啟動（Mac / Linux：bash start-mac-linux.sh phone）。',
+    'e.zipFail': '檔案產生失敗：{e}。請按「調整」後再重新產生。', 'e.makeFail': '無法製作檔案：{e}',
+  },
+};
+const LANG_KEY = 'mixotile.lang';
+function detectLang() {
+  try { const s = localStorage.getItem(LANG_KEY); if (s === 'zh' || s === 'en') return s; } catch {}
+  const L = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
+  return L.some((l) => /^zh/i.test(l)) ? 'zh' : 'en';
+}
+let LANG = detectLang();
+const t = (k, v) => {
+  let s = D[LANG][k] ?? D.en[k] ?? k;
+  if (v) s = s.replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+  return s;
+};
+// server progress lines are English; map them (and a few known engine errors) client-side
+const SRV_MSG = [
+  [/^Starting$/, '開始處理'], [/^Reading photo$/, '讀取照片'], [/^Finding the glaze colours$/, '分析釉色'],
+  [/^Tracing raised outlines$/, '描繪凸起的輪廓線'], [/^Shaping the relief$/, '塑造浮雕'],
+  [/^Carving colour (\d+) of (\d+)$/, '雕刻第 $1 / $2 種顏色'], [/^Writing the 3D file$/, '寫出 3D 檔案'],
+  [/^Writing (.+?) \((\d+) of (\d+)\)$/, (m, f, i, n) => `寫出 ${f.replace(/ \+ photo$/, ' + 照片')}（第 ${i} / ${n} 個）`],
+  [/^selected tile area is too small.*$/, '選取的磚面範圍太小，請檢查四個角點'], [/^could not decode image.*$/, '無法解讀圖片（請使用 JPEG / PNG / WebP）'],
+  [/^empty image upload$/, '上傳的圖片是空的'], [/^image larger than (\d+) MB$/, '圖片超過 $1 MB'], [/^corners must be exactly 4.*$/, '必須剛好有 4 個角點'],
+  [/^model generation failed.*$/, '模型產生失敗'],
+];
+function tSrv(msg) {
+  if (LANG !== 'zh' || !msg) return msg;
+  for (const [re, to] of SRV_MSG) if (re.test(msg)) return msg.replace(re, to);
+  return msg;
+}
+const fmtMB = (b) => (b / 1048576).toFixed(1);
+function applyLang() {
+  document.documentElement.lang = LANG === 'zh' ? 'zh-Hant' : 'en';
+  document.title = t('title');
+  document.querySelector('meta[name=description]')?.setAttribute('content', t('desc'));
+  document.querySelectorAll('[data-i18n]').forEach((e) => { e.textContent = t(e.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach((e) => { e.innerHTML = t(e.dataset.i18nHtml); });
+  for (const [attr, to] of [['i18nTitle', 'title'], ['i18nAria', 'aria-label'], ['i18nAlt', 'alt'], ['i18nPh', 'placeholder']])
+    document.querySelectorAll(`[data-${attr.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}]`).forEach((e) => e.setAttribute(to, t(e.dataset[attr])));
+  $('langZh').setAttribute('aria-pressed', LANG === 'zh'); $('langEn').setAttribute('aria-pressed', LANG === 'en');
+  refreshDynamic();
+}
+function setLang(l) { LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch {} applyLang(); }
 const S = {
   src: null, srcData: null, W: 0, H: 0, blob: null,
   corners: null, mode: 'corners', cropper: null,
   flat: null, view: 'photo', swatches: [],
   segmenter: null, aiState: 'loading', tapMode: false,
   model: null, stats: null, abort: null, lastPayloadKey: null, cornerEdits: 0, cropReady: false,
+  manualPalette: false, cmode: 'suggest', texState: 'idle', dl: { state: 'idle' }, aiMsg: null, aiPillState: 'loading', engine: { state: 'checking' },
 };
 
 // --------------------------------------------------------------------- backend URL + health
@@ -412,22 +651,23 @@ function apiBase() {
   if (v === 'self') return location.origin;            // page is served by the engine itself (local / tunnel)
   return v.replace(/\/+$/, '');
 }
+function renderEngine() {
+  const e = S.engine;
+  $('apiDot').className = 'w-1.5 h-1.5 rounded-full ' + ({ checking: 'bg-gray-400 animate-pulse', waking: 'bg-gray-400 animate-pulse', ready: 'bg-emerald-500', err: 'bg-red-500', unreach: 'bg-red-500', notset: 'bg-amber-500' }[e.state]);
+  $('apiLabel').innerHTML = `<span class="pill-long">${t('eng.prefix')}</span>${t('eng.' + e.state, { n: e.n })}`;
+}
 async function checkHealth() {
   const base = apiBase();
   $('apiUrl').value = base;
-  const dot = $('apiDot'), label = $('apiLabel');
-  if (!base) { dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500'; label.textContent = 'Engine: not set'; return false; }
-  dot.className = 'w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse'; label.textContent = 'Engine: waking…';
+  const set = (state, n) => { S.engine = { state, n }; renderEngine(); };
+  if (!base) { set('notset'); return false; }
+  set('waking');
   try {
     const r = await fetch(base + '/health', { signal: AbortSignal.timeout(45000) });
     const ok = r.ok && (await r.json()).status === 'ok';
-    dot.className = `w-1.5 h-1.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-red-500'}`;
-    label.textContent = ok ? 'Engine: ready' : `Engine: error ${r.status}`;
+    set(ok ? 'ready' : 'err', r.status);
     return ok;
-  } catch {
-    dot.className = 'w-1.5 h-1.5 rounded-full bg-red-500'; label.textContent = 'Engine: unreachable';
-    return false;
-  }
+  } catch { set('unreach'); return false; }
 }
 $('apiSave').onclick = () => {
   const v = $('apiUrl').value.trim();
@@ -437,8 +677,23 @@ $('apiSave').onclick = () => {
 };
 
 // --------------------------------------------------------------------- 1. load photo
-async function loadFile(file, { detect = true } = {}) {
-  if (!file) return;
+let photoBusy = false;
+async function loadFile(file, opts = {}) {
+  if (!file || photoBusy) return;
+  photoBusy = true;
+  $('photoBusy').classList.remove('hidden'); $('pbSpin').classList.remove('hidden'); $('pbErr').classList.add('hidden'); $('pbOk').classList.add('hidden');
+  $('pbMsg').classList.remove('hidden');
+  $('fileInput').disabled = true; $('sampleBtn').disabled = true;
+  await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));   // let the overlay paint before the heavy decode
+  try { await loadFileInner(file, opts); $('photoBusy').classList.add('hidden'); }
+  catch (e) {
+    console.warn('[MixoTile] photo load failed', e);
+    $('pbSpin').classList.add('hidden'); $('pbMsg').classList.add('hidden');
+    $('pbErr').textContent = t('e.photo'); $('pbErr').classList.remove('hidden'); $('pbOk').classList.remove('hidden'); $('pbOk').focus();
+  } finally { photoBusy = false; $('fileInput').disabled = false; $('sampleBtn').disabled = false; $('fileInput').value = ''; }
+}
+$('pbOk').onclick = () => $('photoBusy').classList.add('hidden');
+async function loadFileInner(file, { detect = true } = {}) {
   let bmp;
   try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
   catch {
@@ -463,10 +718,11 @@ async function loadFile(file, { detect = true } = {}) {
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
+  S.manualPalette = false; S.swatches = []; S.cmode = 'suggest'; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
+  scheduleSuggest();
   warmBackend();
   if (detect && S.aiState !== 'failed') autoDetect(undefined, true);
 }
-$('camInput').onchange = (e) => loadFile(e.target.files[0]);
 $('fileInput').onchange = (e) => loadFile(e.target.files[0]);
 // computers: drop a photo anywhere on the page, or paste one (Ctrl+V)
 let dragDepth = 0;
@@ -491,11 +747,12 @@ const SAMPLE = { url: 'samples/roses.jpg', corners: [[510, 564], [2616, 534], [2
 $('sampleBtn').onclick = async () => {
   const blob = await (await fetch(SAMPLE.url)).blob();
   await loadFile(new File([blob], 'sample-roses.jpg', { type: 'image/jpeg' }), { detect: false });
+  if (!S.src) return;
   const k = S.W / SAMPLE.ref;
   S.corners = SAMPLE.corners.map(([x, y]) => [x * k, y * k]);
   S.cornerEdits++;                       // counts as a manual edit: auto-detect won't move them
   drawOverlay(); updateWarp();
-  setAiStatus('Sample photo: corners already placed on the glaze. Drag them to adjust.', 'ok');
+  setAiStatus('a.sample', 'ok');
 };
 
 // --------------------------------------------------------------------- homography helpers
@@ -563,7 +820,7 @@ function drawOverlay() {
   ['TL', 'TR', 'BR', 'BL'].forEach((name, i) => {
     const [x, y] = S.corners[i];
     const g = document.createElementNS(NS, 'g'); g.classList.add('handle'); g.dataset.i = i;
-    g.setAttribute('role', 'slider'); g.setAttribute('aria-label', `${name} corner`); g.setAttribute('tabindex', '0');
+    g.setAttribute('role', 'slider'); g.setAttribute('aria-label', t('corner.' + name)); g.setAttribute('tabindex', '0');
     const hit = document.createElementNS(NS, 'circle'); hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', r * 2.2); hit.setAttribute('fill', 'transparent');
     const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
     c.setAttribute('fill', 'rgba(28,26,23,.55)'); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', sw);
@@ -614,19 +871,18 @@ window.addEventListener('resize', () => drawOverlay());
 $('resetCornersBtn').onclick = () => { S.cornerEdits++; S.corners = defaultCorners(); drawOverlay(); updateWarp(); };
 $('autoBtn').onclick = () => autoDetect();
 $('tapDetectBtn').onclick = () => {
-  if (S.aiState !== 'ready') { setAiStatus('AI unavailable — drag corners manually.', 'warn'); return; }
-  S.tapMode = true; $('tapDetectBtn').classList.add('flash'); setAiStatus('Tap anywhere on the tile…', 'info');
+  if (S.aiState !== 'ready') { setAiStatus('a.unavailable', 'warn'); return; }
+  S.tapMode = true; $('tapDetectBtn').classList.add('flash'); setAiStatus('a.tap', 'info');
 };
 
 // --------------------------------------------------------------------- 2b. Cropper.js fallback
+function renderOutlineHint() { $('outlineHint').textContent = t(S.mode === 'corners' ? 'o.hintCorners' : 'o.hintCrop'); }
 function setMode(m) {
   S.mode = m;
   $('modeCorners').setAttribute('aria-pressed', m === 'corners'); $('modeCrop').setAttribute('aria-pressed', m === 'crop');
   $('cornerStage').classList.toggle('hidden', m !== 'corners'); $('cornerTools').classList.toggle('hidden', m !== 'corners');
   $('cropStage').classList.toggle('hidden', m !== 'crop');
-  $('outlineHint').textContent = m === 'corners'
-    ? 'Drag the handles onto the four glazed corners.'
-    : 'Square crop: move / resize the box around the tile. Best for straight-on photos.';
+  renderOutlineHint();
   if (m === 'crop' && S.src) {
     if (!S.cropper) {
       S.cropper = new Cropper($('cropImg'), {
@@ -664,23 +920,27 @@ function updateWarp() {
   const t = document.createElement('canvas'); t.width = t.height = FLAT; t.getContext('2d').putImageData(S.flat, 0, 0);
   $('warpThumb').getContext('2d').drawImage(t, 0, 0, 320, 320);
   renderFlat();
+  scheduleSuggest();
 }
 
 // --------------------------------------------------------------------- MediaPipe (Google AI Edge) auto-outline
-function setAiStatus(text, kind = 'info') {
-  const icon = { info: '○', ok: '✓', warn: '!', busy: '' }[kind];
-  $('aiStatus').innerHTML = (kind === 'busy' ? '<span class="spinner"></span>' : `<span aria-hidden="true" class="text-ink">${icon}</span>`) + `<span>${text}</span>`;
+function renderAiStatus() {
+  const m = S.aiMsg; if (!m) { $('aiStatus').innerHTML = ''; return; }
+  const icon = { info: '○', ok: '✓', warn: '!', busy: '' }[m.kind];
+  $('aiStatus').innerHTML = (m.kind === 'busy' ? '<span class="spinner"></span>' : `<span aria-hidden="true" class="text-ink">${icon}</span>`) + `<span>${t(m.key)}</span>`;
 }
+function setAiStatus(key, kind = 'info') { S.aiMsg = { key, kind }; renderAiStatus(); }
 function setAiPill(state) {
-  const t = { loading: ['bg-gray-400 animate-pulse', ': loading'], ready: ['bg-emerald-500', ': on'], off: ['bg-amber-500', ': off · manual'] }[state];
-  $('aiDot').className = 'w-1.5 h-1.5 rounded-full ' + t[0];
-  $('aiLabel').innerHTML = `AI<span class="pill-long">${t[1]}</span>`;
+  S.aiPillState = state;
+  const c = { loading: ['bg-gray-400 animate-pulse', 'ai.loading'], ready: ['bg-emerald-500', 'ai.on'], off: ['bg-amber-500', 'ai.off'] }[state];
+  $('aiDot').className = 'w-1.5 h-1.5 rounded-full ' + c[0];
+  $('aiLabel').innerHTML = `AI<span class="pill-long">${t(c[1])}</span>`;
   // detection buttons do nothing without the model
   ['tapDetectBtn', 'autoBtn'].forEach((id) => $(id).classList.toggle('hidden', state === 'off'));
   $('cornerTools').querySelectorAll('.text-faint').forEach((e) => e.classList.toggle('hidden', state === 'off'));
 }
 async function initSegmenter() {
-  setAiStatus('Loading on-device AI (MediaPipe)…', 'busy');
+  setAiStatus('a.loadingMP', 'busy');
   const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
   try {
     const vision = await Promise.race([import(`${MP_BASE}/vision_bundle.mjs`), timeout(20000)]);
@@ -697,13 +957,13 @@ async function initSegmenter() {
     if (!S.segmenter) throw last;
     S.aiState = 'ready';
     setAiPill('ready');
-    setAiStatus('On-device AI ready.', 'ok');
+    setAiStatus('a.ready', 'ok');
     if (S.src && S.mode === 'corners') autoDetect(undefined, true);
   } catch (e) {
     console.warn('[MixoTile] MediaPipe unavailable, falling back to manual crop:', e);
     S.aiState = 'failed';
     setAiPill('off');
-    setAiStatus('AI off: manual mode. Drag the 4 corners onto the tile (or use Square crop).', 'warn');
+    setAiStatus('a.off', 'warn');
   }
 }
 
@@ -743,10 +1003,10 @@ function maskToQuad({ w, h, data }, kp) {
 async function autoDetect(points, auto = false) {
   if (auto && S.cornerEdits > 0) return;
   if (S.aiState !== 'ready' || !S.src) {
-    if (S.aiState === 'loading') setAiStatus('AI still loading… corners will snap automatically.', 'busy');
+    if (S.aiState === 'loading') setAiStatus('a.stillLoading', 'busy');
     return;
   }
-  setAiStatus('Finding tile edges…', 'busy');
+  setAiStatus('a.finding', 'busy');
   const s = Math.min(1, 640 / Math.max(S.W, S.H)), c = document.createElement('canvas');
   c.width = Math.round(S.W * s); c.height = Math.round(S.H * s);
   c.getContext('2d').drawImage(S.src, 0, 0, c.width, c.height);
@@ -758,10 +1018,10 @@ async function autoDetect(points, auto = false) {
     const r = maskToQuad(m, kp);
     if (r && (!best || r.score > best.score)) best = { ...r, sx: S.W / m.w, sy: S.H / m.h };
   }
-  if (!best) { setAiStatus('Couldn’t lock onto the tile outline — drag the corners, or tap the tile to retry.', 'warn'); return; }
-  if (S.cornerEdits !== gen || (auto && S.cornerEdits > 0)) { setAiStatus('Kept your manual corners (auto-detect finished after you edited them).', 'info'); return; }
+  if (!best) { setAiStatus('a.nolock', 'warn'); return; }
+  if (S.cornerEdits !== gen || (auto && S.cornerEdits > 0)) { setAiStatus('a.kept', 'info'); return; }
   S.corners = orderCorners(best.q.map(([x, y]) => [x * best.sx, y * best.sy]));
-  setAiStatus('AI suggestion: check that the 4 corners sit on the glaze edges, and drag any that don’t.', 'ok');
+  setAiStatus('a.suggest', 'ok');
   if (S.mode !== 'corners') setMode('corners'); else { drawOverlay(); updateWarp(); }
 }
 
@@ -793,8 +1053,9 @@ $('flatCanvas').addEventListener('click', (e) => {
   const [u, v] = flatCoords(e), c = sampleAt(u, v), L = srgbToLab(c);
   const dup = S.swatches.findIndex((s) => { const l = srgbToLab(s); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 6; });
   if (dup >= 0) { flashSwatch(dup); return; }
-  if (S.swatches.length >= 12) { showError('Maximum 12 colours.'); return; }
-  S.swatches.push(c.map(Math.round)); renderSwatches(); renderFlat();
+  if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
+  takeManual();
+  S.swatches.push(c.map(Math.round)); renderSwatches(); S.cmode = 'pick'; S.view = 'photo'; renderFlat(); updateModeButtons();
 });
 $('flatCanvas').addEventListener('pointermove', (e) => {
   if (!S.flat || e.pointerType === 'touch') return;
@@ -805,25 +1066,31 @@ $('flatCanvas').addEventListener('pointermove', (e) => {
 });
 $('flatCanvas').addEventListener('pointerleave', () => $('hoverChip').classList.add('hidden'));
 
-function flashSwatch(i) { const el = $('swatches').children[i]; el?.classList.remove('flash'); void el?.offsetWidth; el?.classList.add('flash'); }
+function flashSwatch(i) { const el = $('swatches').children[i]?.querySelector('.swatch'); el?.classList.remove('flash'); void el?.offsetWidth; el?.classList.add('flash'); }
+// Once the user edits the palette by hand, automatic suggestions never overwrite it (like S.cornerEdits for corners).
+const takeManual = () => { S.manualPalette = true; };
+function renderEmpty() { $('swatchEmpty').textContent = t('c.empty', { k: $('numColors').value }); }
 function renderSwatches() {
   const box = $('swatches'); box.innerHTML = '';
   S.swatches.forEach((c, i) => {
+    const chip = document.createElement('div'); chip.className = 'chip';
     const d = document.createElement('div'); d.className = 'swatch'; d.style.background = toHex(c); d.title = toHex(c);
-    const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(c); inp.setAttribute('aria-label', `Swatch ${i + 1} colour`);
-    inp.oninput = () => { S.swatches[i] = fromHex(inp.value); d.style.background = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
-    const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.setAttribute('aria-label', `Remove swatch ${i + 1}`);
-    x.onclick = (ev) => { ev.stopPropagation(); S.swatches.splice(i, 1); renderSwatches(); renderFlat(); };
-    d.append(inp, x); box.appendChild(d);
+    const hex = document.createElement('span'); hex.className = 'hex'; hex.textContent = toHex(c);
+    const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(c); inp.setAttribute('aria-label', t('sw.colour', { n: i + 1 }));
+    inp.oninput = () => { takeManual(); S.swatches[i] = fromHex(inp.value); d.style.background = inp.value; hex.textContent = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.setAttribute('aria-label', t('sw.remove', { n: i + 1 }));
+    x.onclick = (ev) => { ev.stopPropagation(); takeManual(); S.swatches.splice(i, 1); renderSwatches(); renderFlat(); };
+    d.append(inp, x); chip.append(d, hex); box.appendChild(chip);
   });
   $('swatchEmpty').classList.toggle('hidden', S.swatches.length > 0);
+  renderEmpty();
   renderTiers();
 }
 function renderTiers() {   // palette summary — every colour is an equal cushion, no height order
   const pal = S.swatches, box = $('tierList');
   updateHeightEcho();
   if (!pal.length) { box.innerHTML = ''; return; }
-  box.innerHTML = `<p class="mono text-[11px] uppercase tracking-wider text-mute">${pal.length} colours · one filament each</p>`;
+  box.innerHTML = `<p class="mono text-[11px] uppercase tracking-wider text-mute">${t('c.count', { n: pal.length })}</p>`;
 }
 function renderFlat() {
   if (!S.flat) return;
@@ -844,42 +1111,65 @@ function renderFlat() {
     g.putImageData(out, 0, 0);
   } else g.putImageData(S.flat, 0, 0);
 }
-function setView(v) {
-  if (v === 'mapped' && !S.swatches.length) { showError('Pick colours (or tap Suggest) to see the mapped preview.'); v = 'photo'; }
-  S.view = v; $('viewPhoto').setAttribute('aria-pressed', v === 'photo'); $('viewMapped').setAttribute('aria-pressed', v === 'mapped'); renderFlat();
+// the three colour actions: Suggest (auto palette, mapped view) · Photo (tap the tile to pick) · Mapped (preview)
+function updateModeButtons() {
+  $('suggestBtn').setAttribute('aria-pressed', S.cmode === 'suggest');
+  $('viewPhoto').setAttribute('aria-pressed', S.cmode === 'pick');
+  $('viewMapped').setAttribute('aria-pressed', S.cmode === 'mapped');
 }
-$('viewPhoto').onclick = () => setView('photo');
-$('viewMapped').onclick = () => setView('mapped');
-$('clearSwatches').onclick = () => { S.swatches = []; renderSwatches(); setView('photo'); };
-$('numColors').oninput = () => { $('kEcho').textContent = $('numColors').value; };
-$('suggestBtn').onclick = () => {   // quick client-side k-means (Lab) on a pixel sample
-  if (!S.flat) return;
-  const k = Math.min(12, Math.max(2, +$('numColors').value | 0)), d = S.flat.data, pts = [];
-  for (let n = 0; n < 5000; n++) { const i = ((Math.random() * FLAT * FLAT) | 0) * 4; pts.push([d[i], d[i + 1], d[i + 2]]); }
+function setView(v) {
+  if (v === 'mapped' && !S.swatches.length) { showError(t('c.needPal')); v = 'photo'; }
+  S.view = v; renderFlat(); updateModeButtons();
+}
+function setColorMode(m) { S.cmode = m; setView(m === 'pick' ? 'photo' : 'mapped'); }
+$('viewPhoto').onclick = () => setColorMode('pick');
+$('viewMapped').onclick = () => { if (!S.swatches.length) { showError(t('c.needPal')); return; } setColorMode('mapped'); };
+$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); S.cmode = 'pick'; setView('photo'); };
+$('numColors').addEventListener('input', renderEmpty);
+$('numColors').addEventListener('change', () => { if (!S.manualPalette && S.flat) runSuggest(); });
+
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
+function suggestPalette(k) {   // k-means (Lab) on a fixed 70×70 pixel grid: same photo -> same palette
+  const d = S.flat.data, pts = [], N = 70, step = FLAT / N, rnd = mulberry32(12345);
+  for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) { const i = (Math.floor((gy + 0.5) * step) * FLAT + Math.floor((gx + 0.5) * step)) * 4; pts.push([d[i], d[i + 1], d[i + 2]]); }
   const lab = pts.map(srgbToLab);
-  let cent = [lab[0]];                                   // k-means++ seeding
+  let cent = [lab[Math.floor(rnd() * lab.length)]];       // k-means++ seeding
   while (cent.length < k) {
     const dist = lab.map((p) => Math.min(...cent.map((c) => (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2 + (c[2] - p[2]) ** 2)));
-    let r = Math.random() * dist.reduce((a, b) => a + b, 0), j = 0; while ((r -= dist[j]) > 0 && j < dist.length - 1) j++;
+    let r = rnd() * dist.reduce((a, b) => a + b, 0), j = 0; while ((r -= dist[j]) > 0 && j < dist.length - 1) j++;
     cent.push(lab[j]);
   }
   let assign = new Array(lab.length).fill(0);
   for (let it = 0; it < 15; it++) {
     assign = lab.map((p) => { let b = 0, bd = Infinity; cent.forEach((c, j) => { const dd = (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2 + (c[2] - p[2]) ** 2; if (dd < bd) { bd = dd; b = j; } }); return b; });
-    cent = cent.map((c, j) => { const m = lab.filter((_, i) => assign[i] === j); return m.length ? [0, 1, 2].map((t) => m.reduce((a, p) => a + p[t], 0) / m.length) : c; });
+    cent = cent.map((c, j) => { const m = lab.filter((_, i) => assign[i] === j); return m.length ? [0, 1, 2].map((q) => m.reduce((a, p) => a + p[q], 0) / m.length) : c; });
   }
-  S.swatches = cent.map((_, j) => {           // report as mean sRGB of members (avoids Lab->RGB code)
+  return cent.map((c, j) => {           // report as mean sRGB of members (avoids Lab->RGB code)
     const m = pts.filter((_, i) => assign[i] === j); if (!m.length) return null;
-    return [0, 1, 2].map((t) => Math.round(m.reduce((a, p) => a + p[t], 0) / m.length));
-  }).filter(Boolean);
-  renderSwatches(); setView('mapped');
-};
+    return { L: c[0], rgb: [0, 1, 2].map((q) => Math.round(m.reduce((a, p) => a + p[q], 0) / m.length)) };
+  }).filter(Boolean).sort((a, b) => b.L - a.L).map((x) => x.rgb);
+}
+function runSuggest() {
+  if (!S.flat) return;
+  S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0)));
+  renderSwatches();
+  if (S.cmode === 'suggest') S.view = 'mapped';
+  renderFlat(); updateModeButtons();
+}
+$('suggestBtn').onclick = () => { S.manualPalette = false; S.cmode = 'suggest'; runSuggest(); };
+let sugTimer = null;
+function scheduleSuggest() {   // after every photo load / corner change (debounced), unless the user took over the palette
+  if (S.manualPalette) return;
+  clearTimeout(sugTimer);
+  sugTimer = setTimeout(() => { if (!S.manualPalette && S.flat) runSuggest(); }, 350);
+}
 
 // --------------------------------------------------------------------- 4. settings
 const settingIds = ['tileSize', 'maxH', 'padThick', 'reliefH', 'fillet', 'domeH', 'mergeDE', 'beadH', 'outlineH', 'outlineW', 'clearance', 'pxPerMm', 'smoothing', 'minFeature', 'grooveFloor', 'cornerR', 'meshRes'];
 function updateHeightEcho() {
   const pad = +$('padThick').value, fl = +$('grooveFloor').value, rh = +$('reliefH').value, dh = +$('domeH').value, size = (+$('tileSize').value).toFixed(1);
-  $('heightEcho').innerHTML = `${size} × ${size} mm · seams <b class="text-ink font-medium">${(pad + fl).toFixed(1)}</b> · top <b class="text-ink font-medium">${(pad + fl + rh + dh).toFixed(1)} mm</b>`;
+  $('heightEcho').innerHTML = t('s4.echo', { s: size, a: (pad + fl).toFixed(1), b: (pad + fl + rh + dh).toFixed(1) });
+  renderDiagram();
 }
 [...settingIds, 'numColors'].forEach((id) => $(id).addEventListener('input', renderTiers));
 
@@ -913,18 +1203,117 @@ function readSettings() {
   const v = Object.fromEntries(settingIds.map((id) => [id, parseFloat($(id).value)]));
   for (const id of settingIds) {
     const el = $(id), n = v[id];
-    if (!Number.isFinite(n) || n < +el.min || n > +el.max) { el.focus(); throw new Error(`${el.closest('.field').querySelector('label').textContent}: enter a value between ${el.min} and ${el.max}.`); }
+    if (!Number.isFinite(n) || n < +el.min || n > +el.max) { el.focus(); throw new Error(t('e.range', { label: el.closest('.field').querySelector('label').textContent, min: el.min, max: el.max })); }
   }
   return v;
 }
 
+// --------------------------------------------------------------------- step 4: live cross-section diagram
+// Plain SVG, one proportional scale for width and heights (heights exaggerated ×ex, marked on the drawing).
+const DG_PART = { tileSize: 'size', maxH: 'maxH', padThick: 'pad', domeH: 'crown', reliefH: 'depth', clearance: 'clear', fillet: 'fillet', outlineH: 'outline', outlineW: 'outline', grooveFloor: 'floor', cornerR: 'corner' };
+let dgHl = null;
+function dgHighlight(p) {
+  dgHl = p;
+  $('dgSvg').querySelectorAll('[data-p]').forEach((e) => e.classList.toggle('hl', e.dataset.p === p));
+}
+Object.entries(DG_PART).forEach(([id, part]) => {
+  const el = $(id), fld = el.closest('.field');
+  el.addEventListener('focus', () => dgHighlight(part));
+  el.addEventListener('blur', () => dgHighlight(null));
+  fld.addEventListener('pointerenter', () => dgHighlight(part));
+  fld.addEventListener('pointerleave', () => dgHighlight(DG_PART[document.activeElement?.id] || null));
+});
+function renderDiagram() {
+  const svg = $('dgSvg'); if (!svg) return;
+  const num = (id, d) => { const v = parseFloat($(id).value); return Number.isFinite(v) && v >= 0 ? v : d; };
+  const W = Math.max(20, num('tileSize', 150)), maxH = num('maxH', 15), pad = Math.max(0.4, num('padThick', 15)), crown = num('domeH', 1), depth = num('reliefH', 3),
+    clear = num('clearance', 0), fil = Math.max(0.5, num('fillet', 6)), flo = Math.max(0.1, num('grooveFloor', 0.4)), cr = num('cornerR', 2),
+    olH = num('outlineH', 0.8), olW = Math.max(0.4, num('outlineW', 1.2));
+  const f = (x) => String(+x.toFixed(2));
+  const VW = 360, L = 36, R = 92, TW = VW - L - R, sx = TW / W;
+  const above = Math.max(maxH, flo + depth + crown);
+  let ex = 3; if ((pad + above) * sx * ex > 200) ex = Math.max(1, 200 / ((pad + above) * sx));
+  const sy = sx * ex, TOP = 60, BOT = 52;
+  const y0 = TOP + (pad + above) * sy, H = Math.ceil(y0 + BOT), x0 = L, x1 = L + TW;
+  const yPad = y0 - pad * sy, yS = yPad - flo * sy, yH = yS - depth * sy, yT = yH - crown * sy, yCap = yPad - maxH * sy;
+  const yTop = Math.min(yT, yCap);
+  const r1 = (v) => Math.round(v * 10) / 10;
+
+  // dimension line with arrow heads (tiny ones collapse to a plain tick line)
+  const arr = (xa, ya, xb, yb) => {
+    const len = Math.hypot(xb - xa, yb - ya), ux = (xb - xa) / (len || 1), uy = (yb - ya) / (len || 1), a = Math.min(4.5, len / 2.2), w = a * 0.4;
+    const head = (x, y, dx, dy) => `M${r1(x)} ${r1(y)}l${r1(dx * a - dy * w)} ${r1(dy * a + dx * w)}l${r1(2 * dy * w)} ${r1(-2 * dx * w)}z`;
+    return `<path class="ln" d="M${r1(xa)} ${r1(ya)}L${r1(xb)} ${r1(yb)}"/><path d="${head(xa, ya, ux, uy)}${head(xb, yb, -ux, -uy)}" fill="currentColor"/>`;
+  };
+  const dot = (xa, ya, xb, yb) => `<path class="ln dot" d="M${r1(xa)} ${r1(ya)}L${r1(xb)} ${r1(yb)}"/>`;
+  const txt = (x, y, s, anchor = 'start', extra = '') => `<text x="${r1(x)}" y="${r1(y)}" text-anchor="${anchor}" ${extra}>${s}</text>`;
+
+  // --- pad slab (rounded outer corners) and the colour cushions
+  const rr = Math.min(cr * sx, (pad * sy) / 2, TW / 2);
+  let body = `<rect class="shape" data-p="pad" x="${x0}" y="${r1(yPad)}" width="${TW}" height="${r1(pad * sy)}" rx="${r1(rr)}" fill="#f6f3ee"/>`;
+  const gh = clear > 0 ? Math.max((clear * sx) / 2, 0.8) : 0;
+  const bx = [x0, x0 + TW / 3, x0 + (2 * TW) / 3, x1], fills = ['#ebe6de', '#dcd5ca', '#cfc7ba'];
+  let sh3 = null;
+  for (let i = 0; i < 3; i++) {
+    const xl = bx[i] + (i > 0 ? gh : 0), xr = bx[i + 1] - (i < 2 ? gh : 0), fw = Math.min(fil * sx, (xr - xl) / 2.6), xm = (xl + xr) / 2;
+    if (i === 2) sh3 = { xl, xr, fw, xm };
+    body += `<path class="shape" d="M${r1(xl)} ${r1(yPad)}V${r1(yS)}C${r1(xl + fw * 0.55)} ${r1(yS)} ${r1(xl + fw * 0.45)} ${r1(yH)} ${r1(xl + fw)} ${r1(yH)}`
+      + `Q${r1(xm)} ${r1(yH - 2 * crown * sy)} ${r1(xr - fw)} ${r1(yH)}C${r1(xr - fw * 0.45)} ${r1(yH)} ${r1(xr - fw * 0.55)} ${r1(yS)} ${r1(xr)} ${r1(yS)}V${r1(yPad)}Z" fill="${fills[i]}"/>`;
+  }
+  // outline ridges sit in the seams; overlays only show while their input is highlighted
+  const ow = Math.max(olW * sx, 1.6);
+  if (olH > 0) for (const i of [1, 2]) body += `<rect class="fillhl" data-p="outline" x="${r1(bx[i] - ow / 2)}" y="${r1(yS - olH * sy)}" width="${r1(ow)}" height="${r1(olH * sy + 0.6)}" rx="0.8" fill="#1c1a17"/>`;
+  body += `<rect class="ov" data-p="floor" x="${x0}" y="${r1(yS)}" width="${TW}" height="${r1(Math.max(flo * sy, 1.5))}"/>`;
+  if (clear > 0) for (const i of [1, 2]) body += `<rect class="ov" data-p="clear" x="${r1(bx[i] - gh - 0.5)}" y="${r1(yS)}" width="${r1(gh * 2 + 1)}" height="${r1(Math.max(flo * sy, 1.5))}"/>`;
+  if (rr > 0.5) body += `<path class="ovs" data-p="corner" d="M${x0} ${r1(y0 - rr)}A${r1(rr)} ${r1(rr)} 0 0 0 ${r1(x0 + rr)} ${y0}"/>`;
+
+  // --- vertical dimension chain on the right: base | floor | edge depth | crown
+  const xd = x1 + 12;
+  const chain = [
+    { p: 'pad', a: y0, b: yPad, s: `${t('dg.pad')} ${f(pad)}`, ext: x1 },
+    { p: 'floor', a: yPad, b: yS, s: `${t('dg.floor')} ${f(flo)}`, ext: x1 },
+    { p: 'depth', a: yS, b: yH, s: `${t('dg.depth')} ${f(depth)}`, ext: x1 },
+    { p: 'crown', a: yH, b: yT, s: `${t('dg.crown')} ${f(crown)}`, ext: sh3.xm },
+  ];
+  let dims = '', prev = Infinity;
+  for (const c of chain) {
+    const mid = (c.a + c.b) / 2, ly = Math.min(mid, prev - 11.5); prev = ly;
+    dims += `<g data-p="${c.p}">${dot(c.ext, c.b, xd + 3, c.b)}${c.p === 'pad' ? dot(x1, c.a, xd + 3, c.a) : ''}${arr(xd, c.a, xd, c.b)}`
+      + (Math.abs(ly - mid) > 1 ? `<path class="ln" d="M${xd} ${r1(mid)}L${xd + 5} ${r1(ly)}"/>` : '') + txt(xd + 7, ly + 3, c.s) + '</g>';
+  }
+  // max relief (cap) on the left
+  const xl2 = x0 - 12;
+  dims += `<g data-p="maxH">${arr(xl2, yPad, xl2, yCap)}${dot(xl2 - 3, yCap, x1, yCap)}${dot(xl2 - 3, yPad, x0, yPad)}`
+    + `<text transform="translate(${r1(x0 - 19)} ${r1((yPad + yCap) / 2)}) rotate(-90)" text-anchor="middle">${t('dg.maxH')} ${f(maxH)}</text></g>`;
+  // tile width
+  const yw = y0 + 26;
+  dims += `<g data-p="size">${dot(x0, y0 + 2, x0, yw + 4)}${dot(x1, y0 + 2, x1, yw + 4)}${arr(x0, yw, x1, yw)}${txt((x0 + x1) / 2, yw + 14, `${t('dg.size')} ${f(W)}`, 'middle')}</g>`;
+  // corner radius
+  dims += `<g data-p="corner">${txt(x0 + 16, y0 + 11, `${t('dg.corner')} ${f(cr)}`)}<path class="ln" d="M${x0 + 14} ${y0 + 8}L${r1(x0 + rr * 0.3)} ${r1(y0 - rr * 0.3)}"/></g>`;
+  // edge roll (left tile edge: seam level up to full height)
+  const fw1 = Math.min(fil * sx, (bx[1] - gh - x0) / 2.6), yR = yT - 9;
+  dims += `<g data-p="fillet">${dot(x0, yR, x0, yS)}${dot(x0 + fw1, yR, x0 + fw1, yH)}${arr(x0, yR, x0 + fw1, yR)}${txt(x0, yR - 5, `${t('dg.fillet')} ${f(fil)}`)}</g>`;
+  // callouts for the outline ridge and the clearance gap
+  dims += `<g data-p="outline">${txt(bx[1], 12, `${t('dg.out')} ${f(olH)} × ${f(olW)}`, 'middle')}<path class="ln dot" d="M${r1(bx[1])} 16L${r1(bx[1])} ${r1(yS - olH * sy - 1)}"/></g>`;
+  dims += `<g data-p="clear">${txt(bx[2] + 14, 28, `${t('dg.clear')} ${f(clear)}`, 'middle')}<path class="ln dot" d="M${r1(bx[2] + 8)} 32L${r1(bx[2])} ${r1(yS - 9)}"/>`
+    + `<path class="ln" d="M${r1(bx[2] - 12)} ${r1(yS - 9)}H${r1(bx[2] - gh - 1)}M${r1(bx[2] + 12)} ${r1(yS - 9)}H${r1(bx[2] + gh + 1)}"/></g>`;
+  // vertical exaggeration, marked on the drawing
+  dims += `<text x="${VW - 4}" y="${H - 6}" text-anchor="end" style="font-weight:700">${t('dg.ex', { n: +ex.toFixed(1) })}</text>`;
+
+  svg.setAttribute('viewBox', `0 0 ${VW} ${H}`);
+  svg.innerHTML = `<g>${body}</g><g>${dims}</g>`;
+  dgHighlight(dgHl);
+}
+
 // --------------------------------------------------------------------- generate
 function showError(msg) { const b = $('errorBox'); b.textContent = msg; b.classList.remove('hidden'); clearTimeout(showError.t); showError.t = setTimeout(() => b.classList.add('hidden'), 9000); }
+const errText = (e) => (e.name === 'AbortError' || e.name === 'TimeoutError' ? t('e.cancelled') : tSrv(e.message || String(e)));
 
-async function requestModel(format, onPreview = null, onTexture = null) {
+// o = { format, formats[] }, hooks = { onPreview, onTexture, onMsg }. Without onPreview the engine skips the preview mesh.
+async function requestModel(o, hooks = {}) {
   const base = apiBase();
-  if (!base) { $('apiBox').open = true; throw new Error('Set your Cloud Run backend URL first (top-right).'); }
-  if (!S.blob || !S.corners) throw new Error('Load a tile photo first.');
+  if (!base) { $('apiBox').open = true; throw new Error(t('e.noApi')); }
+  if (!S.blob || !S.corners) throw new Error(t('e.noPhoto'));
   const v = readSettings();
   const fd = new FormData();
   fd.append('image', S.blob, 'tile.jpg');
@@ -939,39 +1328,46 @@ async function requestModel(format, onPreview = null, onTexture = null) {
   fd.append('symmetry', $('symmetry').value); fd.append('edge_is_seam', $('edgeSeam').checked ? 'true' : 'false');
   fd.append('groove_floor_mm', v.grooveFloor); fd.append('corner_radius_mm', v.cornerR); fd.append('mesh_resolution_mm', v.meshRes);
   fd.append('px_per_mm', v.pxPerMm); fd.append('smoothing_mm', v.smoothing); fd.append('min_feature_mm2', v.minFeature);
-  fd.append('output_format', format);
+  fd.append('output_format', o.format);
+  if (o.formats) fd.append('formats', o.formats.join(','));
 
-  fd.append('stream', 'true'); fd.append('preview', onPreview ? 'true' : 'false');
+  fd.append('stream', 'true'); fd.append('preview', hooks.onPreview ? 'true' : 'false');
 
   S.abort = new AbortController();
   const timer = setTimeout(() => S.abort.abort(new DOMException('timeout', 'TimeoutError')), 300000);
   // 0–6 %: upload · 6–92 %: real server stages · 92–100 %: download
-  setProgress(0.02, 'Uploading photo…');
-  const wake = setTimeout(() => setProgress(0.05, 'Waking up the server — the first run after a quiet spell takes ~30 s…'), 4000);
+  const upMB = (S.blob.size / 1048576).toFixed(1);
+  setProgress(0.02, t('ld.uploadN', { mb: upMB }));
+  // fetch() has no upload progress: show an honest estimate that creeps toward (never reaches) 6 % until the server answers
+  const upT0 = Date.now(), upSecs = Math.max(1.5, S.blob.size / 1048576 / 0.6);
+  const upTick = setInterval(() => setProgress(0.02 + 0.035 * Math.min(1, (Date.now() - upT0) / 1000 / upSecs)), 250);
+  const stopUp = () => clearInterval(upTick);
+  const wake = setTimeout(() => setProgress(0.05, t('ld.wake')), 4000);
   try {
     const r = await fetch(base + '/process-tile', { method: 'POST', body: fd, signal: S.abort.signal });
     if (!r.ok) {
-      let msg = `Server error ${r.status}`;
+      let msg = t('e.server', { n: r.status });
       try { const j = await r.json(); if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail); } catch {}
       throw new Error(msg);
     }
-    // wire format: JSON lines; an event carrying "bytes": N is followed by N raw bytes (preview mesh, model)
+    // wire format: JSON lines; an event carrying "bytes": N is followed by N raw bytes (preview mesh, texture, zip)
     const reader = r.body.getReader(), dec = new TextDecoder();
     let pending = new Uint8Array(0), bin = null, result = null, pStart = null, tStart = 0;
     const finishBin = (ev, data) => {
       if (ev.type === 'preview') {
         clearTimeout(wake);
-        onPreview && onPreview({ layout: ev.layout, data: data.buffer, stats: ev.stats, size: v.tileSize });
-      } else if (ev.type === 'texture') onTexture && onTexture(data.slice());
-      else if (ev.type === 'done') result = { buf: data.buffer, stats: ev.stats, size: v.tileSize };
+        hooks.onPreview && hooks.onPreview({ layout: ev.layout, data: data.buffer, stats: ev.stats, size: v.tileSize });
+      } else if (ev.type === 'texture') hooks.onTexture && hooks.onTexture(data.slice());
+      else if (ev.type === 'done') result = { buf: data.buffer, filename: ev.filename, stats: ev.stats, size: v.tileSize };
     };
     const onEvent = (ev) => {
       if (ev.type === 'progress') {
-        clearTimeout(wake);
+        clearTimeout(wake); stopUp();
         if (ev.p >= 0.22 && pStart === null) { pStart = ev.p; tStart = Date.now(); }
         if (pStart !== null && ev.p > pStart) LP.rate = (0.86 * (ev.p - pStart)) / ((Date.now() - tStart) / 1000);
-        setProgress(0.06 + 0.86 * ev.p, ev.msg + '…');
-      } else if (ev.type === 'error') throw new Error(ev.detail || 'Model generation failed');
+        setProgress(0.06 + 0.86 * ev.p, tSrv(ev.msg) + '…');
+        hooks.onMsg && hooks.onMsg(ev.msg);
+      } else if (ev.type === 'error') throw new Error(ev.detail || t('e.modelFail'));
       else if (ev.bytes >= 0) bin = { ev, out: new Uint8Array(ev.bytes), got: 0 };
     };
     for (;;) {
@@ -983,7 +1379,7 @@ async function requestModel(format, onPreview = null, onTexture = null) {
         if (bin) {                                     // binary payload mode
           const n = Math.min(bin.ev.bytes - bin.got, buf.length - i);
           bin.out.set(buf.subarray(i, i + n), bin.got); bin.got += n; i += n;
-          if (bin.ev.type === 'done') setProgress(0.92 + 0.07 * bin.got / Math.max(bin.ev.bytes, 1), `Downloading model… ${(bin.got / 1048576).toFixed(1)} / ${(bin.ev.bytes / 1048576).toFixed(1)} MB`);
+          if (bin.ev.type === 'done') setProgress(0.92 + 0.07 * bin.got / Math.max(bin.ev.bytes, 1), t('ld.dl', { a: fmtMB(bin.got), b: fmtMB(bin.ev.bytes) }));
           if (bin.got === bin.ev.bytes) { const b = bin; bin = null; finishBin(b.ev, b.out); }
           continue;
         }
@@ -994,10 +1390,10 @@ async function requestModel(format, onPreview = null, onTexture = null) {
       }
       pending = i < buf.length ? buf.slice(i) : new Uint8Array(0);
     }
-    if (!result) throw new Error('Connection closed before the model arrived — please try again.');
-    setProgress(1, 'Done');
+    if (!result) throw new Error(t('e.closed'));
+    setProgress(1, t('ld.done'));
     return result;
-  } finally { clearTimeout(timer); clearTimeout(wake); LP.rate = 0; }
+  } finally { clearTimeout(timer); clearTimeout(wake); stopUp(); LP.rate = 0; }
 }
 
 let loadTick = null;
@@ -1013,7 +1409,7 @@ function showLoading(on) {
   clearInterval(loadTick);
   if (!on) return;
   Object.assign(LP, { t0: Date.now(), shown: 0, target: 0 });
-  $('loadMsg').textContent = 'Uploading photo…'; $('loadTimer').textContent = '0 s';
+  $('loadMsg').textContent = t('ld.upload'); $('loadTimer').textContent = t('ld.sec', { n: 0 });
   $('loadBar').style.width = '0%'; $('loadPct').textContent = '0%';
   loadTick = setInterval(() => {
     const el = (Date.now() - LP.t0) / 1000;
@@ -1025,9 +1421,9 @@ function showLoading(on) {
     let eta = '';
     if (LP.rate && LP.target > 0.25 && LP.target < 0.9) {
       const left = Math.max(1, Math.round((0.95 - LP.target) / LP.rate));
-      eta = ` · ~${left} s left`;
+      eta = t('ld.left', { n: left });
     }
-    $('loadTimer').textContent = `${Math.round(el)} s${eta}`;
+    $('loadTimer').textContent = t('ld.sec', { n: Math.round(el) }) + eta;
   }, 250);
   $('cancelBtn').focus();
 }
@@ -1039,33 +1435,91 @@ function warmBackend() {
 }
 $('cancelBtn').onclick = () => S.abort?.abort();
 
+// ---- downloads: a checklist of formats, one .zip
+const FORMATS = ['3mf', '3mftex', 'glb', 'glbtex', 'obj', 'objtex', 'stl'];
+const FMT_KEY = 'mixotile.formats';
+S.formats = (() => {
+  try { const j = JSON.parse(localStorage.getItem(FMT_KEY)); if (Array.isArray(j)) return new Set(j.filter((x) => FORMATS.includes(x))); } catch {}
+  return new Set(FORMATS);
+})();
+const fmtList = () => FORMATS.filter((c) => S.formats.has(c));
+function saveFormats() { try { localStorage.setItem(FMT_KEY, JSON.stringify(fmtList())); } catch {} }
+function renderFormats() {
+  const box = $('fmList'); box.innerHTML = '';
+  for (const code of FORMATS) {
+    const l = document.createElement('label'); l.className = 'fmt'; l.title = `${t('fmt.' + code)} — ${t('fmt.' + code + '.d')}`;
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = S.formats.has(code); cb.dataset.code = code;
+    cb.onchange = () => { cb.checked ? S.formats.add(code) : S.formats.delete(code); saveFormats(); updateDownloadBtn(); };
+    const n = document.createElement('span'); n.textContent = t('fmt.' + code);
+    const d = document.createElement('small'); d.textContent = t('fmt.' + code + '.d');
+    l.append(cb, n, d); box.appendChild(l);
+  }
+}
+function setAllFormats(on) { S.formats = new Set(on ? FORMATS : []); saveFormats(); renderFormats(); updateDownloadBtn(); }
+$('fmAll').onclick = () => setAllFormats(true);
+$('fmNone').onclick = () => setAllFormats(false);
+
+function zipCount(buf) {   // entries counted from the zip's end-of-central-directory record
+  const dv = new DataView(buf);
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65600); i--) if (dv.getUint32(i, true) === 0x06054b50) return dv.getUint16(i + 10, true);
+  return 0;
+}
+function updateDownloadBtn() {
+  const b = $('downloadBtn'), d = S.dl, key = fmtList().join(',');
+  let label, off = false;
+  if (d.state === 'preparing') { label = d.n ? t('dl.prepN', { a: d.n, b: d.N }) : t('dl.prep'); off = true; }
+  else if (!key) { label = t('dl.none'); off = true; }
+  else if (d.state === 'ready' && d.key === key) label = d.count > 1 ? t('dl.ready', { n: d.count }) : d.count === 1 ? t('dl.ready1') : t('dl.ready0');
+  else { label = t('dl.make'); off = !S.blob; }
+  b.textContent = label; b.disabled = off;
+}
+function noteWriting(msg) {   // "Writing .GLB + photo (3 of 7)" -> Preparing files… 3/7
+  const m = /^Writing .+ \((\d+) of (\d+)\)$/.exec(msg || '');
+  if (m && S.dl.state === 'preparing') { S.dl.n = +m[1]; S.dl.N = +m[2]; updateDownloadBtn(); }
+}
+function saveZip() { saveBlob(S.dl.buf, `mixotile_${Math.round(S.dl.size)}mm.zip`, 'application/zip'); }
+$('downloadBtn').onclick = async () => {
+  const list = fmtList(), key = list.join(',');
+  if (!list.length) return;
+  if (S.dl.state === 'ready' && S.dl.key === key) { saveZip(); return; }
+  // the checklist changed since Generate: re-run the engine for the new list (no preview needed)
+  S.dl = { state: 'preparing', n: 0, N: list.length, key }; updateDownloadBtn(); showLoading(true);
+  try {
+    const r = await requestModel({ format: 'bundle', formats: list }, { onMsg: noteWriting });
+    S.dl = { state: 'ready', key, buf: r.buf, count: zipCount(r.buf), size: r.size };
+    showLoading(false); updateDownloadBtn(); saveZip();
+  } catch (e) {
+    showLoading(false); S.dl = { state: 'error' }; updateDownloadBtn(); alertInModal(t('e.makeFail', { e: errText(e) }));
+  }
+};
+
 $('generateBtn').onclick = async () => {
   $('errorBox').classList.add('hidden');
   $('generateBtn').disabled = true; showLoading(true);
   let previewShown = false;
-  setDownloadReady(false);
+  const list = fmtList().length ? fmtList() : ['3mf'], key = list.join(',');
+  S.dl = { state: 'preparing', n: 0, N: list.length, key }; updateDownloadBtn();
+  S.photoTex = null; S.texState = 'loading'; setLook('colour'); renderLookState();
   try {
-    S.photoTex = null; setLook('colour'); $('pvPhoto').disabled = true;
-    const res = await requestModel('3mf', (pv) => {
-      // preview first: open the 3D view right away; the printable file keeps streaming in behind it
-      S.model = { ...pv, buf: null }; previewShown = true;
-      showLoading(false); openPreview();
-    }, (jpg) => { S.photoTex = jpg; applyPhotoTexture(); });
-    S.model = { ...(S.model || {}), ...res };
+    const res = await requestModel({ format: 'bundle', formats: list }, {
+      // preview first: open the 3D view right away; the zip keeps streaming in behind it
+      onPreview: (pv) => { S.model = { ...pv }; previewShown = true; showLoading(false); openPreview(); },
+      onTexture: (jpg) => { S.photoTex = jpg; applyPhotoTexture(); },
+      onMsg: noteWriting,
+    });
+    S.model = { ...(S.model || {}), size: res.size };
+    S.dl = { state: 'ready', key, buf: res.buf, count: zipCount(res.buf), size: res.size };
+    if (S.texState === 'loading' && !S.photoTex) { S.texState = 'none'; renderLookState(); }
     if (!previewShown) { showLoading(false); await openPreview(); }
-    setDownloadReady(true);
+    updateDownloadBtn();
   } catch (e) {
     showLoading(false);
-    const msg = e.name === 'AbortError' || e.name === 'TimeoutError' ? 'Cancelled / timed out.' : e.message || String(e);
-    if (previewShown) alertInModal('The printable file failed: ' + msg + ' — tap Tweak, then Generate again.');
-    else showError(msg);
+    S.dl = { state: 'error' }; updateDownloadBtn();
+    if (S.texState === 'loading') { S.texState = 'none'; renderLookState(); }
+    if (previewShown) alertInModal(t('e.zipFail', { e: errText(e) }));
+    else showError(errText(e));
   } finally { $('generateBtn').disabled = false; }
 };
-function setDownloadReady(ready) {
-  const b = $('downloadBtn');
-  b.disabled = !ready;
-  b.textContent = ready ? 'Download .3MF' : 'Preparing .3MF…';
-}
 
 // --------------------------------------------------------------------- 3D preview (Three.js)
 const V = { ready: false };
@@ -1119,6 +1573,24 @@ function frame(view) {
   controls.target.copy(target); controls.update();
 }
 // preview mesh from the stream: per part nv*3 float32 xyz (mm, Z-up) then nt*3 uint32 indices
+// The backing pad is split into [non-down, down] triangle ranges so its underside can stay plain white in Photo mode.
+function splitDownFaces(g, pos, idx) {
+  const nt = idx.length / 3, up = [], dn = [];
+  for (let k = 0; k < nt; k++) {
+    const a = idx[3 * k] * 3, b = idx[3 * k + 1] * 3, c = idx[3 * k + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1];
+    const nx = (pos[b + 1] - pos[a + 1]) * (pos[c + 2] - pos[a + 2]) - (pos[b + 2] - pos[a + 2]) * (pos[c + 1] - pos[a + 1]);
+    const ny = (pos[b + 2] - pos[a + 2]) * (pos[c] - pos[a]) - (pos[b] - pos[a]) * (pos[c + 2] - pos[a + 2]);
+    const nz = ux * vy - uy * vx, len = Math.hypot(nx, ny, nz) || 1;
+    (nz / len < -0.5 ? dn : up).push(k);
+  }
+  if (!dn.length || !up.length) return;
+  const out = new Uint32Array(idx.length); let o = 0;
+  for (const k of up) { out[o++] = idx[3 * k]; out[o++] = idx[3 * k + 1]; out[o++] = idx[3 * k + 2]; }
+  for (const k of dn) { out[o++] = idx[3 * k]; out[o++] = idx[3 * k + 1]; out[o++] = idx[3 * k + 2]; }
+  g.setIndex(new V.THREE.BufferAttribute(out, 1));
+  g.addGroup(0, up.length * 3, 0); g.addGroup(up.length * 3, dn.length * 3, 1);
+}
 function buildPreviewGroup(m) {
   const { THREE } = V, group = new THREE.Group();
   let off = 0;
@@ -1127,6 +1599,7 @@ function buildPreviewGroup(m) {
     const idx = new Uint32Array(m.data, off, part.nt * 3); off += part.nt * 12;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(new THREE.BufferAttribute(idx, 1));
+    if (/pad/i.test(part.name)) splitDownFaces(g, pos, idx);
     g.computeVertexNormals();
     const uv = new Float32Array(part.nv * 2);
     for (let i = 0; i < part.nv; i++) { uv[2 * i] = pos[3 * i] / m.size; uv[2 * i + 1] = pos[3 * i + 1] / m.size; }
@@ -1136,16 +1609,22 @@ function buildPreviewGroup(m) {
   }
   return group;
 }
+function renderPvStats() {
+  const st = S.model?.stats;
+  $('pvStats').innerHTML = st ? `${st.colours.map((c) => `<span title="${c.hex} · extruder ${c.extruder}" style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:2px;background:${c.hex};box-shadow:0 0 0 1px #0002"></span>`).join('')}
+    <br>${t('pv.stats', { n: st.colours.length, a: st.relief_height_mm, b: st.dome_height_mm, k: (st.triangles / 1000).toFixed(0) })}
+` : '';
+}
 async function openPreview() {
   $('previewModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   try { await initViewer(); }
-  catch (e) { $('pvStats').textContent = '3D preview failed to load (' + e.message + '). You can still download the file.'; return; }
+  catch (e) { $('pvStats').textContent = t('pv.failed', { e: e.message }); return; }
   const { THREE, scene } = V;
-  if (V.obj) { scene.remove(V.obj); V.obj.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); V.obj = null; }
+  if (V.obj) { scene.remove(V.obj); V.obj.traverse((o) => { o.geometry?.dispose(); new Set([].concat(o.userData.colourMat || [])).forEach((m) => m.dispose?.()); }); V.obj = null; }
   let group;
   try { group = S.model.layout ? buildPreviewGroup(S.model) : new V.ThreeMFLoader().parse(S.model.buf); }
-  catch (e) { $('pvStats').textContent = 'Could not build the preview: ' + e.message; return; }
+  catch (e) { $('pvStats').textContent = t('pv.buildFail', { e: e.message }); return; }
   group.rotation.x = -Math.PI / 2;                      // 3MF is Z-up
   group.traverse((o) => {
     if (!o.isMesh) return;
@@ -1153,7 +1632,8 @@ async function openPreview() {
     // 3MF carries no normals: smooth across fillets, keep crisp edges at the tier walls
     if (!o.geometry.attributes.normal) { const g = V.toCreasedNormals(o.geometry, Math.PI / 5); o.geometry.dispose(); o.geometry = g; }   // 3MF fallback only
     // fired-glaze look: glossy clear coat over a slightly satin colour layer
-    o.material = new THREE.MeshPhysicalMaterial({ color: col, roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15, vertexColors: !!o.geometry.attributes.color });
+    const mat = new THREE.MeshPhysicalMaterial({ color: col, roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15, vertexColors: !!o.geometry.attributes.color });
+    o.material = o.geometry.groups.length ? [mat, mat] : mat;    // the pad has two ranges: sides/top and underside
     o.userData.colourMat = o.material;
     old?.dispose?.(); o.castShadow = o.receiveShadow = true;
   });
@@ -1167,30 +1647,28 @@ async function openPreview() {
   const sc = V.sun.shadow.camera; sc.left = sc.bottom = -size; sc.right = sc.top = size; sc.far = size * 6; sc.updateProjectionMatrix();
   V.resize(); frame('iso');
   $('pvSize').textContent = `${size.toFixed(1)} × ${size.toFixed(1)} × ${V.height.toFixed(1)} mm`;
-  const st = S.model.stats;
-  $('pvStats').innerHTML = st ? `${st.colours.map((t) => `<span title="${t.hex} · extruder ${t.extruder}" style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:2px;background:${t.hex};box-shadow:0 0 0 1px #0002"></span>`).join('')}
-    <br>${st.colours.length} colours · edge ${st.relief_height_mm} mm + crown ${st.dome_height_mm} mm · ${(st.triangles / 1000).toFixed(0)}k tris
-` : '';
+  renderPvStats();
   $('downloadBtn').focus();
 }
-// "Photo" view: the engine's top-down photo on every colour body (the backing pad stays plain,
-// like the textured OBJ download, because its sides would show streaks)
+// "Photo" view: the engine's top-down photo (u = x/size, v = y/size) on every body. The pad is textured too, so its four
+// sides continue the border colours; only its underside (normal pointing down) stays plain white.
 function applyPhotoTexture() {
   if (!V.ready || !V.obj || !S.photoTex) return;
   const { THREE } = V;
-  if (V.photoMap) V.photoMap.dispose();
   const img = new Image(), url = URL.createObjectURL(new Blob([S.photoTex], { type: 'image/jpeg' }));
   img.onload = () => {
     URL.revokeObjectURL(url);
+    if (V.photoMap) V.photoMap.dispose();
+    (V.photoMats || []).forEach((m) => m.dispose());
     const map = new THREE.Texture(img); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8; map.needsUpdate = true;
-    V.photoMap = map;
+    const shared = { roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15 };
+    const photo = new THREE.MeshPhysicalMaterial({ map, ...shared }), white = new THREE.MeshPhysicalMaterial({ color: 0xffffff, ...shared });
+    V.photoMap = map; V.photoMats = [photo, white];
     V.obj.traverse((o) => {
       if (!o.isMesh) return;
-      o.userData.photoMat?.dispose();
-      o.userData.photoMat = /pad/i.test(o.name) || !o.geometry.attributes.uv ? o.userData.colourMat
-        : new THREE.MeshPhysicalMaterial({ map, roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15 });
+      o.userData.photoMat = !o.geometry.attributes.uv ? null : Array.isArray(o.userData.colourMat) ? [photo, white] : photo;
     });
-    $('pvPhoto').disabled = false;
+    S.texState = 'ready'; renderLookState();
     setLook(V.look || 'colour');
   };
   img.src = url;
@@ -1199,6 +1677,14 @@ function setLook(look) {
   V.look = look;
   $('pvColour').setAttribute('aria-pressed', look === 'colour'); $('pvPhoto').setAttribute('aria-pressed', look === 'photo');
   V.obj?.traverse((o) => { if (o.isMesh && o.userData.colourMat) o.material = (look === 'photo' && o.userData.photoMat) || o.userData.colourMat; });
+}
+// Photo is disabled (spinner + hint) until the texture has arrived and been applied
+function renderLookState() {
+  const st = S.texState, btn = $('pvPhoto'), hint = $('pvLookHint');
+  btn.disabled = st !== 'ready';
+  $('pvPhotoSpin').classList.toggle('hidden', st !== 'loading'); $('pvPhotoIcon').classList.toggle('hidden', st === 'loading');
+  hint.classList.toggle('hidden', st === 'ready' || st === 'idle');
+  hint.innerHTML = st === 'loading' ? `<span class="spinner"></span>${t('pv.loadingPhoto')}` : t('pv.noPhoto');
 }
 $('pvColour').onclick = () => setLook('colour');
 $('pvPhoto').onclick = () => { if (!$('pvPhoto').disabled) setLook('photo'); };
@@ -1216,24 +1702,69 @@ function saveBlob(buf, name, type) {
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
-$('downloadBtn').onclick = () => { if (S.model && S.model.buf) saveBlob(S.model.buf, `mixotile_${Math.round(S.model.size)}mm.3mf`, 'model/3mf'); };
-// other formats: re-run the engine with the same settings (≈ 10 s) and save the result
-const FORMAT_FILES = { glb: ['glb', 'model/gltf-binary'], stl: ['stl.zip', 'application/zip'],
-                       obj: ['obj.zip', 'application/zip'], objtex: ['textured.obj.zip', 'application/zip'],
-                       '3mftex': ['textured.3mf', 'model/3mf'], glbtex: ['textured.glb', 'model/gltf-binary'] };
-$('moreFormats').onchange = async (e) => {
-  const fmt = e.target.value; e.target.value = '';
-  if (!FORMAT_FILES[fmt]) return;
-  showLoading(true);
-  try { const r = await requestModel(fmt); saveBlob(r.buf, `mixotile_${Math.round(r.size)}mm.${FORMAT_FILES[fmt][0]}`, FORMAT_FILES[fmt][1]); }
-  catch (err) { alertInModal(err.message); }
-  finally { showLoading(false); }
-};
 function alertInModal(msg) { $('pvStats').textContent = '! ' + msg; }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('previewModal').classList.contains('hidden')) closePreview(); });
 
+// --------------------------------------------------------------------- phone QR panel (only on the PC, via the local launcher)
+const QR_KEY = 'mixotile.qrHidden';
+const QR = { sig: '', timer: null, lib: null };
+const isLocalHost = () => /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+function loadQrLib() {
+  return QR.lib || (QR.lib = new Promise((res, rej) => {
+    if (window.QRCode) return res();
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = () => res(); s.onerror = () => { QR.lib = null; rej(new Error('qr')); }; document.head.appendChild(s);
+  }));
+}
+async function renderQr(info) {
+  const box = $('qrPanel'), links = info.links || [];
+  box.classList.remove('hidden');
+  const hidden = (() => { try { return localStorage.getItem(QR_KEY) === '1'; } catch { return false; } })();
+  $('qrBody').classList.toggle('hidden', hidden); $('qrToggle').textContent = t(hidden ? 'qr.show' : 'qr.hide');
+  $('qrToggle').setAttribute('aria-expanded', !hidden);
+  const list = $('qrLinks'); list.innerHTML = '';
+  $('qrPhoneHint').classList.toggle('hidden', info.phone_mode !== false);
+  try { await loadQrLib(); } catch { list.textContent = links.map((l) => l.url).join('\n'); return; }
+  for (const l of links) {
+    const item = document.createElement('div'); item.className = 'qr-item';
+    const q = document.createElement('div'); q.className = 'qr-code';
+    const lab = document.createElement('p'); lab.className = 'mono text-[11px] uppercase tracking-wider text-ink mt-1.5'; lab.textContent = /wi-?fi/i.test(l.label) ? t('qr.wifi') : /cloudflare/i.test(l.label) ? t('qr.cf') : l.label;
+    const u = document.createElement('p'); u.className = 'mono text-[10.5px] text-mute break-all select-all'; u.textContent = l.url;
+    item.append(q, lab, u); list.appendChild(item);
+    new QRCode(q, { text: l.url, width: 132, height: 132, colorDark: '#1c1a17', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  }
+}
+async function pollLocalInfo() {
+  if (!isLocalHost()) return;
+  try {
+    const r = await fetch(apiBase() + '/local-info', { cache: 'no-store' });
+    if (!r.ok) throw new Error(String(r.status));
+    const info = await r.json();
+    if (!info?.links?.length) throw new Error('empty');
+    const sig = JSON.stringify([info.links, info.phone_mode]);
+    if (sig !== QR.sig) { QR.sig = sig; QR.info = info; await renderQr(info); }
+  } catch { if (QR.sig) { QR.sig = ''; QR.info = null; $('qrPanel').classList.add('hidden'); } }
+}
+$('qrToggle').onclick = () => {
+  const now = !$('qrBody').classList.contains('hidden');
+  try { localStorage.setItem(QR_KEY, now ? '1' : '0'); } catch {}
+  $('qrBody').classList.toggle('hidden', now); $('qrToggle').textContent = t(now ? 'qr.show' : 'qr.hide'); $('qrToggle').setAttribute('aria-expanded', !now);
+};
+if (isLocalHost()) { pollLocalInfo(); QR.timer = setInterval(pollLocalInfo, 20000); }
+
+// --------------------------------------------------------------------- language + dynamic text
+function refreshDynamic() {
+  renderEngine(); setAiPill(S.aiPillState); renderAiStatus(); renderOutlineHint();
+  renderSwatches(); updateModeButtons(); renderFormats(); updateDownloadBtn(); renderLookState(); renderPvStats();
+  if (S.corners) drawOverlay();
+  if (QR.info) renderQr(QR.info);
+  const lbl = QR.info; void lbl;
+}
+$('langZh').onclick = () => setLang('zh');
+$('langEn').onclick = () => setLang('en');
+
 // --------------------------------------------------------------------- boot
-renderSwatches();
+applyLang();
 checkHealth();
 initSegmenter();
 </script>

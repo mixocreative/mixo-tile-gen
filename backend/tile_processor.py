@@ -43,6 +43,7 @@ MAX_COLORS = 12
 FACES_PER_MM = int(os.environ.get("MIXOTILE_FACES_PER_MM", 120))   # decimation budget per mm of outline
 MAX_FACES_PER_BODY = 400_000
 Z_STEP_MM = float(os.environ.get("MIXOTILE_Z_STEP_MM", 0.6))       # marching-cubes level spacing above the floor
+BUNDLE_DEFAULT_NAMES = ("3mf", "3mftex", "glb", "glbtex", "obj", "objtex", "stl")
 BODY_WORKERS = int(os.environ.get("MIXOTILE_BODY_WORKERS", 1))     # measured: 2 threads are slower (memory-bound)
 
 
@@ -73,6 +74,10 @@ class TileConfig:
     remove_glare: bool = False       # opt-in glare/sticker inpaint; off by default (eats white motifs)
     symmetry: str = "off"            # "off" | "auto" | "c4" | "d4" — opt-in: averaging a slightly misaligned photo smears detail
     output_format: str = "3mf"       # see EXPORT_FORMATS
+    formats: str = ",".join(BUNDLE_DEFAULT_NAMES)   # for output_format="bundle": comma list
+
+    def bundle_formats(self) -> list[str]:
+        return [x.strip().lower() for x in self.formats.split(",") if x.strip()]
 
     def validate(self) -> "TileConfig":
         def rng(name, lo, hi):
@@ -104,6 +109,10 @@ class TileConfig:
             raise ValueError("symmetry must be auto, off, c4 or d4")
         if self.output_format not in EXPORT_FORMATS:
             raise ValueError("output_format must be one of " + ", ".join(EXPORT_FORMATS))
+        if self.output_format == "bundle":
+            bad = [x for x in self.bundle_formats() if x not in BUNDLE_DEFAULT_NAMES]
+            if bad or not self.bundle_formats():
+                raise ValueError("formats must be a comma list of " + ", ".join(BUNDLE_DEFAULT_NAMES))
         self.num_colors = int(self.num_colors)
         self.corner_radius_mm = min(self.corner_radius_mm, self.tile_size_mm / 4)
         # keep rasters bounded so huge tiles don't blow up memory / time
@@ -943,7 +952,7 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
     texture = RGB photo of the flattened tile: the colour bodies instead reference it through the
     3MF Materials extension (texture2dgroup, top-down u = x/size, v = y/size) so viewers show the
     photo; the slicer part table / extruders are unchanged, so it still prints in glaze colours.
-    The backing pad keeps its plain colour (its sides would streak).
+    The pad's sides take the same projection (continuing the border colours); its underside is white.
 
 """
     obj_id, mat_id = 1, 2
@@ -962,8 +971,11 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
       f'<basematerials id="{mat_id}">\n')
     for name, rgb, _, _ in parts:
         w('<base name="%s" displaycolor="#%02X%02X%02XFF"/>\n' % (_xml_escape(name), *map(int, rgb)))
+    if texture is not None:
+        w('<base name="underside" displaycolor="#FFFFFFFF"/>\n')
     w('</basematerials>\n')
-    textured = [texture is not None and "pad" not in name for name, _, _, _ in parts]
+    white_idx = len(parts)
+    textured = [texture is not None for _ in parts]
     if texture is not None:
         w(f'<m:texture2d id="{tex_id}" path="/3D/Textures/texture.jpg" contenttype="image/jpeg" '
           'tilestyleu="clamp" tilestylev="clamp"/>\n'
@@ -981,10 +993,16 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
     w('</vertices>\n<triangles>\n')
     ranges, v_off, t_off, uv_off = [], 0, 0, 0
     for i, ((_, _, v, f), t) in enumerate(zip(parts, textured)):
-        if t:      # property per corner = that vertex's tex2coord (numbered over textured parts only)
-            tri = np.column_stack([f + v_off, f + uv_off])
-            w(('<triangle v1="%d" v2="%d" v3="%d" pid="' + str(grp_id) + '" p1="%d" p2="%d" p3="%d"/>\n') * len(f)
-              % tuple(tri.ravel().tolist()))
+        if t:      # property per corner = that vertex's tex2coord; downward faces = white base
+            # (order inside a part is free: the slicer table only needs each part contiguous)
+            down = _bottom_faces(v, f) if _is_pad(parts[i][0]) else np.zeros(len(f), bool)
+            tex_rows = np.column_stack([f[~down] + v_off, f[~down] + uv_off])
+            w(('<triangle v1="%d" v2="%d" v3="%d" pid="' + str(grp_id) + '" p1="%d" p2="%d" p3="%d"/>\n')
+              * len(tex_rows) % tuple(tex_rows.ravel().tolist()))
+            if down.any():
+                white_rows = np.column_stack([f[down] + v_off, np.full(int(down.sum()), white_idx, np.int64)])
+                w(('<triangle v1="%d" v2="%d" v3="%d" pid="' + str(mat_id) + '" p1="%d"/>\n')
+                  * len(white_rows) % tuple(white_rows.ravel().tolist()))
             uv_off += len(v)
         else:
             tri = np.column_stack([f + v_off, np.full(len(f), i, np.int64)])
@@ -1030,8 +1048,9 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
 
 
 def write_glb(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
-    """glTF is Y-up and in metres: rotate Z-up mm -> Y-up m. texture = flattened photo: colour
-    bodies get it top-down (u = x/size, v = y/size); the pad keeps its plain colour."""
+    """glTF is Y-up and in metres: rotate Z-up mm -> Y-up m. texture = flattened photo: every body
+    gets it top-down (u = x/size, v = y/size), the pad's sides included; downward faces (the pad's
+    underside) are split off as a white mesh."""
     import trimesh
 
     scene = trimesh.Scene()
@@ -1041,13 +1060,20 @@ def write_glb(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
         img = Image.fromarray(np.ascontiguousarray(texture))
     for name, rgb, v, f in parts:
         vv = np.column_stack([v[:, 0], v[:, 2], -v[:, 1]]) / 1000.0
-        mesh = trimesh.Trimesh(vv, f, process=False)
-        if img is not None and "pad" not in name:
+        if img is not None:
+            down = _bottom_faces(v, f) if _is_pad(name) else np.zeros(len(f), bool)
             uv = np.clip(np.asarray(v, np.float64)[:, :2] / size_mm, 0.0, 1.0)
             mat = trimesh.visual.material.PBRMaterial(baseColorTexture=img, metallicFactor=0.0, roughnessFactor=0.5)
+            mesh = trimesh.Trimesh(vv, f[~down], process=False)
             mesh.visual = trimesh.visual.TextureVisuals(uv=uv, material=mat)
-        else:
-            mesh.visual = trimesh.visual.ColorVisuals(mesh, face_colors=[*map(int, rgb), 255])
+            scene.add_geometry(mesh, geom_name=name, node_name=name)
+            if down.any():
+                under = trimesh.Trimesh(vv, f[down], process=False)
+                under.visual = trimesh.visual.ColorVisuals(under, face_colors=[*WHITE, 255])
+                scene.add_geometry(under, geom_name=name + " underside", node_name=name + " underside")
+            continue
+        mesh = trimesh.Trimesh(vv, f, process=False)
+        mesh.visual = trimesh.visual.ColorVisuals(mesh, face_colors=[*map(int, rgb), 255])
         scene.add_geometry(mesh, geom_name=name, node_name=name)
     return scene.export(file_type="glb")
 
@@ -1074,6 +1100,22 @@ def preview_mesh(parts, max_tris: int = 300_000) -> tuple[list, bytes]:
         layout.append({"name": name, "hex": "#%02x%02x%02x" % tuple(int(c) for c in rgb), "nv": int(len(v)), "nt": int(len(f))})
         blobs += [v.tobytes(), f.tobytes()]
     return layout, b"".join(blobs)
+
+
+def _bottom_faces(v, f) -> np.ndarray:
+    """Faces looking straight down (the pad's underside). Textured exports colour them white;
+    every other face, the pad's 4 sides included, takes the top-down photo, so each side
+    continues the colours of the tile border above it."""
+    v = np.asarray(v, np.float64); f = np.asarray(f)
+    n = np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]])
+    return n[:, 2] < -0.5 * np.linalg.norm(n, axis=1)
+
+
+WHITE = (255, 255, 255)
+
+
+def _is_pad(name: str) -> bool:
+    return "pad" in name.lower()
 
 
 def _part_files(parts):
@@ -1125,17 +1167,18 @@ def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150
     texture=None: each body gets its glaze colour as a material (Kd).
     texture=RGB image of the flattened tile: the photo is projected straight down from the top,
     u = x / size, v = y / size, so every point shows the photo pixel directly above it (the same
-    warped photo the colours were read from, so the texture lines up with the relief exactly)."""
+    warped photo the colours were read from, so the texture lines up with the relief exactly).
+    The pad's sides take the same projection (they continue the border colours downward); its
+    underside is white."""
     names = _part_files(parts)
     mtl, obj = [], ["mtllib model.mtl\n"]
     if texture is not None:
         mtl.append("newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n")
+        mtl.append("newmtl underside\nKa 1 1 1\nKd 1 1 1\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n")
     base = vt_base = 1
     for nm, (name, rgb, v, f) in zip(names, parts):
         v = np.asarray(v, np.float64); f = np.asarray(f, np.int64)
-        # the backing pad is seen almost only from the side, where a top-down photo smears into
-        # streaks: it keeps its plain glaze colour
-        textured = texture is not None and "pad" not in name
+        textured = texture is not None
         if not textured:
             r, g, b = (int(c) / 255 for c in rgb)
             mtl.append(f"newmtl {nm}\nKa {r:.4f} {g:.4f} {b:.4f}\nKd {r:.4f} {g:.4f} {b:.4f}\nKs 0.08 0.08 0.08\nNs 40\nillum 2\n")
@@ -1145,8 +1188,11 @@ def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150
         if textured:                     # OBJ numbers v and vt separately (the pad has no vt)
             uv = np.clip(v[:, :2] / size_mm, 0.0, 1.0)
             obj.append(("vt %.5f %.5f\n" * len(uv)) % tuple(uv.ravel()))
-            fv = np.stack([idx, f + vt_base], axis=2)                 # (n, 3, [v, vt])
-            obj.append(("f %d/%d %d/%d %d/%d\n" * len(f)) % tuple(fv.ravel()))
+            down = _bottom_faces(v, f) if _is_pad(name) else np.zeros(len(f), bool)
+            fv = np.stack([idx[~down], f[~down] + vt_base], axis=2)  # (n, 3, [v, vt])
+            obj.append(("f %d/%d %d/%d %d/%d\n" * len(fv)) % tuple(fv.ravel()))
+            if down.any():                                            # underside: plain white
+                obj.append("usemtl underside\n" + ("f %d %d %d\n" * int(down.sum())) % tuple(idx[down].ravel()))
             vt_base += len(v)
         else:
             obj.append(("f %d %d %d\n" * len(f)) % tuple(idx.ravel()))
@@ -1170,7 +1216,28 @@ EXPORT_FORMATS = {
     "stl": ("stl.zip", "application/zip"),
     "obj": ("obj.zip", "application/zip"),
     "objtex": ("textured.obj.zip", "application/zip"),
+    "bundle": ("all.zip", "application/zip"),    # several formats from ONE run (TileConfig.formats)
 }
+BUNDLE_DEFAULT = ("3mf", "3mftex", "glb", "glbtex", "obj", "objtex", "stl")
+# inside the bundle zip: single files as they are, the zipped formats unpacked into folders
+_BUNDLE_DIR = {"stl": "stl", "obj": "obj", "objtex": "obj_textured"}
+
+
+def write_bundle(parts, formats, texture, size_mm: float, stem: str, progress=None) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=5) as z:
+        for i, fmt in enumerate(formats):
+            if progress:
+                progress(i, len(formats), fmt)
+            data = export_parts(parts, fmt, texture, size_mm)
+            if fmt in _BUNDLE_DIR:
+                with zipfile.ZipFile(io.BytesIO(data)) as inner:
+                    for n in inner.namelist():
+                        z.writestr(f"{stem}_{_BUNDLE_DIR[fmt]}/{n}", inner.read(n))
+            else:
+                z.writestr(f"{stem}.{EXPORT_FORMATS[fmt][0]}", data)
+            del data
+    return buf.getvalue()
 
 
 def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
@@ -1204,7 +1271,8 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     # photo texture = the same warp as the geometry (inset, symmetry), projected top-down:
     # 2048 px for the textured OBJ, 1024 px for the browser preview's "Photo" view
     texture = preview_tex = None
-    want_tex = cfg.output_format.endswith("tex")
+    want_tex = cfg.output_format.endswith("tex") or (
+        cfg.output_format == "bundle" and any(x.endswith("tex") for x in cfg.bundle_formats()))
     if want_tex or on_parts:
         texture = warp_tile(rgb, corners, 2048 if want_tex else 1024, corners_scale, inset=0.015)
         if sym not in ("off", "none"):     # same symmetry group the geometry used
@@ -1257,7 +1325,14 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
         on_parts(parts, stats, preview_tex)
     report(0.90, "Writing the 3D file")
     t2 = time.monotonic()
-    data = export_parts(parts, cfg.output_format, texture, cfg.tile_size_mm)
+    if cfg.output_format == "bundle":
+        fmts = cfg.bundle_formats()
+        names = {"3mf": ".3MF", "3mftex": ".3MF + photo", "glb": ".GLB", "glbtex": ".GLB + photo",
+                 "obj": ".OBJ", "objtex": ".OBJ + photo", "stl": ".STL"}
+        data = write_bundle(parts, fmts, texture, cfg.tile_size_mm, f"mixotile_{int(round(cfg.tile_size_mm))}mm",
+                            progress=lambda i, n, f: report(0.90 + 0.09 * i / n, f"Writing {names[f]} ({i + 1} of {n})"))
+    else:
+        data = export_parts(parts, cfg.output_format, texture, cfg.tile_size_mm)
     t3 = time.monotonic()
 
     stats.update({

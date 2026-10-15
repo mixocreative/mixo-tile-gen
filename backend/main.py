@@ -86,6 +86,17 @@ def health():
     return {"status": "ok", "service": "mixotile", "version": app.version}
 
 
+@app.get("/local-info")
+def local_info():
+    """Phone links for the home page's QR panel. Only the local PC launcher (scripts/run_local.py)
+    sets MIXO_PHONE_FILE, so on Cloud Run / Docker / any other host this is always 404."""
+    path = os.getenv("MIXO_PHONE_FILE")
+    if not path or not os.path.exists(path):
+        raise HTTPException(404, "not running from the local launcher")
+    with open(path, encoding="utf-8") as fh:
+        return Response(fh.read(), media_type="application/json", headers={"Cache-Control": "no-store"})
+
+
 @app.post("/process-tile")
 async def process_tile(
     image: UploadFile = File(..., description="Tile photo (JPEG/PNG/WebP)"),
@@ -111,7 +122,8 @@ async def process_tile(
     outline_width_mm: float = Form(1.2, description="width of that ridge"),
     edge_is_seam: bool = Form(False, description="true = groove along the tile edge too"),
     symmetry: str = Form("off", description="off | auto | c4 | d4 (opt-in)"),
-    output_format: str = Form("3mf", description="3mf | 3mftex | glb | glbtex | stl (zip, one per colour) | obj (zip, colours) | objtex (zip, photo texture). *tex = the photo as a texture; 3mftex still prints in glaze colours"),
+    formats: str = Form(",".join(tp.BUNDLE_DEFAULT_NAMES), description="output_format=bundle: comma list of formats to put in the zip"),
+    output_format: str = Form("3mf", description="3mf | 3mftex | glb | glbtex | stl (zip, one per colour) | obj (zip, colours) | objtex (zip, photo texture). *tex = the photo as a texture; 3mftex still prints in glaze colours | bundle = zip of the `formats` list from one run"),
     stream: bool = Form(False, description="true = progress lines + binary payloads (see _stream)"),
     preview: bool = Form(True, description="stream: also send a light preview mesh before the file"),
 ):
@@ -128,7 +140,7 @@ async def process_tile(
         smoothing_mm=smoothing_mm, min_feature_mm2=min_feature_mm2, merge_delta_e=merge_delta_e,
         bead_height_mm=bead_height_mm, clearance_mm=clearance_mm, outline_height_mm=outline_height_mm, outline_width_mm=outline_width_mm,
         edge_is_seam=edge_is_seam, symmetry=symmetry.lower(),
-        output_format=fmt,
+        output_format=fmt, formats=formats,
     )
     corner_pts = _parse_json("corners", corners)
     swatch_list = _parse_swatches(_parse_json("swatches", swatches))

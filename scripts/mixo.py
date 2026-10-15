@@ -16,6 +16,7 @@ is used. Change any setting with --set name=value (names as in the README, e.g. 
 
 Formats: 3mf (default, prints in glaze colours) | 3mftex (same + the photo as a texture for viewers)
          glb | glbtex | stl (zip, one STL per colour) | obj (zip, colours) | objtex (zip, photo texture)
+         bundle (one zip with all of the above; pick some with --set formats=3mf,objtex)
 """
 from __future__ import annotations
 
@@ -31,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXT = {"3mf": "3mf", "3mftex": "textured.3mf", "glb": "glb", "glbtex": "textured.glb",
-       "stl": "stl.zip", "obj": "obj.zip", "objtex": "textured.obj.zip"}
+       "stl": "stl.zip", "obj": "obj.zip", "objtex": "textured.obj.zip", "bundle": "all.zip"}
 
 
 def parse_corners(text: str):

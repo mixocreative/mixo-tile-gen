@@ -50,8 +50,8 @@ for fmt in ("stl", "obj", "objtex"):
         if fmt == "objtex":
             tex = cv2.cvtColor(cv2.imdecode(np.frombuffer(z.read("texture.jpg"), np.uint8), 1), cv2.COLOR_BGR2RGB)
             vt = np.array(re.findall(r"^vt (\S+) (\S+)$", obj, re.M), float)
-            npad = sum(len(re.findall(r"^v ", b, re.M)) for b in objs if "pad" in b.split("\n", 1)[0])
-            assert len(vt) == len(v) - npad          # the pad keeps a plain colour (no UVs)
+            assert len(vt) == len(v)                 # every body has UVs, the pad's sides included
+            ok &= "usemtl underside" in obj           # pad underside is plain white
             # what a viewer does: follow each face corner's v/vt pair; the UV must be the vertex's top-down position
             pairs = np.array(re.findall(r"(\d+)/(\d+)", "\n".join(re.findall(r"^f .*$", obj, re.M))), int) - 1
             uv_err = float(np.abs(vt[pairs[:, 1]] - np.clip(v[pairs[:, 0], :2] / 150.0, 0, 1)).max())
@@ -63,9 +63,9 @@ for fmt in ("stl", "obj", "objtex"):
             for blk in objs:
                 nm = blk.split("\n", 1)[0].strip(); nv = len(re.findall(r"^v ", blk, re.M))
                 hexc = nm.rsplit("_", 1)[1]; rgb = np.array([int(hexc[i:i + 2], 16) for i in (0, 2, 4)])
+                uv = vt[base:base + nv]; base += nv
                 if "pad" in nm:
                     continue
-                uv = vt[base:base + nv]; base += nv
                 px = tex[np.clip(((1 - uv[:, 1]) * (h - 1)).round().astype(int), 0, h - 1),
                          np.clip((uv[:, 0] * (w - 1)).round().astype(int), 0, w - 1)]
                 errs.append(float(np.linalg.norm(np.median(px, 0) - rgb)))
@@ -75,9 +75,9 @@ for fmt in ("stl", "obj", "objtex"):
             for blk in objs:
                 nm = blk.split("\n", 1)[0].strip(); nv = len(re.findall(r"^v ", blk, re.M))
                 hexc = nm.rsplit("_", 1)[1]; rgb = np.array([int(hexc[i:i + 2], 16) for i in (0, 2, 4)])
+                uv = vt[base:base + nv]; base += nv
                 if "pad" in nm:
                     continue
-                uv = vt[base:base + nv]; base += nv
                 px = tex[np.clip((uv[:, 1] * (h - 1)).round().astype(int), 0, h - 1),
                          np.clip((uv[:, 0] * (w - 1)).round().astype(int), 0, w - 1)]
                 flip.append(float(np.linalg.norm(np.median(px, 0) - rgb)))
@@ -95,7 +95,8 @@ v = np.array(re.findall(r'<vertex x="([^"]+)" y="([^"]+)" z="([^"]+)"', x), floa
 uv = np.array(re.findall(r'<m:tex2coord u="([^"]+)" v="([^"]+)"', x), float)
 tt = np.array(re.findall(r'<triangle v1="(\d+)" v2="(\d+)" v3="(\d+)" pid="\d+" p1="(\d+)" p2="(\d+)" p3="(\d+)"', x), int)
 err = max(float(np.abs(uv[tt[:, 3 + k]] - np.clip(v[tt[:, k], :2] / 150.0, 0, 1)).max()) for k in range(3))
-has_tex = "3D/Textures/texture.jpg" in z.namelist() and "3D/_rels/3dmodel.model.rels" in z.namelist()
+white = '<base name="underside" displaycolor="#FFFFFFFF"/>' in x
+has_tex = white and "3D/Textures/texture.jpg" in z.namelist() and "3D/_rels/3dmodel.model.rels" in z.namelist()
 has_cfg = "extruder" in z.read("Metadata/Slic3r_PE_model.config").decode()
 print(f"3mftex  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  textured tris={len(tt)}  corner-UV error {err:.5f}  texture={has_tex} extruders={has_cfg}", flush=True)
 ok &= err < 2e-3 and has_tex and has_cfg and len(tt) > 0          # 3 decimals on vertices
@@ -107,9 +108,18 @@ data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="glbte
 sc = trimesh.load(io.BytesIO(data), file_type="glb")
 geoms = list(sc.geometry.items())
 tex = [n for n, g in geoms if getattr(g.visual, "kind", "") == "texture" and g.visual.uv is not None]
-pad_plain = all(getattr(g.visual, "kind", "") != "texture" for n, g in geoms if "pad" in n)
-print(f"glbtex  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  textured bodies {len(tex)}/{len(geoms)}  pad plain={pad_plain}", flush=True)
-ok &= len(tex) == len(geoms) - 1 and pad_plain
+under = [n for n, g in geoms if "underside" in n]
+print(f"glbtex  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  textured meshes {len(tex)}  underside meshes {len(under)}", flush=True)
+ok &= len(tex) == len(geoms) - len(under) and any("pad" in n for n in under)
+
+# bundle: every format from one run, one zip
+t = time.time()
+data, st = tp.process_tile(img, corners, None, tp.TileConfig(output_format="bundle"))
+names = zipfile.ZipFile(io.BytesIO(data)).namelist()
+want = [".3mf", ".textured.3mf", ".glb", ".textured.glb", "_obj/model.obj", "_obj_textured/texture.jpg", "_stl/"]
+miss = [w for w in want if not any(w in n for n in names)]
+print(f"bundle  {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  {len(names)} files  missing={miss}", flush=True)
+ok &= not miss
 
 print("ALL OK" if ok else "FAILED")
 sys.exit(0 if ok else 1)
