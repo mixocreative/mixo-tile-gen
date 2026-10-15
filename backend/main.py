@@ -21,6 +21,19 @@ import tile_processor as tp
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("mixotile.api")
 
+# One tile at a time per engine (memory: a tile peaks ~1.5–2 GB). Cloud Run is deployed with
+# --concurrency > 1 so /health and queued requests are still answered (with CORS headers) while a
+# tile is being made; extra tiles wait here instead of being refused by the platform.
+_tile_lock: asyncio.Lock | None = None
+_waiting = 0
+
+
+def _lock() -> asyncio.Lock:
+    global _tile_lock
+    if _tile_lock is None:
+        _tile_lock = asyncio.Lock()
+    return _tile_lock
+
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024
 MEDIA_TYPES = {fmt: media for fmt, (_ext, media) in tp.EXPORT_FORMATS.items()}
 
@@ -154,7 +167,8 @@ async def process_tile(
                                  headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
     try:
-        model, stats = await run_in_threadpool(tp.process_tile, data, corner_pts, swatch_list, cfg)
+        async with _lock():
+            model, stats = await run_in_threadpool(tp.process_tile, data, corner_pts, swatch_list, cfg)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
@@ -244,6 +258,28 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
     def line(obj):
         return (json.dumps(obj, separators=(",", ":")) + "\n").encode()
 
+    global _waiting
+    lock = _lock()
+    if lock.locked():                            # someone else's tile is being made: wait in line
+        _waiting += 1
+        try:
+            acq = asyncio.ensure_future(lock.acquire())
+            while not acq.done():
+                yield line({"type": "progress", "p": 0.0,
+                            "msg": f"Waiting for the engine: another tile is being made ({_waiting} waiting)"})
+                await asyncio.wait([acq], timeout=5)
+        finally:
+            _waiting -= 1
+    else:
+        await lock.acquire()
+    try:
+        async for chunk in _run_stream(loop, q, work, line, fname):
+            yield chunk
+    finally:
+        lock.release()
+
+
+async def _run_stream(loop, q, work, line, fname):
     task = loop.run_in_executor(None, work)
     yield line({"type": "progress", "p": 0.0, "msg": "Starting"})
     while True:

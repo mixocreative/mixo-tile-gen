@@ -459,7 +459,7 @@
 <div id="previewModal" class="hidden fixed inset-0 z-50 bg-ink/50 backdrop-blur-[2px] p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
   <div class="bg-paper h-full max-w-[1100px] mx-auto flex flex-col overflow-hidden sm:rounded-xl sm:border sm:border-line">
     <div class="flex items-center gap-x-2 px-4 h-12 border-b border-line">
-      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap mr-auto"><span data-i18n="pv.title">3D preview</span> <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
+      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap mr-auto min-w-0 overflow-hidden text-ellipsis"><span data-i18n="pv.title">3D preview</span> <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1 max-[400px]:hidden"></span></h2>
       <div class="seg" role="group" aria-label="View" data-i18n-aria="pv.view"><button id="pvTop" data-i18n="pv.top">Top</button><button id="pvIso" aria-pressed="true" data-i18n="pv.iso">3/4</button></div>
       <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview" data-i18n-aria="pv.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
@@ -647,6 +647,7 @@ const t = (k, v) => {
 const SRV_MSG = [
   [/^Starting$/, '開始處理'], [/^Reading photo$/, '讀取照片'], [/^Finding the glaze colours$/, '分析釉色'],
   [/^Tracing raised outlines$/, '描繪凸起的輪廓線'], [/^Shaping the relief$/, '塑造浮雕'],
+  [/^Waiting for the engine: another tile is being made \((\d+) waiting\)$/, '排隊中：引擎正在製作另一塊磚（$1 人等待）'],
   [/^Carving colour (\d+) of (\d+)$/, '雕刻第 $1 / $2 種顏色'], [/^Writing the 3D file$/, '寫出 3D 檔案'],
   [/^Writing (.+?) \((\d+) of (\d+)\)$/, (m, f, i, n) => `寫出 ${f.replace(/ \+ photo$/, ' + 照片')}（第 ${i} / ${n} 個）`],
   [/^selected tile area is too small.*$/, '選取的磚面範圍太小，請檢查四個角點'], [/^could not decode image.*$/, '無法解讀圖片（請使用 JPEG / PNG / WebP）'],

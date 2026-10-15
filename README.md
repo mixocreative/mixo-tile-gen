@@ -303,7 +303,7 @@ Block 3: the engine. Takes 5–10 minutes. If it says *Permission denied … Art
 [ -d mixo-tile-gen ] || git clone https://github.com/mixocreative/mixo-tile-gen.git
 cd ~/mixo-tile-gen
 gcloud run deploy mixo-tile-gen --source backend --region $REGION --allow-unauthenticated \
-  --cpu 4 --memory 4Gi --concurrency 1 --timeout 300 --min-instances 0 --max-instances 1 \
+  --cpu 4 --memory 4Gi --concurrency 4 --timeout 300 --min-instances 0 --max-instances 1 \
   --set-env-vars ALLOWED_ORIGINS=$SITE,MIXOTILE_BODY_WORKERS=2 --quiet
 ```
 **Success:** the last lines show `Service URL: https://mixo-tile-gen-….run.app`. **That's your engine address.** Open it with `/health` added; you should see `{"status":"ok", …}`.
