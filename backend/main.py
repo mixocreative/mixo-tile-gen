@@ -197,6 +197,9 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
       optional     {"type":"preview","layout":[{name,hex,nv,nt}..],"stats":{..},"bytes":N}\n + N bytes
                    (per part: nv*3 float32 xyz mm, then nt*3 uint32 indices; little-endian)
       optional     {"type":"texture","bytes":N}\n + N bytes of JPEG: the top-down photo (u = x/size, v = y/size)
+      optional     {"type":"heights","params":{pad,floor,relief,crown,outline,size},"bytes":N}\n + N bytes:
+                   per preview vertex (same parts/order) 5 float32 t, A, B, R, resid. Body vertex height
+                   = pad + t*(floor + relief*A + crown*B + outline*R + resid); pad vertex = t*pad
       then either  {"type":"error","status":..,"detail":..}\n
       or           {"type":"done","filename":..,"stats":{..},"bytes":N}\n  followed by N raw model bytes
     (raw bytes, not base64: 25 % smaller, and the browser never has to parse a 20 MB JSON line)."""
@@ -208,9 +211,18 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
 
     def on_parts(parts, stats, texture=None):
         if want_preview:
-            layout, blob = tp.preview_mesh(parts)
+            H = stats.get("_heights")
+            res = tp.preview_mesh(parts, heights=H)
+            layout, blob = res[0], res[1]
             loop.call_soon_threadsafe(q.put_nowait, ("preview", ({"type": "preview", "layout": layout,
                                                                   "stats": _summary(stats), "bytes": len(blob)}, blob)))
+            if H is not None:            # live sliders: per vertex t, A, B, R, resid (float32 x5), same part order
+                hb = res[2]
+                params = {"pad": cfg.pad_thickness_mm, "floor": cfg.groove_floor_mm, "relief": cfg.relief_height_mm,
+                          "crown": min(cfg.dome_height_mm, cfg.relief_height_mm + cfg.dome_height_mm),
+                          "outline": cfg.outline_height_mm, "size": cfg.tile_size_mm}
+                loop.call_soon_threadsafe(q.put_nowait, ("preview", ({"type": "heights", "params": params,
+                                                                      "bytes": len(hb)}, hb)))
             if texture is not None:      # top-down photo for the preview's "Photo" view (u = x/size, v = y/size)
                 ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 85])
                 if ok:

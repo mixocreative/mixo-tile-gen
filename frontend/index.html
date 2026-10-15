@@ -87,6 +87,9 @@
   .btn-lg { height: 44px; font-size: 14px; padding: 0 18px; }
   .link { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); font: 400 12px/1.2 "Geist Mono", monospace; }
 
+  #sampleBtn { color: #23408e; font-weight: 600; text-decoration-color: #23408e; }
+  #sampleBtn:hover { color: #172a5e; text-decoration-color: #172a5e; }
+
   /* segmented control */
   .seg { display: inline-flex; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r); padding: 2px; }
   .seg button { white-space: nowrap; height: 26px; padding: 0 10px; border-radius: 4px; font: 400 12px/1 "Geist Mono", monospace; color: var(--mute); }
@@ -176,6 +179,16 @@
   @media (min-width: 900px) { .fmt small { display: inline; } }
   @media (pointer: coarse) { .fmt { height: 36px; } .fmt input { width: 18px; height: 18px; } }
 
+  /* per-setting reset-to-default button + live fine-tune sliders */
+  .rs { flex: none; width: 18px; height: 18px; display: inline-grid; place-items: center; border-radius: 4px; font: 400 13px/1 "Geist Mono", "Noto Sans TC", monospace; color: var(--mute); cursor: pointer; }
+  .rs:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
+  .rs:disabled { opacity: .22; cursor: default; }
+  .rs:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .ft-range { display: block; width: 100%; height: 22px; margin: 1px 0 0; accent-color: #1c1a17; cursor: pointer; }
+  .ft-note { color: var(--ink2); }
+  #pvFoot { max-height: 54vh; overflow-y: auto; overscroll-behavior: contain; }
+  @media (pointer: coarse) { .rs { width: 28px; height: 28px; font-size: 16px; } .ft-range { height: 30px; } }
+
   /* phone QR */
   .qr-item { width: 140px; max-width: 100%; }
   .qr-code { padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 6px; width: fit-content; }
@@ -263,6 +276,9 @@
   <!-- ============================================================ 1. capture -->
   <section class="sec" id="step1" aria-labelledby="h1s">
     <div class="sec-h"><h2 id="h1s" data-i18n="s1.h">01 Capture</h2><span class="meta" data-i18n="s1.meta">Photo of one tile</span></div>
+    <div class="seg mb-3" role="group" aria-label="Language">
+      <button id="langPickEn" lang="en" aria-pressed="false">English</button><button id="langPickZh" lang="zh-Hant" aria-pressed="false" style="font-family:'Geist Mono','Noto Sans TC',monospace">繁體中文</button>
+    </div>
     <div class="max-w-md">
       <label class="btn btn-primary btn-lg w-full cursor-pointer">
         <svg class="t-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
@@ -368,7 +384,8 @@
       <div class="field"><label for="fillet" data-i18n="f.fillet" data-i18n-title="f.filletT" title="Seam to full height">Edge roll</label><div class="unit" data-unit="mm"><input id="fillet" type="number" min="0.5" max="60" step="0.5" value="6.0"></div></div>
       <div class="field"><label for="outlineH" data-i18n="f.outH" data-i18n-title="f.outHt" title="Raised tube-lining ridge (0 = off)">Outlines</label><div class="unit" data-unit="mm"><input id="outlineH" type="number" min="0" max="3" step="0.1" value="0.8"></div></div>
     </form>
-    <details class="mt-3">
+    <div class="flex justify-end mt-2"><button id="resetAll4" type="button" class="link" data-i18n="rs.all">Reset all to defaults</button></div>
+    <details class="mt-2">
       <summary class="mono text-[11.5px] text-ink2 flex items-center gap-1.5"><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="f.adv">Advanced</span></summary>
       <div class="grid grid-cols-2 gap-2 mt-2.5">
         <div class="field"><label for="pxPerMm" data-i18n="f.px">Detail</label><div class="unit" data-unit="px/mm"><input id="pxPerMm" type="number" min="1" max="6" step="0.5" value="4"></div></div>
@@ -400,6 +417,7 @@
       <span data-i18n="s4.gen">Generate 3D relief</span>
     </button>
     <p class="hint mono text-center mt-2 text-[11px]" data-i18n="s4.genHint">Usually ~10 s · first run after idle ~30–60 s · downloads a .zip</p>
+    <button id="reopenPv" type="button" class="link hidden block mx-auto mt-2.5" data-i18n="pv.reopen">Back to 3D preview</button>
     <div id="errorBox" class="hidden mt-3 rounded-md border border-[#e3b8b0] bg-[#fbf1ef] text-[#7a2a1e] text-[12.5px] p-2.5" role="alert"></div>
   </section>
 
@@ -457,7 +475,20 @@
       <div id="pvStats" class="absolute left-3 bottom-3 mono text-[11px] text-ink2 bg-white/90 border border-line rounded-md px-2.5 py-1.5 max-w-[80%]"></div>
       <p class="absolute right-3 bottom-3 mono text-[10.5px] text-mute hidden sm:block" data-i18n="pv.help">drag orbit · right-drag pan · scroll zoom</p>
     </div>
-    <div class="border-t border-line px-4 pt-2.5" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
+    <div id="pvFoot" class="border-t border-line px-4 pt-2.5" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
+      <div id="ftPanel" class="hidden pb-2.5 mb-2.5 border-b border-line">
+        <button id="ftToggle" type="button" class="flex items-center gap-1.5 mono text-[11px] uppercase tracking-wider text-ink w-full text-left" aria-expanded="true" aria-controls="ftBody">
+          <svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span data-i18n="ft.title">Fine-tune (live)</span>
+        </button>
+        <div id="ftBody">
+          <div id="ftList" class="grid gap-x-6 gap-y-2.5 mt-2.5 sm:grid-cols-2 lg:grid-cols-3"></div>
+          <p id="ftStatus" class="hint text-[11px] mt-2" role="status" aria-live="polite"></p>
+          <div class="flex items-center gap-2 mt-2">
+            <button id="ftReset" type="button" class="btn btn-ghost" data-i18n="ft.resetAll">Reset all</button>
+            <button id="ftConfirm" type="button" class="btn btn-primary flex-1" disabled data-i18n="ft.confirm">Confirm</button>
+          </div>
+        </div>
+      </div>
       <div class="flex items-center justify-between gap-2">
         <p class="mono text-[11px] uppercase tracking-wider text-mute" id="fmTitle" data-i18n="fm.title">Files in the .zip</p>
         <span class="flex items-center gap-2"><button id="fmAll" class="btn-text btn" data-i18n="fm.all">All</button><span class="text-faint">·</span><button id="fmNone" class="btn-text btn" data-i18n="fm.none">None</button></span>
@@ -538,6 +569,10 @@ const D = {
     'qr.hint': 'Scan with your phone\'s camera. Same Wi-Fi is fastest; the Cloudflare link works on any network while this PC window is open.',
     'qr.phoneHint': 'For phones on another network, start the app with start-windows-phone.bat (Mac/Linux: bash start-mac-linux.sh phone).',
     'e.zipFail': 'The files failed: {e} — tap Tweak, then Generate again.', 'e.makeFail': 'Could not make the files: {e}',
+    'ft.title': 'Fine-tune (live)', 'ft.pad': 'Base thickness', 'ft.relief': 'Edge depth', 'ft.crown': 'Crown', 'ft.floor': 'Groove floor', 'ft.outline': 'Outline height',
+    'ft.resetAll': 'Reset all', 'ft.confirm': 'Confirm', 'ft.reset': 'Reset', 'ft.cap': 'Stopped at the limit: groove floor + edge depth + crown can’t exceed {m} mm (tile width ÷ 10).',
+    'ft.stale': 'Settings changed — Confirm to rebuild', 'ft.approx': 'Live preview is approximate (about ±0.3 mm). Confirm builds the exact model.', 'ft.same': 'Matches the built model.',
+    'ft.mm0': 'was off', 'rs.one': 'Reset to default', 'rs.all': 'Reset all to defaults', 'pv.reopen': 'Back to 3D preview',
   },
   zh: {
     title: 'mixo-tile-gen · 花磚 3D 浮雕', desc: '把台灣花磚的照片變成可列印的多色 3D 浮雕（.3MF）。免費，在瀏覽器就能用。',
@@ -590,6 +625,10 @@ const D = {
     'qr.hint': '用手機相機掃描。同一個 Wi-Fi 最快；Cloudflare 連結在這台電腦的視窗開著時，任何網路都能使用。',
     'qr.phoneHint': '手機若在其他網路，請用 start-windows-phone.bat 啟動（Mac / Linux：bash start-mac-linux.sh phone）。',
     'e.zipFail': '檔案產生失敗：{e}。請按「調整」後再重新產生。', 'e.makeFail': '無法製作檔案：{e}',
+    'ft.title': '微調（即時）', 'ft.pad': '底座厚度', 'ft.relief': '邊緣深度', 'ft.crown': '弧頂', 'ft.floor': '溝底', 'ft.outline': '輪廓線高度',
+    'ft.resetAll': '全部還原', 'ft.confirm': '確認', 'ft.reset': '還原', 'ft.cap': '已到上限：溝底 + 邊緣深度 + 弧頂 不可超過 {m} 公釐（磚寬 ÷ 10）。',
+    'ft.stale': '設定已變更，按「確認」重新產生', 'ft.approx': '即時預覽為近似值（約 ±0.3 公釐），按「確認」產生精確模型。', 'ft.same': '與已產生的模型相同。',
+    'ft.mm0': '原本關閉', 'rs.one': '還原預設值', 'rs.all': '全部還原為預設值', 'pv.reopen': '回到 3D 預覽',
   },
 };
 const LANG_KEY = 'mixotile.lang';
@@ -629,6 +668,7 @@ function applyLang() {
   for (const [attr, to] of [['i18nTitle', 'title'], ['i18nAria', 'aria-label'], ['i18nAlt', 'alt'], ['i18nPh', 'placeholder']])
     document.querySelectorAll(`[data-${attr.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}]`).forEach((e) => e.setAttribute(to, t(e.dataset[attr])));
   $('langZh').setAttribute('aria-pressed', LANG === 'zh'); $('langEn').setAttribute('aria-pressed', LANG === 'en');
+  $('langPickZh').setAttribute('aria-pressed', LANG === 'zh'); $('langPickEn').setAttribute('aria-pressed', LANG === 'en');
   refreshDynamic();
 }
 function setLang(l) { LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch {} applyLang(); }
@@ -1170,6 +1210,62 @@ function updateHeightEcho() {
   const pad = +$('padThick').value, fl = +$('grooveFloor').value, rh = +$('reliefH').value, dh = +$('domeH').value, size = (+$('tileSize').value).toFixed(1);
   $('heightEcho').innerHTML = t('s4.echo', { s: size, a: (pad + fl).toFixed(1), b: (pad + fl + rh + dh).toFixed(1) });
   renderDiagram();
+  saveSettings(); refreshResets();
+  if (!FT.writing) ftSyncFromInputs();     // step 04 edited -> live sliders / preview follow
+}
+
+// --- remember step 04 (+ colour count) across visits
+const SET_KEY = 'mixotile.settings';
+const resetIds = [...settingIds, 'symmetry', 'edgeSeam'];
+function saveSettings() {
+  try {
+    const o = {}; for (const id of [...settingIds, 'symmetry', 'numColors']) o[id] = $(id).value;
+    o.edgeSeam = $('edgeSeam').checked; localStorage.setItem(SET_KEY, JSON.stringify(o));
+  } catch {}
+}
+function restoreSettings() {
+  try {
+    const o = JSON.parse(localStorage.getItem(SET_KEY) || 'null'); if (!o || typeof o !== 'object') return;
+    for (const id of [...settingIds, 'numColors']) if (o[id] !== undefined && Number.isFinite(parseFloat(o[id]))) $(id).value = o[id];
+    if (['off', 'auto', 'd4', 'c4'].includes(o.symmetry)) $('symmetry').value = o.symmetry;
+    if (typeof o.edgeSeam === 'boolean') $('edgeSeam').checked = o.edgeSeam;
+  } catch {}
+}
+// --- per-setting reset to default (default = the input's original value attribute)
+function dfltOf(id) {
+  const el = $(id);
+  if (el.type === 'checkbox') return el.defaultChecked;
+  if (el.tagName === 'SELECT') return [...el.options].find((o) => o.defaultSelected)?.value ?? el.options[0].value;
+  return el.defaultValue;
+}
+function isDflt(id) {
+  const el = $(id), d = dfltOf(id);
+  if (el.type === 'checkbox') return el.checked === d;
+  if (el.tagName === 'SELECT') return el.value === d;
+  return parseFloat(el.value) === parseFloat(d);
+}
+function setDflt(id) { const el = $(id), d = dfltOf(id); if (el.type === 'checkbox') el.checked = d; else el.value = d; }
+function refreshResets() {
+  document.querySelectorAll('.rs[data-rs]').forEach((b) => { b.disabled = isDflt(b.dataset.rs); });
+  const all = $('resetAll4'); if (all) all.disabled = resetIds.every(isDflt);
+}
+function setupResets() {
+  for (const id of resetIds) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'rs'; b.dataset.rs = id; b.textContent = '↺';
+    b.onclick = (ev) => {
+      ev.preventDefault(); setDflt(id);
+      if (id === 'tileSize') { $(id).dispatchEvent(new Event('change', { bubbles: true })); $('scaleNote').classList.add('hidden'); }
+      else if ($(id).tagName === 'SELECT' || $(id).type === 'checkbox') { saveSettings(); refreshResets(); }
+      else renderTiers();
+    };
+    $(id).closest('.field').appendChild(b);
+  }
+  $('resetAll4').onclick = () => { resetIds.forEach(setDflt); $('scaleNote').classList.add('hidden'); renderTiers(); };
+  ['symmetry', 'edgeSeam', 'numColors'].forEach((id) => $(id).addEventListener('change', () => { saveSettings(); refreshResets(); }));
+  rsText();
+}
+function rsText() {
+  document.querySelectorAll('.rs[data-rs]').forEach((b) => { b.title = t('rs.one'); b.setAttribute('aria-label', t('rs.one')); });
 }
 [...settingIds, 'numColors'].forEach((id) => $(id).addEventListener('input', renderTiers));
 
@@ -1357,6 +1453,8 @@ async function requestModel(o, hooks = {}) {
       if (ev.type === 'preview') {
         clearTimeout(wake);
         hooks.onPreview && hooks.onPreview({ layout: ev.layout, data: data.buffer, stats: ev.stats, size: v.tileSize });
+      } else if (ev.type === 'heights') {
+        if (hooks.onHeights && data.length % 20 === 0) hooks.onHeights({ params: ev.params, buf: data.buffer });
       } else if (ev.type === 'texture') hooks.onTexture && hooks.onTexture(data.slice());
       else if (ev.type === 'done') result = { buf: data.buffer, filename: ev.filename, stats: ev.stats, size: v.tileSize };
     };
@@ -1493,17 +1591,31 @@ $('downloadBtn').onclick = async () => {
   }
 };
 
-$('generateBtn').onclick = async () => {
+// everything that decides the built model except the five live height settings (those are compared separately)
+function snapKey() {
+  const o = {};
+  for (const id of settingIds) if (id !== 'maxH' && !FT_KEYS.some((k) => k.id === id)) o[id] = parseFloat($(id).value);
+  o.sym = $('symmetry').value; o.edge = $('edgeSeam').checked; o.nc = $('numColors').value;
+  o.sw = S.swatches.map(toHex).join(','); o.c = S.corners ? S.corners.map((p) => p.map(Math.round)).join(';') : '';
+  return JSON.stringify(o);
+}
+let runId = 0;
+$('generateBtn').onclick = () => runGenerate(false);
+async function runGenerate(fromModal) {
   $('errorBox').classList.add('hidden');
-  $('generateBtn').disabled = true; showLoading(true);
+  $('generateBtn').disabled = true; S.busy = true; ftUpdateUI(); showLoading(true);
   let previewShown = false;
+  const prevLook = V.look, run = ++runId, snap = snapKey();
   const list = fmtList().length ? fmtList() : ['3mf'], key = list.join(',');
   S.dl = { state: 'preparing', n: 0, N: list.length, key }; updateDownloadBtn();
   S.photoTex = null; S.texState = 'loading'; setLook('colour'); renderLookState();
+  if (fromModal && prevLook === 'photo') V.look = 'photo';      // keep the look; re-applied when the texture arrives
+  let pendingH = null;
   try {
     const res = await requestModel({ format: 'bundle', formats: list }, {
       // preview first: open the 3D view right away; the zip keeps streaming in behind it
-      onPreview: (pv) => { S.model = { ...pv }; previewShown = true; showLoading(false); openPreview(); },
+      onPreview: (pv) => { S.model = { ...pv, id: run, snap, heights: pendingH }; previewShown = true; showLoading(false); openPreview(); },
+      onHeights: (h) => { pendingH = h; if (previewShown && S.model?.id === run) { S.model.heights = h; ftAttach(); } },
       onTexture: (jpg) => { S.photoTex = jpg; applyPhotoTexture(); },
       onMsg: noteWriting,
     });
@@ -1517,9 +1629,14 @@ $('generateBtn').onclick = async () => {
     S.dl = { state: 'error' }; updateDownloadBtn();
     if (S.texState === 'loading') { S.texState = 'none'; renderLookState(); }
     if (previewShown) alertInModal(t('e.zipFail', { e: errText(e) }));
+    else if (fromModal) alertInModal(errText(e));
     else showError(errText(e));
-  } finally { $('generateBtn').disabled = false; }
-};
+  } finally {
+    $('generateBtn').disabled = false; S.busy = false;
+    if (S.texState === 'none' && V.look === 'photo') { V.look = 'colour'; setLook('colour'); }
+    ftUpdateUI();
+  }
+}
 
 // --------------------------------------------------------------------- 3D preview (Three.js)
 const V = { ready: false };
@@ -1612,12 +1729,14 @@ function buildPreviewGroup(m) {
 function renderPvStats() {
   const st = S.model?.stats;
   $('pvStats').innerHTML = st ? `${st.colours.map((c) => `<span title="${c.hex} · extruder ${c.extruder}" style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:2px;background:${c.hex};box-shadow:0 0 0 1px #0002"></span>`).join('')}
-    <br>${t('pv.stats', { n: st.colours.length, a: st.relief_height_mm, b: st.dome_height_mm, k: (st.triangles / 1000).toFixed(0) })}
+    <br>${t('pv.stats', { n: st.colours.length, a: FT.on ? +(st.relief_height_mm + FT.cur.relief - FT.gen.relief).toFixed(2) : st.relief_height_mm, b: FT.on ? +(st.dome_height_mm + FT.cur.crown - FT.gen.crown).toFixed(2) : st.dome_height_mm, k: (st.triangles / 1000).toFixed(0) })}
 ` : '';
 }
 async function openPreview() {
-  $('previewModal').classList.remove('hidden');
+  const keepCam = !$('previewModal').classList.contains('hidden') && V.ready && !!V.obj;   // rebuild from Confirm: keep the camera
+  $('previewModal').classList.remove('hidden'); $('reopenPv').classList.add('hidden');
   document.body.style.overflow = 'hidden';
+  FT.on = false; $('ftPanel').classList.add('hidden');
   try { await initViewer(); }
   catch (e) { $('pvStats').textContent = t('pv.failed', { e: e.message }); return; }
   const { THREE, scene } = V;
@@ -1639,16 +1758,18 @@ async function openPreview() {
   });
   const box = new THREE.Box3().setFromObject(group), c = box.getCenter(new THREE.Vector3());
   group.position.x -= c.x; group.position.z -= c.z; group.position.y -= box.min.y;
+  group.userData.mid = S.model.id;
   scene.add(group); V.obj = group;
   applyPhotoTexture();
   const size = Math.max(box.max.x - box.min.x, box.max.z - box.min.z); V.size = size; V.height = box.max.y - box.min.y;
   V.ground.scale.set(size * 4, size * 4, 1);
   V.sun.position.set(size * 0.8, size * 1.6, size * 0.6); V.sun.target.position.set(0, 0, 0);
   const sc = V.sun.shadow.camera; sc.left = sc.bottom = -size; sc.right = sc.top = size; sc.far = size * 6; sc.updateProjectionMatrix();
-  V.resize(); frame('iso');
+  V.resize(); if (!keepCam) frame('iso');
   $('pvSize').textContent = `${size.toFixed(1)} × ${size.toFixed(1)} × ${V.height.toFixed(1)} mm`;
   renderPvStats();
-  $('downloadBtn').focus();
+  ftAttach();
+  if (!keepCam) $('downloadBtn').focus();
 }
 // "Photo" view: the engine's top-down photo (u = x/size, v = y/size) on every body. The pad is textured too, so its four
 // sides continue the border colours; only its underside (normal pointing down) stays plain white.
@@ -1688,7 +1809,11 @@ function renderLookState() {
 }
 $('pvColour').onclick = () => setLook('colour');
 $('pvPhoto').onclick = () => { if (!$('pvPhoto').disabled) setLook('photo'); };
-function closePreview() { $('previewModal').classList.add('hidden'); document.body.style.overflow = ''; }
+function closePreview() { $('previewModal').classList.add('hidden'); document.body.style.overflow = ''; $('reopenPv').classList.toggle('hidden', !S.model); }
+$('reopenPv').onclick = () => {
+  $('previewModal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; $('reopenPv').classList.add('hidden');
+  ftSyncFromInputs(); ftUpdateUI(); V.resize?.();
+};
 $('pvClose').onclick = closePreview;
 $('pvTop').onclick = () => { frame('top'); $('pvTop').setAttribute('aria-pressed', 'true'); $('pvIso').setAttribute('aria-pressed', 'false'); };
 $('pvIso').onclick = () => { frame('iso'); $('pvIso').setAttribute('aria-pressed', 'true'); $('pvTop').setAttribute('aria-pressed', 'false'); };
@@ -1704,6 +1829,173 @@ function saveBlob(buf, name, type) {
 }
 function alertInModal(msg) { $('pvStats').textContent = '! ' + msg; }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('previewModal').classList.contains('hidden')) closePreview(); });
+
+// --------------------------------------------------------------------- 3D preview: live fine-tune sliders
+// The engine sends, per preview vertex, t, A, B, R, resid. Heights (Z-up mm):
+//   pad parts:  z = t*pad       other parts:  z = pad + t*(floor + relief*A + crown*B + outline*R + resid)
+// We add the formula's DIFFERENCE between the new and the generated settings to the original z, so the model is exact
+// at the generated settings (resid cancels) and follows the formula elsewhere.
+const FT_KEYS = [
+  { k: 'pad', id: 'padThick', lo: 0.4, hi: 40, pmin: -80, pmax: 100, step: 0.1, dec: 1, cap: false },
+  { k: 'relief', id: 'reliefH', lo: 0.1, hi: 40, pmin: -80, pmax: 200, step: 0.1, dec: 1, cap: true },
+  { k: 'crown', id: 'domeH', lo: 0, hi: 20, pmin: -100, pmax: 300, step: 0.1, dec: 1, cap: true, zmax: 4 },
+  { k: 'floor', id: 'grooveFloor', lo: 0.1, hi: 5, pmin: -75, pmax: 300, step: 0.05, dec: 2, cap: true },
+  { k: 'outline', id: 'outlineH', lo: 0, hi: 3, pmin: -100, pmax: 200, step: 0.1, dec: 1, cap: false, zmax: 2.4 },
+];
+const FT = { on: false, gen: {}, cur: {}, rows: {}, parts: [], writing: false, raf: 0 };
+const FT_OPEN_KEY = 'mixotile.ftOpen';
+const ftQ = (it, v) => +(Math.round(v / it.step) * it.step).toFixed(2);
+const ftClamp = (it, v) => Math.min(it.hi, Math.max(it.lo, v));
+const ftPctOf = (it, mm) => (mm / FT.gen[it.k] - 1) * 100;
+const ftIsPct = (it) => FT.gen[it.k] > 0;
+function ftRange(it) {
+  const g = FT.gen[it.k];
+  return g > 0 ? { min: Math.max(it.pmin, (it.lo / g - 1) * 100), max: Math.min(it.pmax, (it.hi / g - 1) * 100) } : { min: 0, max: Math.min(it.hi, it.zmax ?? it.hi) };
+}
+function ftBuild() {
+  const list = $('ftList');
+  for (const it of FT_KEYS) {
+    const row = document.createElement('div');
+    row.innerHTML = `<div class="flex items-center gap-1.5"><label for="ftS_${it.k}" class="flex-1 min-w-0 truncate mono text-[11.5px] text-mute"></label>`
+      + `<output class="ft-val mono text-[12px] font-medium text-ink whitespace-nowrap"></output><span class="ft-pct mono text-[10.5px] text-mute whitespace-nowrap text-right" style="min-width:3.4em"></span>`
+      + `<button type="button" class="rs"></button></div><input id="ftS_${it.k}" type="range" class="ft-range" step="any" min="0" max="1" value="0"><p class="ft-note hidden hint text-[10.5px] leading-snug"></p>`;
+    list.appendChild(row);
+    const r = FT.rows[it.k] = { row, lab: row.querySelector('label'), val: row.querySelector('output'), pct: row.querySelector('.ft-pct'), rs: row.querySelector('.rs'), sl: row.querySelector('input'), note: row.querySelector('.ft-note'), capped: false, last: null };
+    r.rs.textContent = '↺';
+    r.sl.addEventListener('input', () => ftOnInput(it));
+    r.rs.onclick = () => ftResetOne(it);
+    r.sl.addEventListener('pointerup', (e) => {            // double-click / double-tap resets this slider
+      const now = performance.now(), l = r.last;
+      if (l && now - l.t < 350 && Math.hypot(e.clientX - l.x, e.clientY - l.y) < 14) { r.last = null; ftResetOne(it); }
+      else r.last = { t: now, x: e.clientX, y: e.clientY };
+    });
+  }
+  const open = (() => { try { return localStorage.getItem(FT_OPEN_KEY) !== '0'; } catch { return true; } })();
+  ftSetOpen(open);
+  $('ftToggle').onclick = () => { const o = $('ftBody').classList.contains('hidden'); ftSetOpen(o); try { localStorage.setItem(FT_OPEN_KEY, o ? '1' : '0'); } catch {} };
+  $('ftReset').onclick = () => { for (const it of FT_KEYS) { FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; } ftRenderAll(); ftSchedule(); };
+  $('ftConfirm').onclick = () => { ftFlush(); runGenerate(true); };
+  ftRenderText();
+}
+function ftSetOpen(o) {
+  $('ftBody').classList.toggle('hidden', !o); $('ftToggle').setAttribute('aria-expanded', o);
+  $('ftToggle').querySelector('.chev').style.transform = o ? 'rotate(90deg)' : '';
+}
+function ftRenderText() {
+  for (const it of FT_KEYS) { const r = FT.rows[it.k]; if (!r) continue; r.lab.textContent = t('ft.' + it.k); r.rs.title = t('ft.reset'); r.rs.setAttribute('aria-label', t('ft.reset') + ': ' + t('ft.' + it.k)); }
+  ftRenderAll(); ftUpdateUI();
+}
+function ftSetSlider(it) {
+  const r = FT.rows[it.k], g = FT.gen[it.k], rg = ftRange(it);
+  r.sl.min = rg.min; r.sl.max = rg.max;
+  const v = ftIsPct(it) ? (Math.abs(FT.cur[it.k] - g) < 1e-9 ? 0 : ftPctOf(it, FT.cur[it.k])) : FT.cur[it.k];
+  r.sl.value = Math.min(rg.max, Math.max(rg.min, v));
+}
+function ftRenderRow(it) {
+  const r = FT.rows[it.k], c = FT.cur[it.k], g = FT.gen[it.k];
+  r.val.textContent = `${c.toFixed(it.dec)} mm`;
+  if (ftIsPct(it)) { const p = Math.round(ftPctOf(it, c)); r.pct.textContent = (p > 0 ? '+' : p < 0 ? '−' : '±') + Math.abs(p) + '%'; }
+  else r.pct.textContent = c > 0 ? t('ft.mm0') : '';
+  r.rs.disabled = Math.abs(c - g) < 1e-9;
+  const m = parseFloat($('maxH').value);
+  r.note.classList.toggle('hidden', !r.capped); if (r.capped) r.note.textContent = t('ft.cap', { m: Number.isFinite(m) ? +m.toFixed(1) : '' });
+}
+function ftRenderAll() { if (!FT.on) return; for (const it of FT_KEYS) { ftSetSlider(it); ftRenderRow(it); } }
+function ftOnInput(it) {
+  if (!FT.on) return;
+  const r = FT.rows[it.k], g = FT.gen[it.k], pct = ftIsPct(it);
+  let sv = +r.sl.value;
+  if (pct && Math.abs(sv) <= 3) { sv = 0; r.sl.value = 0; }                           // snap to 0 %
+  let mm = pct ? (sv === 0 ? g : ftClamp(it, ftQ(it, g * (1 + sv / 100)))) : ftClamp(it, ftQ(it, sv));
+  const prev = FT.cur[it.k]; let capped = false;
+  const maxH = parseFloat($('maxH').value);
+  if (it.cap && Number.isFinite(maxH)) {                                              // floor + relief + crown <= max relief (width ÷ 10)
+    const others = FT_KEYS.filter((o) => o.cap && o !== it).reduce((a, o) => a + FT.cur[o.k], 0);
+    const allowed = +(Math.floor((maxH - others) / it.step + 1e-6) * it.step).toFixed(2);
+    if (mm > allowed + 1e-9 && mm > prev) {
+      mm = ftClamp(it, Math.max(allowed, prev)); capped = true;
+      r.sl.value = pct ? (Math.abs(mm - g) < 1e-9 ? 0 : ftPctOf(it, mm)) : mm;
+    }
+  }
+  r.capped = capped; FT.cur[it.k] = mm;
+  ftRenderRow(it); ftSchedule();
+}
+function ftResetOne(it) { FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; ftSetSlider(it); ftRenderRow(it); ftSchedule(); }
+const ftFmt = (it, v) => (Math.abs(v - FT.gen[it.k]) < 1e-9 ? String(FT.gen[it.k]) : v.toFixed(it.dec));
+function ftSchedule() { if (!FT.raf) FT.raf = requestAnimationFrame(ftFlush); }
+function ftFlush() {
+  if (FT.raf) { cancelAnimationFrame(FT.raf); FT.raf = 0; }
+  if (!FT.on) return;
+  ftApply(); ftWriteInputs(); ftUpdateUI();
+}
+function ftWriteInputs() {                                                             // slider -> step 04 inputs (+ diagram, echo, saved settings)
+  FT.writing = true;
+  try {
+    for (const it of FT_KEYS) {
+      const el = $(it.id), s = ftFmt(it, FT.cur[it.k]);
+      if (Math.abs(parseFloat(el.value) - FT.cur[it.k]) > 1e-9 || !el.value) { el.value = s; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+  } finally { FT.writing = false; }
+}
+function ftSyncFromInputs() {                                                          // step 04 input -> sliders + live mesh
+  if (!FT.on) return;
+  let changed = false;
+  for (const it of FT_KEYS) {
+    const v = parseFloat($(it.id).value);
+    if (Number.isFinite(v) && Math.abs(v - FT.cur[it.k]) > 1e-9) { FT.cur[it.k] = ftClamp(it, v); FT.rows[it.k].capped = false; changed = true; }
+  }
+  if (changed) { ftRenderAll(); ftApply(); }
+  ftUpdateUI();
+}
+function ftApply() {
+  if (!FT.on || !V.obj) return;
+  const c = FT.cur, g = FT.gen, dPad = c.pad - g.pad, dFl = c.floor - g.floor, dRl = c.relief - g.relief, dCr = c.crown - g.crown, dOl = c.outline - g.outline;
+  let zmin = Infinity, zmax = -Infinity;
+  for (const p of FT.parts) {
+    const pos = p.mesh.geometry.attributes.position, a = pos.array, z0 = p.z0, h = p.hv, n = p.nv;
+    if (p.pad) for (let v = 0; v < n; v++) { const z = z0[v] + h[5 * v] * dPad; a[3 * v + 2] = z; if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
+    else for (let v = 0, j = 0; v < n; v++, j += 5) {
+      const z = z0[v] + dPad + h[j] * (dFl + h[j + 1] * dRl + h[j + 2] * dCr + h[j + 3] * dOl);
+      a[3 * v + 2] = z; if (z < zmin) zmin = z; if (z > zmax) zmax = z;
+    }
+    pos.needsUpdate = true; p.mesh.geometry.computeVertexNormals();
+  }
+  if (!Number.isFinite(zmin)) return;
+  V.obj.position.y = -zmin; V.height = zmax - zmin;                                   // Z-up -> world Y (group is rotated -90° about X)
+  $('pvSize').textContent = `${V.size.toFixed(1)} × ${V.size.toFixed(1)} × ${V.height.toFixed(1)} mm`;
+  renderPvStats();
+}
+function ftAttach() {
+  const m = S.model, g = V.obj;
+  if (!g || !m?.heights?.params || !m.layout || g.userData.mid !== m.id || g.userData.ftDone) return;
+  const total = m.layout.reduce((a, q) => a + q.nv, 0);
+  if (m.heights.buf.byteLength !== total * 20 || g.children.length !== m.layout.length) return;
+  const all = new Float32Array(m.heights.buf), parts = []; let off = 0;
+  for (let i = 0; i < m.layout.length; i++) {
+    const q = m.layout[i], mesh = g.children[i], a = mesh.geometry.attributes.position.array;
+    if (a.length !== q.nv * 3) return;
+    const z0 = new Float32Array(q.nv); for (let v = 0; v < q.nv; v++) z0[v] = a[3 * v + 2];
+    parts.push({ mesh, nv: q.nv, hv: all.subarray(off * 5, (off + q.nv) * 5), z0, pad: /pad/i.test(q.name) }); off += q.nv;
+    mesh.frustumCulled = false;
+  }
+  const p = m.heights.params;
+  for (const it of FT_KEYS) { const v = +p[it.k]; FT.gen[it.k] = Number.isFinite(v) ? v : parseFloat($(it.id).value) || 0; FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; }
+  FT.parts = parts; FT.on = true; g.userData.ftDone = true;
+  $('ftPanel').classList.remove('hidden');
+  ftRenderAll(); ftUpdateUI();
+  ftSyncFromInputs();                                                                  // inputs edited while the model was building
+}
+function ftUpdateUI() {
+  const btn = $('ftConfirm'); if (!btn) return;
+  if (!FT.on) { btn.disabled = true; return; }
+  const live = FT_KEYS.some((it) => Math.abs(FT.cur[it.k] - FT.gen[it.k]) > 1e-9);
+  const stale = !!S.model?.snap && S.model.snap !== snapKey();
+  btn.disabled = S.busy || !(live || stale);
+  $('ftReset').disabled = !live || S.busy;
+  $('ftStatus').textContent = stale ? t('ft.stale') : live ? t('ft.approx') : t('ft.same');
+  $('ftStatus').style.fontWeight = stale ? '600' : '';
+  $('ftStatus').style.color = stale ? 'var(--ink)' : '';
+}
 
 // --------------------------------------------------------------------- phone QR panel (only on the PC, via the local launcher)
 const QR_KEY = 'mixotile.qrHidden';
@@ -1755,15 +2047,20 @@ if (isLocalHost()) { pollLocalInfo(); QR.timer = setInterval(pollLocalInfo, 2000
 // --------------------------------------------------------------------- language + dynamic text
 function refreshDynamic() {
   renderEngine(); setAiPill(S.aiPillState); renderAiStatus(); renderOutlineHint();
-  renderSwatches(); updateModeButtons(); renderFormats(); updateDownloadBtn(); renderLookState(); renderPvStats();
+  renderSwatches(); updateModeButtons(); renderFormats(); updateDownloadBtn(); renderLookState(); renderPvStats(); rsText(); ftRenderText();
   if (S.corners) drawOverlay();
   if (QR.info) renderQr(QR.info);
   const lbl = QR.info; void lbl;
 }
 $('langZh').onclick = () => setLang('zh');
 $('langEn').onclick = () => setLang('en');
+$('langPickZh').onclick = () => setLang('zh');
+$('langPickEn').onclick = () => setLang('en');
 
 // --------------------------------------------------------------------- boot
+restoreSettings();            // remembered step 04 values + colour count, before anything reads them
+setupResets();
+ftBuild();
 applyLang();
 checkHealth();
 initSegmenter();

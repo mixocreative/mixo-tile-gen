@@ -718,7 +718,7 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
                       bead_h: float = 0.0, bead_r: float = 0.8, edge_is_seam: bool = False,
                       edge_band_w: float = 4.0, edge_drop: float = 0.35,
                       ridge_dist: np.ndarray | None = None, line_h: float = 0.0, line_w: float = 1.2,
-                      return_top: bool = False, clearance: float = 0.0):
+                      return_top: bool = False, clearance: float = 0.0, coef_out: list | None = None):
     """Closed mesh for one colour, "extrude everything to the shared top, then carve the edges down
     into the seams" (profile designed + verified with Fable):
 
@@ -772,9 +772,12 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
     prof = cushion_profile(d, total, np.maximum(band_w, 0.5), seam_slope, crown_h, crown_w)
     if bead_h > 0:
         prof = smooth_max(prof, bead_floor(d, min(bead_h, total), bead_r)) * (d > 0)
+    edge_mul = 1.0
     if not edge_is_seam:
         te = edge_roundover(np.clip(-d_tile, 0, None) / edge_band_w, 1.5)
-        prof = prof * ((1 - edge_drop) + edge_drop * te)
+        edge_mul = (1 - edge_drop) + edge_drop * te
+        prof = prof * edge_mul
+    ridge_unit = 0.0
     if ridge_dist is not None and line_h > 0:
         # tube-lining ridge: a smooth cos² bead over the detected centre-line, ADDED on top of the
         # cushion (a real tube-line sits on the glaze), coloured like the body it lies in. Faded out
@@ -785,8 +788,20 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
         rd = cv2.GaussianBlur(rd, (0, 0), max(0.5, 0.15 / h))
         t = np.clip(rd / (0.5 * line_w), 0, 1)
         gate = np.clip((d - 0.8) / 0.8, 0, 1) ** 2
-        prof = prof + line_h * np.cos(0.5 * np.pi * t) ** 2 * gate
+        ridge_unit = np.cos(0.5 * np.pi * t) ** 2 * gate
+        prof = prof + line_h * ridge_unit
     top = (z0 + floor + prof * pin).astype(np.float32)
+    if coef_out is not None:
+        # live preview sliders: top − z0 = floor + relief·A + crown·B + outline·R + resid, where A, B, R
+        # are this cell's shape factors (edge profile, crown, tube-line ridge) and resid is the small
+        # non-linear rest (thin-stroke bead minimum). Exact at the current settings by construction.
+        crown = min(crown_h, total)
+        A = pin * edge_mul * edge_roundover(d / np.maximum(band_w, 0.5), seam_slope)
+        B = pin * edge_mul * (1 - np.exp(-d / crown_w))
+        R = pin * ridge_unit * np.ones_like(d)
+        resid = (top - z0) - (floor + (total - crown) * A + crown * B + line_h * R)
+        coef_out.append((r0, r1, c0, c1, inside & (d_own < 0), A.astype(np.float32), B.astype(np.float32),
+                         R.astype(np.float32), resid.astype(np.float32), top))
     if return_top:                         # verification sheets: the height field + its crop window
         return top, (r0, r1, c0, c1)
 
@@ -841,7 +856,7 @@ def pad_mesh(size: float, thickness: float, corner_r: float, seg: int = 24):
 
 
 def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge_dist: np.ndarray | None = None,
-                 progress=None):
+                 progress=None, want_heights: bool = False):
     """Return (list of (name, rgb, vertices, faces)), stats dict. ridge_dist = detect_outlines()[0].
 
     All colours are equal: each is one cushion body on the pad. Colours are listed by
@@ -875,6 +890,8 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
     pv, pf = pad_mesh(size, pad, cfg.corner_radius_mm)
     parts.append(("backing_pad", palette[order[0]], pv, pf))
 
+    coefs: list = []                       # per-body height coefficients (live preview sliders)
+
     def one_body(ci):
         own = (labels == ci).astype(np.uint8)
         if not own.any():
@@ -886,7 +903,7 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
                                 edge_is_seam=cfg.edge_is_seam,
                                 edge_band_w=min(4.0, 0.027 * size), edge_drop=0.35,
                                 ridge_dist=ridge_dist, line_h=cfg.outline_height_mm, line_w=cfg.outline_width_mm,
-                                clearance=cfg.clearance_mm)
+                                clearance=cfg.clearance_mm, coef_out=coefs if want_heights else None)
         if res is not None:
             v, f = res
             # budget scales with how much outline the colour has (shoulders need triangles, plateaus don't)
@@ -914,7 +931,20 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
         colours.append({"colour": k + 1, "rgb": [int(c) for c in rgb], "hex": hexc,
                         "extruder": max(1, len(parts) - 1), "coverage": round(float(coverage[ci]), 4)})
 
+    heights = None
+    if want_heights and coefs:
+        shape = next(iter(phis.values())).shape
+        G = {k: np.zeros(shape, np.float32) for k in ("A", "B", "R", "resid")}
+        G["top"] = np.full(shape, pad + cfg.groove_floor_mm, np.float32)
+        for (r0, r1, c0, c1, inside, A, B, R, resid, top) in coefs:
+            for k, arr in (("A", A), ("B", B), ("R", R), ("resid", resid), ("top", top)):
+                G[k][r0:r1, c0:c1][inside] = arr[inside]
+        n_fine = int(round(size / cfg.mesh_resolution_mm))
+        heights = {"h": size / n_fine, "margin": int(math.ceil(1.0 / (size / n_fine))) + 3, "size": size,
+                   "pad": pad, **G}
+
     stats = {
+        "_heights": heights,
         "bodies": len(parts),
         "triangles": int(sum(len(p[3]) for p in parts)),
         "relief_height_mm": cfg.relief_height_mm,
@@ -1078,7 +1108,31 @@ def write_glb(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
     return scene.export(file_type="glb")
 
 
-def preview_mesh(parts, max_tris: int = 300_000) -> tuple[list, bytes]:
+def preview_heights(layout_parts, heights) -> bytes:
+    """Per preview vertex 5 float32: t, A, B, R, resid (see cushion_body_mesh coef_out).
+    Colour bodies: z = pad + t·(floor + relief·A + crown·B + outline·R + resid), t = how far up the
+    body's own wall/top the vertex sits (0 at its bottom, 1 on its top). Pad: z = t·pad."""
+    out = []
+    H = heights
+    h, m, size, pad = H["h"], H["margin"], H["size"], H["pad"]
+    nr, nc = H["top"].shape
+    for name, v in layout_parts:
+        v = np.asarray(v, np.float64)
+        a = np.zeros((len(v), 5), np.float32)
+        if _is_pad(name):
+            a[:, 0] = np.clip(v[:, 2] / max(pad, 1e-6), 0, 1)
+        else:
+            col = np.clip(np.round(v[:, 0] / h + m - 0.5).astype(int), 0, nc - 1)
+            row = np.clip(np.round((size - v[:, 1]) / h + m - 0.5).astype(int), 0, nr - 1)
+            top = H["top"][row, col]
+            a[:, 0] = np.clip((v[:, 2] - pad) / np.maximum(top - pad, 1e-6), 0, 1)
+            for k, key in enumerate(("A", "B", "R", "resid"), 1):
+                a[:, k] = H[key][row, col]
+        out.append(np.ascontiguousarray(a, "<f4").tobytes())
+    return b"".join(out)
+
+
+def preview_mesh(parts, max_tris: int = 300_000, heights=None):
     """Light preview of the finished bodies for the browser: each part decimated so the total is
     ≈ max_tris, packed as raw little-endian float32 positions (mm, Z-up) + uint32 indices.
     Returns (layout [{name, hex, nv, nt}], bytes). Parsing a 13 MB 3MF in the browser took ~5 s on a
@@ -1086,7 +1140,7 @@ def preview_mesh(parts, max_tris: int = 300_000) -> tuple[list, bytes]:
     import fast_simplification
     total = sum(len(f) for _, _, _, f in parts) or 1
     ratio = min(1.0, max_tris / total)
-    layout, blobs = [], []
+    layout, blobs, kept = [], [], []
     for name, rgb, v, f in parts:
         if ratio < 1.0 and len(f) > 2000:
             try:
@@ -1096,9 +1150,12 @@ def preview_mesh(parts, max_tris: int = 300_000) -> tuple[list, bytes]:
                     v, f = v2, f2
             except Exception as exc:  # preview only: keep the full part
                 log.warning("preview decimation skipped: %s", exc)
+        kept.append((name, v))
         v = np.ascontiguousarray(v, "<f4"); f = np.ascontiguousarray(f, "<u4")
         layout.append({"name": name, "hex": "#%02x%02x%02x" % tuple(int(c) for c in rgb), "nv": int(len(v)), "nt": int(len(f))})
         blobs += [v.tobytes(), f.tobytes()]
+    if heights is not None:
+        return layout, b"".join(blobs), preview_heights(kept, heights)
     return layout, b"".join(blobs)
 
 
@@ -1320,9 +1377,10 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     def body_done(_):
         done[0] += 1
         report(0.22 + 0.66 * done[0] / max(n_bodies, 1), f"Carving colour {done[0]} of {n_bodies}")
-    parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done)
+    parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done, want_heights=on_parts is not None)
     if on_parts:                         # e.g. stream a light preview mesh before the slow file export
         on_parts(parts, stats, preview_tex)
+    stats.pop("_heights", None)            # big rasters: only the preview needs them
     report(0.90, "Writing the 3D file")
     t2 = time.monotonic()
     if cfg.output_format == "bundle":
