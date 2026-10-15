@@ -115,6 +115,8 @@ async def process_tile(
     image: UploadFile = File(..., description="Tile photo (JPEG/PNG/WebP)"),
     corners: str | None = Form(None, description="JSON [[x,y]x4] in image pixels (TL,TR,BR,BL; any order accepted)"),
     swatches: str | None = Form(None, description='JSON [[r,g,b],...] or ["#rrggbb",...]; empty → k-means'),
+    paint: str | None = Form(None, description='JSON, one entry per swatch: replacement colour "#rrggbb" or null (= keep). '
+                                               'The area still comes from the swatch; only its colour changes'),
     tile_size_mm: float = Form(150.0),
     pad_thickness_mm: float = Form(15.0),
     relief_height_mm: float = Form(3.0, description="edge depth: top of each colour down to its seams"),
@@ -157,18 +159,24 @@ async def process_tile(
     )
     corner_pts = _parse_json("corners", corners)
     swatch_list = _parse_swatches(_parse_json("swatches", swatches))
+    paint_raw = _parse_json("paint", paint)
+    paint_list = None
+    if paint_raw:
+        if not isinstance(paint_raw, list):
+            raise HTTPException(422, "'paint' must be a JSON list")
+        paint_list = [None if c is None else _parse_swatches([c])[0] for c in paint_raw]
 
     if fmt not in tp.EXPORT_FORMATS:
         raise HTTPException(422, "output_format must be one of " + ", ".join(tp.EXPORT_FORMATS))
     fname = f"mixotile_{int(round(tile_size_mm))}mm.{tp.EXPORT_FORMATS[fmt][0]}"
     if stream:
-        return StreamingResponse(_stream(data, corner_pts, swatch_list, cfg, fmt, fname, preview),
+        return StreamingResponse(_stream(data, corner_pts, swatch_list, cfg, fmt, fname, preview, paint_list),
                                  media_type="application/x-ndjson",
                                  headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
     try:
         async with _lock():
-            model, stats = await run_in_threadpool(tp.process_tile, data, corner_pts, swatch_list, cfg)
+            model, stats = await run_in_threadpool(tp.process_tile, data, corner_pts, swatch_list, cfg, None, None, paint_list)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
@@ -204,7 +212,7 @@ def _summary(stats):
                                       "colours", "timing_s", "raster_px", "symmetry", "merged_shading_bands")}
 
 
-async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=True):
+async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=True, paint_list=None):
     """Progress over the SAME request (Cloud Run only gives CPU while a request is open, and a
     follow-up poll could land on another instance). Wire format (bytes):
       one JSON object per line:  {"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}  ...
@@ -245,7 +253,7 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
 
     def work():
         try:
-            model, stats = tp.process_tile(data, corner_pts, swatch_list, cfg, progress=progress, on_parts=on_parts)
+            model, stats = tp.process_tile(data, corner_pts, swatch_list, cfg, progress=progress, on_parts=on_parts, paint=paint_list)
             log.info("generated %s: %d bytes, bodies=%d, timing=%s", fmt, len(model), stats["bodies"], stats["timing_s"])
             loop.call_soon_threadsafe(q.put_nowait, ("done", (stats, model)))
         except ValueError as exc:

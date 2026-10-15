@@ -1341,7 +1341,7 @@ def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: fl
 
 
 # --------------------------------------------------------------------------- pipeline
-def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progress=None, on_parts=None):
+def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progress=None, on_parts=None, paint=None):
     """Full pipeline. Returns (model_bytes, stats). on_parts(parts, stats, preview_texture_rgb) is called
     once the bodies exist, before the slow file export.
     progress(fraction 0..1, message) is called at each real stage (UI progress bar); weights are
@@ -1380,6 +1380,13 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     else:                                # auto colour count, capped at num_colors
         labels, palette, merged = quantize_auto(flat, k_cap=cfg.num_colors, shade_de=cfg.merge_delta_e or 12.0)
     n = len(palette)
+    # paint = optional replacement colour per swatch (None = keep). Areas are decided with the picked
+    # colours; the replacement only recolours that area (applied after every area decision below).
+    paint_arr = None
+    if swatches and paint:
+        if len(paint) != n:
+            raise ValueError("paint must have one entry per swatch")
+        paint_arr = [None if c is None else np.asarray(c, np.uint8) for c in paint]
     labels = majority_filter(labels, n, int(round(cfg.smoothing_mm / mm_per_px)))
     labels = remove_specks(labels, n, int(cfg.min_feature_mm2 / mm_per_px ** 2),
                            keep_len_px=4.0 / mm_per_px,           # ≥ 4 mm long = outline stroke, keep
@@ -1400,6 +1407,13 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
         remap = np.full(n, -1, np.int32)
         remap[used] = np.arange(len(used))
         labels, palette = remap[labels], palette[used]
+        if paint_arr is not None:
+            paint_arr = [paint_arr[i] for i in used]
+    if paint_arr is not None:
+        palette = palette.copy()
+        for i, c in enumerate(paint_arr):
+            if c is not None:
+                palette[i] = c
     t1 = time.monotonic()
 
     report(0.14, "Shaping the relief")

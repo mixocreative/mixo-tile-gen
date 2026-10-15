@@ -376,14 +376,12 @@
             <p id="swatchEmpty" class="hint mt-1"></p>
           </div>
           <div class="flex flex-wrap gap-2 mt-3">
-            <button id="addPick" type="button" class="btn btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4zM14.5 7.5L5 17l-1 4 4-1 9.5-9.5"/></svg><span data-i18n="s3.pick">Pick from photo</span></button>
-            <label class="btn btn-ghost relative cursor-pointer"><span aria-hidden="true">+</span><span data-i18n="s3.custom">Custom colour</span><input id="addCustom" type="color" value="#c8553d" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Custom colour" data-i18n-aria="s3.custom"></label>
             <button id="restoreBtn" type="button" class="btn btn-ghost"><span aria-hidden="true">↺</span><span data-i18n="s3.restore">Restore suggested</span></button>
           </div>
           <p id="pickNote" class="hidden text-[12px] text-ink mt-2 font-medium" role="status"></p>
-          <p id="addHint" class="hint mt-2" data-i18n="s3.addHint">Pick from photo: tap the tile on the left. Custom colour: choose any colour. − on a swatch removes it. Restore suggested: drops your edits and lets the app pick again.</p>
+          <p id="addHint" class="hint mt-2" data-i18n="s3.addHint">Tap a swatch to change its colour (its area stays the same). − merges that colour's area into the closest colour. Restore suggested: the app splits the tile again and drops your colour changes.</p>
           <div class="flex items-center justify-between gap-3 mt-3">
-            <div class="field w-44"><label for="numColors" data-i18n="s3.max">Max colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div>
+            <div class="flex items-center gap-1.5"><button id="nMinus" type="button" class="btn btn-ghost !px-3 text-[16px]" aria-label="Fewer colours" data-i18n-aria="s3.fewer">−</button><div class="field w-36"><label for="numColors" data-i18n="s3.max">Colours</label><input id="numColors" type="number" min="2" max="12" step="1" value="8"></div><button id="nPlus" type="button" class="btn btn-ghost !px-3 text-[16px]" aria-label="More colours" data-i18n-aria="s3.more">+</button></div>
             <button id="clearSwatches" class="btn-text btn" data-i18n="s3.clear">Clear</button>
           </div>
           <p class="hint mt-1.5" data-i18n="s3.maxD">Most colours the app will suggest (each colour is one filament).</p>
@@ -574,10 +572,11 @@ const D = {
     'm.infoGlaze': 'Glaze colours are what a multi-colour printer prints: every part is one flat colour, one filament each. Check the palette, then add, remove or recolour as you like.',
     'm.infoPhoto': 'Photo skin wraps your real photo onto the relief, like the real tile. It is for viewing and renders; a printer still prints the glaze colours. The colours below only decide where the bumps and valleys go.',
     's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour',
-    's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Max colours', 's3.clear': 'Clear',
+    's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Colours', 's3.fewer': 'Fewer colours', 's3.more': 'More colours', 's3.clear': 'Clear',
     's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
-    's3.addHint': 'Pick from photo: tap the tile on the left. Custom colour: choose any colour. − on a swatch removes it. Restore suggested: drops your edits and lets the app pick again.',
-    's3.maxD': 'Most colours the app will suggest (each colour is one filament).', 'c.countShape': '{n} shape colours · the photo decides how it looks',
+    's3.addHint': 'Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: the app splits the tile again and drops your colour changes.',
+    'sw.replace': 'Replace colour {n} (its area stays the same)', 'sw.orig': 'Back to the photo colour',
+    's3.maxD': 'How many colours the tile is split into; the app finds them in the photo. + splits into one more, − on a swatch merges its area into the closest colour. Tap a swatch to change its colour.', 'c.countShape': '{n} shape colours · the photo decides how it looks',
     'c.empty': 'No colours yet — tap Suggest, or tap the tile to pick up to {k} of your own.', 'c.max12': 'Maximum 12 colours.', 'c.needPal': 'Pick colours (or tap Suggest) to see the mapped preview.',
     'sw.colour': 'Swatch {n} colour', 'sw.remove': 'Remove swatch {n}', 'c.count': '{n} colours · one filament each',
     's4.h': '04 Size', 's4.meta': 'Dimensions · mm', 's4.scale': 'Relief re-tuned for this tile size (relief ≤ width ÷ 10). Edit any field to override.',
@@ -648,10 +647,11 @@ const D = {
     'm.infoGlaze': '釉色就是多色列印機實際會印出的顏色：每個零件只有一種單色，各用一種線材。請檢查色盤，需要時可新增、移除或換色。',
     'm.infoPhoto': '照片貼面會把你的真實照片貼在浮雕上，就像真正的花磚，適合檢視與渲染；列印機仍會印出釉色。下方的顏色只決定凹凸的位置。',
     's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色',
-    's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '最多顏色數', 's3.clear': '清除',
+    's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '顏色數', 's3.fewer': '減少顏色', 's3.more': '增加顏色', 's3.clear': '清除',
     's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
-    's3.addHint': '從照片挑色：點左邊的磚面。自選顏色：自己選任何顏色。色票上的 − 可移除該色。還原建議色：放棄你的修改，重新由程式挑色。',
-    's3.maxD': '程式最多會建議幾種顏色（每種顏色用一種線材）。', 'c.countShape': '{n} 種形狀顏色・外觀由照片決定',
+    's3.addHint': '點色票可更換它的顏色（區域不變）。− 會把該顏色的區域併入最接近的顏色。還原建議色：程式重新分色，並放棄你的顏色修改。',
+    'sw.replace': '替換第 {n} 個顏色（區域不變）', 'sw.orig': '還原為照片中的顏色',
+    's3.maxD': '磚面要分成幾種顏色；程式會從照片中自動找出。+ 多分一種；色票上的 − 會把該區域併入最接近的顏色。點色票可更換顏色。', 'c.countShape': '{n} 種形狀顏色・外觀由照片決定',
     'c.empty': '還沒有顏色，請點「自動建議」，或點磚面自行挑選（最多 {k} 種）。', 'c.max12': '最多 12 種顏色。', 'c.needPal': '請先挑選顏色（或按「自動建議」）才能看對應預覽。',
     'sw.colour': '第 {n} 個色票的顏色', 'sw.remove': '移除第 {n} 個色票', 'c.count': '{n} 種顏色・每種顏色使用一種線材',
     's4.h': '04 尺寸', 's4.meta': '尺寸・公釐', 's4.scale': '已依此磚尺寸重新調整浮雕（浮雕 ≤ 磚寬 ÷ 10）。可自行修改任何欄位。',
@@ -830,7 +830,7 @@ async function loadFileInner(file, { detect = true } = {}) {
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
-  S.manualPalette = false; S.swatches = []; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
+  S.manualPalette = false; S.swatches = []; S.paint = []; S.view = 'photo'; renderSwatches(); updateModeButtons();   // fresh photo: automatic palette again
   scheduleSuggest();
   warmBackend();
   if (detect && S.aiState !== 'failed') autoDetect(undefined, true);
@@ -1160,16 +1160,6 @@ function flatCoords(e) {
   const r = $('flatCanvas').getBoundingClientRect();
   return [Math.floor((e.clientX - r.left) * FLAT / r.width), Math.floor((e.clientY - r.top) * FLAT / r.height)];
 }
-$('flatCanvas').addEventListener('click', (e) => {
-  if (!S.flat) return;
-  const [u, v] = flatCoords(e), c = sampleAt(u, v), L = srgbToLab(c);
-  const dup = S.swatches.findIndex((s) => { const l = srgbToLab(s); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 6; });
-  if (dup >= 0) { flashSwatch(dup); return; }
-  if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
-  takeManual();
-  S.swatches.push(c.map(Math.round)); renderSwatches(); S.view = 'photo'; renderFlat(); updateModeButtons();
-  clearTimeout(S.pickBackT); S.pickBackT = setTimeout(() => { S.view = viewForMode(); renderFlat(); updateModeButtons(); }, 2000);
-});
 $('flatCanvas').addEventListener('pointermove', (e) => {
   if (!S.flat || e.pointerType === 'touch') return;
   const [u, v] = flatCoords(e), chip = $('hoverChip'), c = sampleAt(u, v), r = $('flatCanvas').getBoundingClientRect();
@@ -1183,17 +1173,32 @@ function flashSwatch(i) { const el = $('swatches').children[i]?.querySelector('.
 // Once the user edits the palette by hand, automatic suggestions never overwrite it (like S.cornerEdits for corners).
 const takeManual = () => { S.manualPalette = true; };
 function renderEmpty() { $('swatchEmpty').textContent = t('c.empty', { k: $('numColors').value }); }
+// A swatch = an AREA (found with the picked / suggested colour, never changes when recoloured) plus its
+// paint. Tapping a swatch only replaces the paint (S.paint[i]); the engine gets it as `paint`.
+const paintOf = (i) => S.paint?.[i] || S.swatches[i];
+function syncPaint() { S.paint = (S.paint || []).slice(0, S.swatches.length); while (S.paint.length < S.swatches.length) S.paint.push(null); }
 function renderSwatches() {
   const box = $('swatches'); box.innerHTML = '';
+  syncPaint();
   S.swatches.forEach((c, i) => {
+    const show = paintOf(i), replaced = !!S.paint[i];
     const chip = document.createElement('div'); chip.className = 'chip';
-    const d = document.createElement('div'); d.className = 'swatch'; d.style.background = toHex(c); d.title = toHex(c);
-    const hex = document.createElement('span'); hex.className = 'hex'; hex.textContent = toHex(c);
-    const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(c); inp.setAttribute('aria-label', t('sw.colour', { n: i + 1 }));
-    inp.oninput = () => { takeManual(); S.swatches[i] = fromHex(inp.value); d.style.background = inp.value; hex.textContent = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
+    const d = document.createElement('div'); d.className = 'swatch'; d.style.background = toHex(show); d.title = t('sw.replace', { n: i + 1 });
+    const hex = document.createElement('span'); hex.className = 'hex'; hex.textContent = toHex(show);
+    const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(show); inp.setAttribute('aria-label', t('sw.replace', { n: i + 1 }));
+    inp.oninput = () => { takeManual(); S.paint[i] = fromHex(inp.value); d.style.background = inp.value; hex.textContent = inp.value; renderTiers(); if (S.view === 'mapped') renderFlat(); };
+    inp.onchange = () => renderSwatches();
     const x = document.createElement('button'); x.className = 'x'; x.textContent = '−'; x.setAttribute('aria-label', t('sw.remove', { n: i + 1 }));
-    x.onclick = (ev) => { ev.stopPropagation(); takeManual(); S.swatches.splice(i, 1); renderSwatches(); renderFlat(); };
-    d.append(inp, x); chip.append(d, hex); box.appendChild(chip);
+    x.onclick = (ev) => { ev.stopPropagation(); if (S.swatches.length <= 2) return; takeManual(); S.swatches.splice(i, 1); S.paint.splice(i, 1); $('numColors').value = S.swatches.length; renderSwatches(); renderFlat(); };
+    d.append(inp, x);
+    if (replaced) {                       // small dot = the photo's colour; tap it to go back
+      const o = document.createElement('button'); o.type = 'button'; o.textContent = '↺';
+      o.setAttribute('aria-label', t('sw.orig')); o.title = t('sw.orig');
+      o.style.cssText = `position:absolute;left:2px;bottom:2px;width:15px;height:15px;border-radius:50%;font-size:9px;line-height:14px;color:#fff;background:${toHex(c)};border:1px solid #fff;box-shadow:0 0 0 1px #0003;z-index:2`;
+      o.onclick = (ev) => { ev.stopPropagation(); S.paint[i] = null; renderSwatches(); renderFlat(); };
+      d.appendChild(o);
+    }
+    chip.append(d, hex); box.appendChild(chip);
   });
   $('swatchEmpty').classList.toggle('hidden', S.swatches.length > 0);
   renderEmpty();
@@ -1219,7 +1224,7 @@ function renderFlat() {
         pal.forEach((p, j) => { const d = (p[0] - L[0]) ** 2 + (p[1] - L[1]) ** 2 + (p[2] - L[2]) ** 2; if (d < best) { best = d; k = j; } });
         cache.set(key, k);
       }
-      const c = S.swatches[k]; o[i] = c[0]; o[i + 1] = c[1]; o[i + 2] = c[2]; o[i + 3] = 255;
+      const c = paintOf(k); o[i] = c[0]; o[i + 1] = c[1]; o[i + 2] = c[2]; o[i + 3] = 255;
     }
     g.putImageData(out, 0, 0);
   } else g.putImageData(S.flat, 0, 0);
@@ -1238,23 +1243,17 @@ function setView(v) {
   if (v === 'mapped' && !S.swatches.length) { showError(t('c.needPal')); v = 'photo'; }
   S.view = v; renderFlat(); updateModeButtons();
 }
-$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; renderSwatches(); setView(viewForMode()); };
-// eyedropper: the tile photo itself picks colours (any tap on it); the button just brings it into view
-$('addPick').onclick = () => {
-  setView('photo');
-  const c = $('flatCanvas'); c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
-  showNote(t('s3.pickNow'));
-};
-// custom colour: native colour picker; the chosen colour is added when the picker is confirmed
-$('addCustom').addEventListener('change', (e) => {
-  const c = fromHex(e.target.value), L = srgbToLab(c);
-  const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 3; });
-  if (dup >= 0) { flashSwatch(dup); return; }
-  if (S.swatches.length >= 12) { showError(t('c.max12')); return; }
-  takeManual(); S.swatches.push(c); renderSwatches(); S.view = viewForMode(); renderFlat(); updateModeButtons();
-});
-$('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; runSuggest(); };
+$('clearSwatches').onclick = () => { takeManual(); S.swatches = []; S.paint = []; renderSwatches(); setView(viewForMode()); };
+$('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; S.paint = []; runSuggest(); };
+// number of colours = how many areas the tile is split into (found automatically in the photo)
+function setCount(n) {
+  n = Math.max(2, Math.min(12, n | 0));
+  $('numColors').value = n; saveSettings?.();
+  if (!S.flat) return;
+  S.manualPalette = false; runSuggest(true);
+}
+$('nMinus').onclick = () => setCount(+$('numColors').value - 1);
+$('nPlus').onclick = () => setCount(+$('numColors').value + 1);
 function showNote(msg) { const b = $('pickNote'); b.textContent = msg; b.classList.remove('hidden'); clearTimeout(showNote.t); showNote.t = setTimeout(() => b.classList.add('hidden'), 5000); }
 
 // ---- the two modes. Glaze colours = what a multi-colour printer prints (full colour controls);
@@ -1283,7 +1282,7 @@ function setColMode(m) {
 $('modeGlaze').onclick = () => setColMode('glaze');
 $('modePhoto').onclick = () => setColMode('photo');
 $('numColors').addEventListener('input', renderEmpty);
-$('numColors').addEventListener('change', () => { if (!S.manualPalette && S.flat) runSuggest(); });
+$('numColors').addEventListener('change', () => setCount(+$('numColors').value));
 
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
 function suggestPalette(k) {   // k-means (Lab) on a fixed 70×70 pixel grid: same photo -> same palette
@@ -1306,9 +1305,18 @@ function suggestPalette(k) {   // k-means (Lab) on a fixed 70×70 pixel grid: sa
     return { L: c[0], rgb: [0, 1, 2].map((q) => Math.round(m.reduce((a, p) => a + p[q], 0) / m.length)) };
   }).filter(Boolean).sort((a, b) => b.L - a.L).map((x) => x.rgb);
 }
-function runSuggest() {
+function runSuggest(keepPaint = false) {
   if (!S.flat) return;
-  S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0)));
+  const oldSw = S.swatches || [], oldPaint = S.paint || [];
+  S.swatches = suggestPalette(Math.min(12, Math.max(2, +$('numColors').value | 0))); S.paint = [];
+  if (keepPaint && oldPaint.some(Boolean)) {         // carry each changed colour to the nearest new area
+    const L = oldSw.map(srgbToLab);
+    S.paint = S.swatches.map((c) => {
+      const l = srgbToLab(c); let best = -1, bd = 400;
+      L.forEach((q, j) => { const d = (q[0] - l[0]) ** 2 + (q[1] - l[1]) ** 2 + (q[2] - l[2]) ** 2; if (oldPaint[j] && d < bd) { bd = d; best = j; } });
+      return best >= 0 ? oldPaint[best] : null;
+    });
+  }
   renderSwatches();
   S.view = viewForMode();
   renderFlat(); updateModeButtons();
@@ -1531,6 +1539,8 @@ async function requestModel(o, hooks = {}) {
   fd.append('image', S.blob, 'tile.jpg');
   fd.append('corners', JSON.stringify(orderCorners(S.corners).map((p) => p.map((x) => +x.toFixed(2)))));
   if (S.swatches.length) fd.append('swatches', JSON.stringify(S.swatches.map(toHex)));
+  syncPaint();
+  if (S.paint.some(Boolean)) fd.append('paint', JSON.stringify(S.paint.map((c) => (c ? toHex(c) : null))));
   fd.append('num_colors', String(Math.min(12, Math.max(2, +$('numColors').value | 0))));
   fd.append('tile_size_mm', v.tileSize); fd.append('pad_thickness_mm', v.padThick);
   fd.append('relief_height_mm', v.reliefH); fd.append('fillet_radius_mm', v.fillet);
@@ -2254,7 +2264,7 @@ function snapKey() {
   const o = {};
   for (const id of settingIds) if (id !== 'maxH' && !FT_KEYS.some((k) => k.id === id)) o[id] = parseFloat($(id).value);
   o.sym = $('symmetry').value; o.edge = $('edgeSeam').checked; o.nc = $('numColors').value;
-  o.sw = S.swatches.map(toHex).join(','); o.c = S.corners ? S.corners.map((p) => p.map(Math.round)).join(';') : '';
+  o.sw = S.swatches.map(toHex).join(',') + '|' + (S.paint || []).map((c) => (c ? toHex(c) : '-')).join(','); o.c = S.corners ? S.corners.map((p) => p.map(Math.round)).join(';') : '';
   return JSON.stringify(o);
 }
 let runId = 0;
