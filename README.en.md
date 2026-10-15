@@ -7,7 +7,7 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 **Live app:** https://mixocreative.github.io/mixo-tile-gen/
 **Engine:** Python, running on Google Cloud Run (with a hard spending cap). You can also run the whole app on your own computer with one double-click, phone included; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
-![Real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
+![One photo, five looks: original → cropped → 3D glaze colours → 3D recoloured → 3D photo skin](docs/readme/showcase_en.jpg)
 
 ---
 
@@ -29,6 +29,10 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 
 **Fun ideas:** coasters 🍵 · fridge magnets 🧲 · a wall of your neighbourhood's tiles 🏘️ · gifts from a trip to Taiwan 🎁 · restoring a missing tile in an old floor 🔧 · class projects about Taiwanese heritage 🏫
 
+**Results on 18 real tiles** (left: photo, right: the generated 3D relief):
+
+![18 real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
+
 ## What it does
 
 1. **Capture.** On a phone: one **Take or choose photo** button (camera, photo library or files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real tiles. A big photo shows **Loading photo…** for a moment and is shrunk before it goes to the engine, so it's quick. The photo is never stored.
@@ -41,6 +45,8 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
    - **Pick from photo** adds a colour the split missed. It stays pinned 📌 when you change the count.
    - Tap a swatch to change its colour; its area stays the same (↺ goes back). The **−** on a swatch merges its area into the closest colour.
    - **Restore suggested** starts over.
+   ![The colour step: automatic colours, number of colours, pick from photo (pinned 📌), recolour, merge](docs/readme/colours_en.png)
+
 4. **Size.** Settings are in millimetres, with a live cross-section drawing that highlights the setting you're editing. Every setting is remembered between visits and has its own ↺ reset, plus a reset-all. The defaults are tuned for a realistic 150 mm tile (15 mm base, about 19–20 mm tall in total). Max relief is the tile width ÷ 10, above the base.
 5. **Generate.** Click **Generate 3D relief**. The cloud engine builds the 3D shape in about 20 seconds (up to a minute after a quiet spell), with a real progress bar. If it's busy you'll see "waiting — another tile is being made" instead of an error.
 6. **Preview and fine-tune.** The 3D preview opens as soon as the shape is ready. Flip between **Colours** and **Photo**, and between **Top** and **3/4** views. Under **Fine-tune (live)**, sliders for base thickness, edge depth, crown, groove floor and outline height move the model live as you drag. Click **Apply** to update the full model in your browser instantly (within a tiny fraction of a millimetre of a full rebuild; tested), or **Exact rebuild (cloud)** if you prefer. Settings that change the shapes (edge roll, clearance, outline width, colours, corners, tile size) need a cloud rebuild.
@@ -86,6 +92,8 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 ```
 
 ### Default settings (150 mm tile)
+
+![Live cross-section: every adjustable setting and its default](docs/readme/settings_en.png)
 
 "Label in the app" is the text you see on the page (the ones marked *Advanced* sit under the **Advanced** fold in step 04). "Name for --set / API" is the name to use with `mixo --set name=value` and in the [API](#api).
 
