@@ -1,4 +1,4 @@
-"""Outline-detection verification sheet over the 16 real tiles:
+"""Outline-detection verification sheet over the owner's fixture photos:
 photo | detected outline centre-lines (magenta) | final label map | hillshade of the actual top surface.
 Writes docs/research/lines_final.jpg and prints per-tile timings. Run: python tests/lines_sheet.py [names...]"""
 import json, math, os, sys, time
@@ -7,10 +7,10 @@ import numpy as np, cv2
 import tile_processor as tp
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-D = os.path.join(HERE, "fixtures", "real_tiles")      # permanent fixture set (never edit)
+D = os.path.join(HERE, "fixtures", "real_tiles", "originals")      # permanent fixture set (never edit)
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "docs", "research")
 os.makedirs(OUT, exist_ok=True)
-C = json.load(open(os.path.join(D, "corners.json")))
+C = json.load(open(os.path.join(D, "..", "corners.json")))
 cfg = tp.TileConfig()
 cfg.validate()
 n_px = int(round(cfg.tile_size_mm * cfg.px_per_mm))
@@ -56,7 +56,7 @@ for nm in names:
     img = open(os.path.join(D, nm + ".jpg"), "rb").read()
     rgb, cs = tp.decode_image(img)
     w = rgb.shape[1] / cs
-    corners = (np.float32(C[nm][1]) * w / 2048).tolist()
+    corners = C[nm]
     flat = tp.warp_tile(rgb, corners, n_px, cs, inset=0.015)
     t0 = time.time()
     labels, palette, _ = tp.quantize_auto(flat, k_cap=cfg.num_colors, shade_de=cfg.merge_delta_e)

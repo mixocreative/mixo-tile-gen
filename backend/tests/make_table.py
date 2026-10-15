@@ -3,14 +3,14 @@ the 3D render from the app. Usage: python tests/make_table.py <renders_dir> <out
 import json, os, sys
 import cv2, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
-D = os.path.join(HERE, "fixtures", "real_tiles")
-C = json.load(open(os.path.join(D, "corners.json"), encoding="utf-8"))
+D = os.path.join(HERE, "fixtures", "real_tiles", "originals")
+C = json.load(open(os.path.join(D, "..", "corners.json"), encoding="utf-8"))
 R, OUT = sys.argv[1], sys.argv[2]
 S = 300                                    # cell size (px)
 INK, MUTE, LINE, PAPER = (23, 26, 28), (106, 112, 119), (218, 225, 230), (245, 248, 250)
 
 def photo(nm):
-    f, c = C[nm]; im = cv2.imread(os.path.join(D, nm + ".jpg")); p = np.float32(c) * im.shape[1] / 2048
+    c = C[nm]; im = cv2.imread(os.path.join(D, nm + ".jpg")); p = np.float32(c)
     return cv2.warpPerspective(im, cv2.getPerspectiveTransform(p, np.float32([[0, 0], [S - 1, 0], [S - 1, S - 1], [0, S - 1]])), (S, S))
 
 def render(nm):
@@ -39,7 +39,7 @@ W = pairs_per_row * cell_w + (pairs_per_row + 1) * gap
 rows = (len(names) + pairs_per_row - 1) // pairs_per_row
 H = 70 + rows * (row_h + gap) + gap
 img = np.full((H, W, 3), PAPER[::-1], np.uint8)
-text(img, "mixo-tile-gen  -  16 real tiles: source photo | generated 3D relief (150 mm, 15 mm base)", (gap, 34), 0.75, INK[::-1], 2)
+text(img, f"mixo-tile-gen  -  {len(names)} real tiles: source photo | generated 3D relief (150 mm, 15 mm base)", (gap, 34), 0.75, INK[::-1], 2)
 text(img, "left: owner's photo, cropped to the chosen corners  |  right: the app's 3D preview of the generated .3MF", (gap, 58), 0.5, MUTE[::-1])
 for i, nm in enumerate(names):
     r, c = divmod(i, pairs_per_row)

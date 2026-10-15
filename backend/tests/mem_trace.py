@@ -13,9 +13,9 @@ def wrap(name):
     setattr(tp, name, w)
 for n in ["quantize_auto", "detect_outlines", "seam_field", "partition_fields", "cushion_body_mesh", "_decimate", "pad_mesh", "export_parts"]:
     wrap(n)
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles")
-C = json.load(open(os.path.join(D, "corners.json"))); nm = sys.argv[1]; f, c = C[nm]
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles", "originals")
+C = json.load(open(os.path.join(D, "..", "corners.json"))); nm = sys.argv[1]; c = C[nm]
 data = open(os.path.join(D, nm + ".jpg"), "rb").read(); rgb, s = tp.decode_image(data); w = rgb.shape[1] / s
 print("start", mem())
 res = float(os.environ.get("RES", 0.12))
-tp.process_tile(data, (np.float32(c) * w / 2048).tolist(), None, tp.TileConfig(mesh_resolution_mm=res)); print("end", mem())
+tp.process_tile(data, c, None, tp.TileConfig(mesh_resolution_mm=res)); print("end", mem())

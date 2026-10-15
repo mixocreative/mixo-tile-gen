@@ -12,12 +12,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cv2, numpy as np
 import tile_processor as tp
 
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles")
-name = sys.argv[1] if len(sys.argv) > 1 else "09_single_rose"
-_, c = json.load(open(os.path.join(D, "corners.json"), encoding="utf-8"))[name]   # [file, corners in 2048-px coords]
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles", "originals")
+name = sys.argv[1] if len(sys.argv) > 1 else "IMG_9255"
+c = json.load(open(os.path.join(D, "..", "corners.json"), encoding="utf-8"))[name]   # corners in photo pixels
 img = open(os.path.join(D, name + ".jpg"), "rb").read()
 rgb0, scale = tp.decode_image(img)
-corners = (np.float32(c) * (rgb0.shape[1] / scale) / 2048).tolist()
+corners = c
 
 
 def closed(f):

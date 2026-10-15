@@ -5,8 +5,8 @@ Keep `HANDOFF.md` up to date at every key step: add to the Status log and refres
 
 Rules:
 - Don't regress the design decisions in HANDOFF section 3. The owner arrived at them over many iterations.
-- After any geometry change, run `backend/tests/run_local.py` in Docker. Every body must be watertight.
+- **Test images: only the owner's hand-picked photos** in `backend/tests/fixtures/real_tiles/originals/` (19 `IMG_*.jpg`, corners in `real_tiles/corners.json`, photo pixels). Never use or add other images (no synthetic samples, no museum crops). Never delete, move or edit those files; if they change, the owner is curating them, so ask before restoring anything.
+- Every pipeline change must pass on all of those photos before reporting: `python tests/run_real.py` (every body watertight) and `python tests/check_formats.py IMG_9255` (all download formats). Look at a photo-vs-result sheet too (`tests/lines_sheet.py`, or `tests/make_table.py` from app screenshots).
+- The AI (MediaPipe auto-outline) only **suggests** corners: the person always confirms or adjusts them, and the app must keep working without the AI.
 - Keep the defaults in `TileConfig`, the `main.py` Form defaults and the `frontend/index.html` inputs in sync.
 - Don't deploy, commit, push or `git init` unless the owner asks.
-
-- Every pipeline change must be verified on all 16 fixture tiles in `backend/tests/fixtures/real_tiles/` (`python tests/run_real.py` for watertightness, `python tests/lines_sheet.py` for the visual sheet) before reporting. Never delete or replace fixture files.

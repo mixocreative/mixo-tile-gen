@@ -5,7 +5,7 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 **Live app:** https://mixocreative.github.io/mixo-tile-gen/
 **Engine:** Python, running on Google Cloud Run (with a hard spending cap). You can also run the whole app on your own computer with one double-click, phone included; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
-![16 real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
+![Real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
 
 ---
 
@@ -18,7 +18,7 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 - **🎨 It understands colours.** It works out the glaze colours by itself: up to 8 by default, or pick your own with a tap. Shadows and shine on the glaze don't fool it into inventing extra colours.
 - **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
 - **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw, so you can print it in several colours in one go. Want a tiny gap so the pieces snap together? Set the **clearance**.
-- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes, then download the `.3MF`, or `.GLB`, `.STL` or `.OBJ`. The **photo-textured `.OBJ`** wraps your actual photo onto the relief, so it looks like the real tile in Blender, games or AR.
+- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes. Flip it between **Colours** (one glaze colour per part, as it will print) and **Photo** (your actual photo wrapped onto the relief), then download the `.3MF`, or `.GLB`, `.STL` or `.OBJ`. The **photo-textured `.OBJ`** wraps your actual photo onto the relief, so it looks like the real tile in Blender, games or AR.
 - **⏱️ Fast and honest.** A real progress bar shows what's actually happening ("Carving colour 3 of 8…"), with time left. It's usually about 10 seconds.
 - **🛠️ Make it yours.** Every setting is a simple number in millimetres. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing). Change the base thickness, how high the colours rise, how round the edges are, how strong the outlines are, the gaps between pieces, the colour count, the mesh smoothness and more.
 - **📱 Works on your phone.** It's designed for phones first: big enough to tap, small enough to stay out of the way.
@@ -86,17 +86,22 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 | Raised outlines | 0.8 mm high, 1.2 mm wide | 0 turns it off. |
 | Clearance between colours | 0 mm | 0 is a flush fit; e.g. 0.3 leaves slots. |
 | Max colours | 8 | Auto picks 3 up to this. |
-| Mesh smoothness | 0.16 mm | Finer than this runs out of memory on a 2 GiB Cloud Run instance, so the server enforces it. |
+| Mesh smoothness | 0.16 mm | Finer than this needs much more memory per tile, so the server enforces it. |
 
 A 150 mm tile is about 19 mm tall (15 mm base plus about 4 mm relief) and about 0.9–1.6 M triangles; the `.3MF` is 9–15 MB.
 
 ## Performance
 
-All numbers were measured under exact Cloud Run limits (2 vCPU, 2 GiB, no swap) on the 16 real test tiles.
+Measured on the owner's test photos (3024 × 3024):
 
-- **Server:** 5–9 s per tile. Peak memory is about 1.5 GB.
-- **In the app, warm server:** the 3D preview is on screen in about 7 s and the download is ready in about 8.5 s. The page never freezes for more than about 1 s.
-- **Cold start:** the engine sleeps when idle, so the first request after a quiet spell adds roughly 20–40 s. To hide this, the app wakes the server as soon as a photo is loaded, and the progress bar says so if it's still waking.
+| Where the engine runs | Time per tile | Notes |
+|---|---|---|
+| A recent desktop PC (Option A, local) | about 10–12 s | |
+| Google Cloud Run, 4 vCPU / 4 GiB (the live site) | about 17–19 s | Google's virtual CPUs are slower than a desktop's. With 2 vCPU it was about 25 s, and 2 GiB ran out of memory on a second tile in a row. |
+
+- Peak memory is about 1.5–2 GB per tile. After each tile the engine hands freed memory back to the system, so tile after tile stays within the limit.
+- The 3D preview appears before the printable file is finished, and the page never freezes for more than about 1 s.
+- **Cold start:** the cloud engine sleeps when idle, so the first tile after a quiet spell adds roughly 20–40 s. The app wakes it as soon as a photo is loaded, and the progress bar says so if it's still waking.
 
 ## Set it up yourself: step-by-step guide (no experience needed)
 
@@ -212,8 +217,8 @@ Block 3: the engine. Takes 5–10 minutes. If it says *Permission denied … Art
 ```bash
 git clone https://github.com/mixocreative/mixo-tile-gen.git && cd mixo-tile-gen
 gcloud run deploy mixo-tile-gen --source backend --region $REGION --allow-unauthenticated \
-  --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 --min-instances 0 --max-instances 1 \
-  --set-env-vars ALLOWED_ORIGINS=$SITE --quiet
+  --cpu 4 --memory 4Gi --concurrency 1 --timeout 300 --min-instances 0 --max-instances 1 \
+  --set-env-vars ALLOWED_ORIGINS=$SITE,MIXOTILE_BODY_WORKERS=2 --quiet
 ```
 The last line shows `Service URL: https://mixo-tile-gen-….run.app`. **That's your engine address.** Open it with `/health` added; you should see `{"status":"ok", …}`.
 
@@ -325,15 +330,14 @@ Free accounts get `402 Payment Required` when creating a Docker Space. With **PR
 
 ## Tests and verification
 
-The owner's **16 real tile photos are a permanent regression set**: `backend/tests/fixtures/real_tiles/` (see its README). Every pipeline change must pass on all 16:
+Tests use **only the owner's hand-picked photos**: 19 shots in `backend/tests/fixtures/real_tiles/originals/`, with their tile corners in `real_tiles/corners.json` (see the README there). Every pipeline change must pass on all of them:
 
 ```bash
-# in the image, with Cloud Run limits (one tile per process)
-docker run --rm -m 2g --memory-swap 2g --cpus 2 -v "$PWD:/repo" -w /repo/backend mixo-tile-gen \
-  python tests/check_borders.py 09_single_rose 0     # watertight + puzzle-fit (gap/overlap) + time
-python tests/run_local.py        # synthetic sample, end to end
-python tests/check_formats.py 09_single_rose   # STL closed per colour, OBJ materials, texture lined up
-python tests/lines_sheet.py      # visual sheet: photo | outlines | colours | height map
+cd backend
+python tests/run_real.py                       # every photo: each colour body watertight, time per tile
+python tests/check_formats.py IMG_9255         # STL closed per colour, OBJ materials, photo texture lined up
+python tests/check_borders.py IMG_9255 0       # puzzle-fit between colours (gap / overlap)
+python tests/lines_sheet.py                    # visual sheet: photo | outlines | colours | height map
 ```
 
 `HANDOFF.md` has the full engineering log, the design decisions and the next steps, for whoever picks this up (human, Claude, or Codex). `AGENTS.md` has the rules for coding agents.
@@ -346,6 +350,5 @@ python tests/lines_sheet.py      # visual sheet: photo | outlines | colours | he
 
 ## Credits
 
-- **Owner's tile photos:** taken at the Museum of Old Taiwan Tiles (台灣花磚博物館), Chiayi.
-- **`backend/tests/fixtures/museum_wikimedia/`:** crops of "Interior of the Museum of Old Taiwan Tiles-03" by 阿道, CC BY-SA 4.0, via Wikimedia Commons.
+- **Tile photos** (tests, results table and the in-app sample): taken and hand-picked by the owner.
 - **Built with:** FastAPI, OpenCV, scikit-image, scikit-learn, SciPy, fast-simplification, trimesh; Three.js, MediaPipe Tasks Vision, Cropper.js and Tailwind (via CDN).

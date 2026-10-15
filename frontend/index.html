@@ -348,12 +348,14 @@
 <!-- ================================================================ 3D preview modal -->
 <div id="previewModal" class="hidden fixed inset-0 z-50 bg-ink/50 backdrop-blur-[2px] p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
   <div class="bg-paper h-full max-w-[1100px] mx-auto flex flex-col overflow-hidden sm:rounded-xl sm:border sm:border-line">
-    <div class="flex items-center justify-between gap-2 px-4 h-12 border-b border-line">
-      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap">3D preview <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
-      <div class="flex gap-1.5">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-4 py-2 sm:py-0 sm:h-12 border-b border-line">
+      <h2 id="pvTitle" class="font-medium text-[14px] whitespace-nowrap mr-auto">3D preview <span id="pvSize" class="mono text-[11px] text-mute font-normal ml-1"></span></h2>
+      <!-- phones: title + close on the first row, the view controls on a row of their own -->
+      <div class="flex gap-1.5 max-sm:order-last max-sm:w-full max-sm:justify-between">
+        <div class="seg" role="group" aria-label="Surface"><button id="pvColour" aria-pressed="true">Colours</button><button id="pvPhoto" aria-pressed="false" disabled title="Your photo projected from the top">Photo</button></div>
         <div class="seg"><button id="pvTop">Top</button><button id="pvIso" aria-pressed="true">3/4</button></div>
-        <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
+      <button id="pvClose" class="btn btn-ghost !px-2.5" aria-label="Close preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="relative flex-1 min-h-0" style="background: linear-gradient(#faf8f5, #ece8e2)">
       <div id="viewer" class="absolute inset-0"></div>
@@ -479,10 +481,10 @@ addEventListener('paste', (e) => {
 });
 
 // "Try a sample": one of the owner's real tile photos, with its tile corners pre-placed
-const SAMPLE = { url: 'samples/rose.jpg', corners: [[304, 330], [1677, 330], [1689, 1717], [280, 1717]], ref: 2048 };
+const SAMPLE = { url: 'samples/roses.jpg', corners: [[510, 564], [2616, 534], [2514, 2508], [594, 2478]], ref: 3024 };
 $('sampleBtn').onclick = async () => {
   const blob = await (await fetch(SAMPLE.url)).blob();
-  await loadFile(new File([blob], 'sample-rose.jpg', { type: 'image/jpeg' }), { detect: false });
+  await loadFile(new File([blob], 'sample-roses.jpg', { type: 'image/jpeg' }), { detect: false });
   const k = S.W / SAMPLE.ref;
   S.corners = SAMPLE.corners.map(([x, y]) => [x * k, y * k]);
   S.cornerEdits++;                       // counts as a manual edit: auto-detect won't move them
@@ -753,7 +755,7 @@ async function autoDetect(points, auto = false) {
   if (!best) { setAiStatus('Couldn’t lock onto the tile outline — drag the corners, or tap the tile to retry.', 'warn'); return; }
   if (S.cornerEdits !== gen || (auto && S.cornerEdits > 0)) { setAiStatus('Kept your manual corners (auto-detect finished after you edited them).', 'info'); return; }
   S.corners = orderCorners(best.q.map(([x, y]) => [x * best.sx, y * best.sy]));
-  setAiStatus('Tile outline detected — fine-tune the corners if needed.', 'ok');
+  setAiStatus('AI suggestion: check that the 4 corners sit on the glaze edges, and drag any that don’t.', 'ok');
   if (S.mode !== 'corners') setMode('corners'); else { drawOverlay(); updateWarp(); }
 }
 
@@ -913,7 +915,7 @@ function readSettings() {
 // --------------------------------------------------------------------- generate
 function showError(msg) { const b = $('errorBox'); b.textContent = msg; b.classList.remove('hidden'); clearTimeout(showError.t); showError.t = setTimeout(() => b.classList.add('hidden'), 9000); }
 
-async function requestModel(format, onPreview = null) {
+async function requestModel(format, onPreview = null, onTexture = null) {
   const base = apiBase();
   if (!base) { $('apiBox').open = true; throw new Error('Set your Cloud Run backend URL first (top-right).'); }
   if (!S.blob || !S.corners) throw new Error('Load a tile photo first.');
@@ -954,7 +956,8 @@ async function requestModel(format, onPreview = null) {
       if (ev.type === 'preview') {
         clearTimeout(wake);
         onPreview && onPreview({ layout: ev.layout, data: data.buffer, stats: ev.stats, size: v.tileSize });
-      } else if (ev.type === 'done') result = { buf: data.buffer, stats: ev.stats, size: v.tileSize };
+      } else if (ev.type === 'texture') onTexture && onTexture(data.slice());
+      else if (ev.type === 'done') result = { buf: data.buffer, stats: ev.stats, size: v.tileSize };
     };
     const onEvent = (ev) => {
       if (ev.type === 'progress') {
@@ -1036,11 +1039,12 @@ $('generateBtn').onclick = async () => {
   let previewShown = false;
   setDownloadReady(false);
   try {
+    S.photoTex = null; setLook('colour'); $('pvPhoto').disabled = true;
     const res = await requestModel('3mf', (pv) => {
       // preview first: open the 3D view right away; the printable file keeps streaming in behind it
       S.model = { ...pv, buf: null }; previewShown = true;
       showLoading(false); openPreview();
-    });
+    }, (jpg) => { S.photoTex = jpg; applyPhotoTexture(); });
     S.model = { ...(S.model || {}), ...res };
     if (!previewShown) { showLoading(false); await openPreview(); }
     setDownloadReady(true);
@@ -1118,6 +1122,9 @@ function buildPreviewGroup(m) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(new THREE.BufferAttribute(idx, 1));
     g.computeVertexNormals();
+    const uv = new Float32Array(part.nv * 2);
+    for (let i = 0; i < part.nv; i++) { uv[2 * i] = pos[3 * i] / m.size; uv[2 * i + 1] = pos[3 * i + 1] / m.size; }
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(part.hex) }));
     mesh.name = part.name; group.add(mesh);
   }
@@ -1141,11 +1148,13 @@ async function openPreview() {
     if (!o.geometry.attributes.normal) { const g = V.toCreasedNormals(o.geometry, Math.PI / 5); o.geometry.dispose(); o.geometry = g; }   // 3MF fallback only
     // fired-glaze look: glossy clear coat over a slightly satin colour layer
     o.material = new THREE.MeshPhysicalMaterial({ color: col, roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15, vertexColors: !!o.geometry.attributes.color });
+    o.userData.colourMat = o.material;
     old?.dispose?.(); o.castShadow = o.receiveShadow = true;
   });
   const box = new THREE.Box3().setFromObject(group), c = box.getCenter(new THREE.Vector3());
   group.position.x -= c.x; group.position.z -= c.z; group.position.y -= box.min.y;
   scene.add(group); V.obj = group;
+  applyPhotoTexture();
   const size = Math.max(box.max.x - box.min.x, box.max.z - box.min.z); V.size = size; V.height = box.max.y - box.min.y;
   V.ground.scale.set(size * 4, size * 4, 1);
   V.sun.position.set(size * 0.8, size * 1.6, size * 0.6); V.sun.target.position.set(0, 0, 0);
@@ -1158,6 +1167,35 @@ async function openPreview() {
 ` : '';
   $('downloadBtn').focus();
 }
+// "Photo" view: the engine's top-down photo on every colour body (the backing pad stays plain,
+// like the textured OBJ download, because its sides would show streaks)
+function applyPhotoTexture() {
+  if (!V.ready || !V.obj || !S.photoTex) return;
+  const { THREE } = V;
+  if (V.photoMap) V.photoMap.dispose();
+  const img = new Image(), url = URL.createObjectURL(new Blob([S.photoTex], { type: 'image/jpeg' }));
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const map = new THREE.Texture(img); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8; map.needsUpdate = true;
+    V.photoMap = map;
+    V.obj.traverse((o) => {
+      if (!o.isMesh) return;
+      o.userData.photoMat?.dispose();
+      o.userData.photoMat = /pad/i.test(o.name) || !o.geometry.attributes.uv ? o.userData.colourMat
+        : new THREE.MeshPhysicalMaterial({ map, roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15 });
+    });
+    $('pvPhoto').disabled = false;
+    setLook(V.look || 'colour');
+  };
+  img.src = url;
+}
+function setLook(look) {
+  V.look = look;
+  $('pvColour').setAttribute('aria-pressed', look === 'colour'); $('pvPhoto').setAttribute('aria-pressed', look === 'photo');
+  V.obj?.traverse((o) => { if (o.isMesh && o.userData.colourMat) o.material = (look === 'photo' && o.userData.photoMat) || o.userData.colourMat; });
+}
+$('pvColour').onclick = () => setLook('colour');
+$('pvPhoto').onclick = () => { if (!$('pvPhoto').disabled) setLook('photo'); };
 function closePreview() { $('previewModal').classList.add('hidden'); document.body.style.overflow = ''; }
 $('pvClose').onclick = closePreview;
 $('pvTop').onclick = () => { frame('top'); $('pvTop').setAttribute('aria-pressed', 'true'); $('pvIso').setAttribute('aria-pressed', 'false'); };

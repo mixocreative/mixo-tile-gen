@@ -3,15 +3,15 @@ plus watertightness. Usage: python tests/check_borders.py <tile> [clearance_mm]"
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np, trimesh, tile_processor as tp
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles")
-C = json.load(open(os.path.join(D, "corners.json")))
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles", "originals")
+C = json.load(open(os.path.join(D, "..", "corners.json")))
 nm = sys.argv[1]; clr = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
-f, c = C[nm]; data = open(os.path.join(D, nm + ".jpg"), "rb").read()
+c = C[nm]; data = open(os.path.join(D, nm + ".jpg"), "rb").read()
 rgb, s = tp.decode_image(data); w = rgb.shape[1] / s
 if os.environ.get("NODEC"): tp._decimate = lambda v, f, target_faces: (v, f)
 cap = []; tp.export_parts = lambda parts, fmt: cap.extend(parts) or b""
 cfg = tp.TileConfig(clearance_mm=clr); t = time.time()
-tp.process_tile(data, (np.float32(c) * w / 2048).tolist(), None, cfg)
+tp.process_tile(data, c, None, cfg)
 import cv2
 z0 = cfg.pad_thickness_mm; S = cfg.tile_size_mm; px = 0.05; N = int(S / px)
 cover = np.zeros((N, N), np.uint8); bad = []; perim = 0.0

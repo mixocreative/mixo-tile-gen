@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import ctypes
 import json
 import logging
 import os
@@ -12,6 +13,8 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
+
+import cv2
 
 import tile_processor as tp
 
@@ -147,6 +150,7 @@ async def process_tile(
         raise HTTPException(500, f"model generation failed: {type(exc).__name__}") from exc
 
     log.info("generated %s: %d bytes, bodies=%d, timing=%s", fmt, len(model), stats["bodies"], stats["timing_s"])
+    _trim_memory()
     return Response(
         content=model,
         media_type=MEDIA_TYPES[fmt],
@@ -156,6 +160,14 @@ async def process_tile(
             "Cache-Control": "no-store",
         },
     )
+
+
+def _trim_memory() -> None:
+    """glibc keeps freed heap pages; after a tile that's ~1 GB the next tile can hit the memory limit."""
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):    # not glibc (Windows / macOS dev machines)
+        pass
 
 
 def _summary(stats):
@@ -170,6 +182,7 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
       one JSON object per line:  {"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}  ...
       optional     {"type":"preview","layout":[{name,hex,nv,nt}..],"stats":{..},"bytes":N}\n + N bytes
                    (per part: nv*3 float32 xyz mm, then nt*3 uint32 indices; little-endian)
+      optional     {"type":"texture","bytes":N}\n + N bytes of JPEG: the top-down photo (u = x/size, v = y/size)
       then either  {"type":"error","status":..,"detail":..}\n
       or           {"type":"done","filename":..,"stats":{..},"bytes":N}\n  followed by N raw model bytes
     (raw bytes, not base64: 25 % smaller, and the browser never has to parse a 20 MB JSON line)."""
@@ -179,11 +192,16 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
     def progress(p, msg):
         loop.call_soon_threadsafe(q.put_nowait, ("progress", {"type": "progress", "p": p, "msg": msg}))
 
-    def on_parts(parts, stats):
+    def on_parts(parts, stats, texture=None):
         if want_preview:
             layout, blob = tp.preview_mesh(parts)
             loop.call_soon_threadsafe(q.put_nowait, ("preview", ({"type": "preview", "layout": layout,
                                                                   "stats": _summary(stats), "bytes": len(blob)}, blob)))
+            if texture is not None:      # top-down photo for the preview's "Photo" view (u = x/size, v = y/size)
+                ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 85])
+                if ok:
+                    jb = jpg.tobytes()
+                    loop.call_soon_threadsafe(q.put_nowait, ("preview", ({"type": "texture", "bytes": len(jb)}, jb)))
 
     def work():
         try:
@@ -225,6 +243,7 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
                 yield model[i:i + (1 << 20)]
             break
     await task
+    _trim_memory()
 
 
 # Self-hosting: serve the website from the engine too (one address for the PC, phone and tunnel).

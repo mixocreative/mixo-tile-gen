@@ -1144,7 +1144,8 @@ def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: fl
 
 # --------------------------------------------------------------------------- pipeline
 def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progress=None, on_parts=None):
-    """Full pipeline. Returns (model_bytes, stats).
+    """Full pipeline. Returns (model_bytes, stats). on_parts(parts, stats, preview_texture_rgb) is called
+    once the bodies exist, before the slow file export.
     progress(fraction 0..1, message) is called at each real stage (UI progress bar); weights are
     the measured share of run time on a 150 mm tile (meshing the colour bodies dominates)."""
     def report(frac, msg):
@@ -1157,11 +1158,16 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     n_px = int(round(cfg.tile_size_mm * cfg.px_per_mm))
     flat = warp_tile(rgb, corners, n_px, corners_scale, inset=0.015)
     flat, sym = symmetrise(flat, cfg.symmetry)
-    texture = None
-    if cfg.output_format == "objtex":
-        texture = warp_tile(rgb, corners, 2048, corners_scale, inset=0.015)
+    # photo texture = the same warp as the geometry (inset, symmetry), projected top-down:
+    # 2048 px for the textured OBJ, 1024 px for the browser preview's "Photo" view
+    texture = preview_tex = None
+    if cfg.output_format == "objtex" or on_parts:
+        texture = warp_tile(rgb, corners, 2048 if cfg.output_format == "objtex" else 1024, corners_scale, inset=0.015)
         if sym not in ("off", "none"):     # same symmetry group the geometry used
             texture, _ = symmetrise(texture, sym)
+        preview_tex = texture if texture.shape[0] <= 1024 else cv2.resize(texture, (1024, 1024), interpolation=cv2.INTER_AREA)
+        if cfg.output_format != "objtex":
+            texture = None
     report(0.04, "Finding the glaze colours")
 
     mm_per_px = cfg.tile_size_mm / n_px
@@ -1204,7 +1210,7 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
         report(0.22 + 0.66 * done[0] / max(n_bodies, 1), f"Carving colour {done[0]} of {n_bodies}")
     parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done)
     if on_parts:                         # e.g. stream a light preview mesh before the slow file export
-        on_parts(parts, stats)
+        on_parts(parts, stats, preview_tex)
     report(0.90, "Writing the 3D file")
     t2 = time.monotonic()
     data = export_parts(parts, cfg.output_format, texture, cfg.tile_size_mm)

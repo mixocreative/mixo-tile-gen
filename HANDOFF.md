@@ -97,6 +97,13 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 4. Status log (newest first)
 
+- **2026-10-15, new fixture set + Photo preview + cloud memory/speed:**
+  - **Fixtures replaced by the owner:** they deleted the 16-tile set, the `originals/` duplicates and the museum crops, and left 19 hand-picked photos in `backend/tests/fixtures/real_tiles/originals/IMG_*.jpg` (3024 px). New `corners.json` = `{"IMG_xxxx": [[x,y] TL,TR,BR,BL]}` in photo pixels (10 auto-proposed from the wooden-frame opening, 9 read by eye; all checked by flattening). All test scripts read them (no more /2048 scaling). `check_colours.py` / `check_symmetry.py` removed (museum images). Rule: test only on these; if the folder changes, the owner is curating, so ask before restoring.
+  - **3D preview Colours | Photo switch:** the stream now sends `{"type":"texture","bytes":N}` + a 1024 px JPEG (same warp as the geometry) after the preview mesh; the browser adds top-down UVs (u = x/size, v = y/size) and swaps materials. Pad stays plain in Photo view. Header wraps on phones (tested 360/390/1280).
+  - **AI wording:** after auto-detect: "AI suggestion: check that the 4 corners sit on the glaze edges…". The AI only suggests; the person confirms (owner's rule).
+  - "Try a sample" = owner's IMG_9255 (roses), 1600 px, corners pre-placed, no auto-detect.
+  - **Cloud Run memory bug found and fixed:** a 2nd tile in a row on 3024 px photos hit "Memory limit of 2048 MiB exceeded" (503). Now 4 GiB, and `main.py` calls `malloc_trim(0)` after each tile. **Speed:** desktop 10–12 s/tile; Cloud Run 2 vCPU ≈ 25 s (thread caps didn't help); 4 vCPU + `MIXOTILE_BODY_WORKERS=2` ≈ 17–19 s. Deploy flags now `--cpu 4 --memory 4Gi`, env `MIXOTILE_BODY_WORKERS=2` (README Option B updated).
+
 - **2026-10-15, engine on Google Cloud Run + hard spending cap + local self-hosting (IN PROGRESS):**
   - Hugging Face is out: since ~July 2026 free accounts get `402 Payment Required` for Docker/Gradio Spaces on cpu-basic (PRO only). Owner chose Google Cloud Run with a card on file and a cap.
   - Repo renamed `tw-tile-gen` -> **`mixo-tile-gen`** (github.com/mixocreative/mixo-tile-gen, Pages https://mixocreative.github.io/mixo-tile-gen/). Product name changed everywhere (commit 003a33e).
@@ -210,8 +217,8 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 ## 5. In-flight / next steps
 
 **Owner's open requests (2026-10-15), in order:**
-1. Re-measure `corners.json` for all 16 fixtures (see the status entry), then re-render the photo-vs-render table `docs/results/all_tiles.jpg` with `backend/tests/make_table.py`.
-2. Test the live github.io site end to end against the Cloud Run engine (desktop + phone), including every download format.
+1. Owner to confirm the 19 fixture corners (sheet sent; `real_tiles/corners.json`).
+2. Re-render the photo-vs-render table `docs/results/all_tiles.jpg` from the new photos (Playwright: load each photo, drag corners from `corners.json`, generate, screenshot `#viewer` to `previews/user_<name>.png`, then `backend/tests/make_table.py previews docs/results/all_tiles.jpg`).
 3. Ask the owner whether to delete the empty GCP project `tw-tile-gen` (mixoadrian).
 
 0. **Outlines, known limits to improve:** (a) glossy modelled glaze still yields highlight streaks (06 lion mane, 07 petal ridges) — candidates: both-flank symmetry test, structure-tensor orientation coherence; (b) a tube-line that coincides with a colour seam is drawn only by the groove (ridge faded within 1.6 mm of seams) — a dedicated line body would be needed to raise it; (c) 0.3–0.5 mm hair lines are below the 0.4 mm width gate by design; (d) `compare.py`/`check_labels.py` in `tests/out/user` still read their own folder.

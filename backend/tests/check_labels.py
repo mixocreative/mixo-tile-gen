@@ -2,15 +2,15 @@
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cv2, numpy as np, tile_processor as tp
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles")
-C = json.load(open(os.path.join(D, "corners.json")))
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles", "originals")
+C = json.load(open(os.path.join(D, "..", "corners.json")))
 names = sys.argv[1:] or list(C)
 cfg = tp.TileConfig().validate(); n_px = int(round(cfg.tile_size_mm * cfg.px_per_mm)); mmpp = cfg.tile_size_mm / n_px
 rows = []
 for nm in names:
-    t = time.time(); f, c = C[nm]
+    t = time.time(); c = C[nm]
     rgb, s = tp.decode_image(open(os.path.join(D, nm + ".jpg"), "rb").read())
-    flat = tp.warp_tile(rgb, np.float32(c) * (rgb.shape[1] / s) / 2048, n_px, s, inset=0.015)
+    flat = tp.warp_tile(rgb, np.float32(c), n_px, s, inset=0.015)
     g, gp = (tp.remove_glare(flat, mmpp) if os.environ.get("GLARE") else (flat, 0))
     lab, pal, m = tp.quantize_auto(g, k_cap=cfg.num_colors)
     lab = tp.majority_filter(lab, len(pal), int(round(cfg.smoothing_mm / mmpp)))
