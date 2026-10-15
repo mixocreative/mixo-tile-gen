@@ -376,7 +376,7 @@ curl -F image=@my-tile.jpg -F 'corners=[[510,564],[2616,534],[2514,2508],[594,24
 
 ## Tests and verification
 
-Tests use **only the owner's hand-picked photos**: 19 shots in `backend/tests/fixtures/real_tiles/originals/`, with their tile corners in `real_tiles/corners.json` (see the README there). Every pipeline change must pass on all of them:
+Tests use **only the owner's hand-picked photos**: 18 shots in `backend/tests/fixtures/real_tiles/originals/`, with their tile corners in `real_tiles/corners.json` (see the README there). Every pipeline change must pass on all of them:
 
 ```bash
 cd backend
@@ -391,7 +391,7 @@ python tests/lines_sheet.py                    # visual sheet: photo | outlines 
 ## Known limits
 
 - **Auto-outline:** the AI only suggests the corners. On framed tiles it sometimes grabs a sliver of the wooden frame (seen on IMG_9255 and IMG_9343 in the tests). Always check the four corners and drag any that are off.
-- **Low-contrast tiles:** a white motif on a pale background (the heron, IMG_9391) can merge into one colour. Picking the colours yourself with the eyedropper (heron white and the pale-blue water) may keep them apart.
+- **Low-contrast tiles:** a white motif on a pale background can merge into one colour. Picking the colours yourself with the eyedropper (heron white and the pale-blue water) may keep them apart.
 - **Glossy, painterly glazes** can still split into small patches. Examples: the shiny rose leaves and the lion's mane.
 - **Stickers** on the glaze (e.g. "61", "75") become relief. The glare/sticker inpaint is implemented but off by default, because it also erased real white glaze.
 

@@ -97,6 +97,8 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 4. Status log (newest first)
 
+- **2026-10-15, owner decisions:** corners for the fixture set confirmed by the owner; IMG_9391 (heron) removed from the set at the owner's request (now 18 photos); old empty GCP project `tw-tile-gen` (mixoadrian) deleted (DELETE_REQUESTED, recoverable 30 days).
+
 - **2026-10-15, textured exports + command line:** new formats `3mftex` (3MF Materials-extension texture2dgroup per corner; slicer part table unchanged so it prints in glaze colours) and `glbtex` (trimesh PBR baseColorTexture); pad stays plain. `tests/check_formats.py` checks all (IMG_9255: corner-UV error 0.00001; three.js 3MFLoader renders the textured 3MF). App menu groups formats by Glaze colours / Photo texture. **`scripts/mixo.py`** (+ `mixo.bat`, `mixo.sh`): command line without the web page, local (re-runs itself in `.venv`) or `--server URL`, `--corners`, `--corners-json` batch, `--set name=value`; tested local single + batch. README: "Without the web page" guide + with/without-UI × online/local table. Live site verified after the memory fix: 2 tiles in a row OK on cloud.
 
 - **2026-10-15, new fixture set + Photo preview + cloud memory/speed:**
@@ -219,9 +221,7 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 ## 5. In-flight / next steps
 
 **Owner's open requests (2026-10-15), in order:**
-1. Owner to confirm the 19 fixture corners (sheet sent; `real_tiles/corners.json`).
 2. Re-render the photo-vs-render table `docs/results/all_tiles.jpg` from the new photos (Playwright: load each photo, drag corners from `corners.json`, generate, screenshot `#viewer` to `previews/user_<name>.png`, then `backend/tests/make_table.py previews docs/results/all_tiles.jpg`).
-3. Ask the owner whether to delete the empty GCP project `tw-tile-gen` (mixoadrian).
 
 0. **Outlines, known limits to improve:** (a) glossy modelled glaze still yields highlight streaks (06 lion mane, 07 petal ridges) — candidates: both-flank symmetry test, structure-tensor orientation coherence; (b) a tube-line that coincides with a colour seam is drawn only by the groove (ridge faded within 1.6 mm of seams) — a dedicated line body would be needed to raise it; (c) 0.3–0.5 mm hair lines are below the 0.4 mm width gate by design; (d) `compare.py`/`check_labels.py` in `tests/out/user` still read their own folder.
 1. **Apply the Fable photo report.** Prototype: `docs/research/photo_proto.py`. Before/after sheet: `docs/research/photo_before_after.jpg`, with columns photo | current | glare+meanshift k=6 | auto-k + L-weight. Ranked:
