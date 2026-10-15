@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+numpy==2.2.6
+scipy==1.17.1
+opencv-python-headless==4.10.0.84
+scikit-learn==1.6.1
+scikit-image==0.25.2
+fast-simplification==0.2.0
+trimesh==4.12.2

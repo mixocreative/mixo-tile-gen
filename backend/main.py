@@ -1,0 +1,228 @@
+"""MixoTile API — FastAPI wrapper around tile_processor (deploy target: Google Cloud Run)."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
+
+import tile_processor as tp
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("mixotile.api")
+
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024
+MEDIA_TYPES = {
+    "3mf": "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
+    "glb": "model/gltf-binary",
+}
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        await run_in_threadpool(tp.warm_up)
+        log.info("CAD / meshing modules warmed up")
+    except Exception:  # never block startup — /process-tile will report the real error
+        log.exception("CAD warm-up failed")
+    yield
+
+
+app = FastAPI(title="MixoTile API", version="1.0.0", lifespan=lifespan)
+
+# Comma-separated list, e.g. "https://yourname.github.io,http://localhost:8000". Default "*".
+_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition", "X-MixoTile-Stats"],
+    max_age=3600,
+)
+
+
+def _parse_json(name: str, raw: str | None):
+    if raw is None or raw.strip() in ("", "null"):
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(422, f"'{name}' must be valid JSON: {exc.msg}") from exc
+
+
+def _parse_swatches(raw):
+    """Accept [[r,g,b], ...] or ["#rrggbb", ...]."""
+    if not raw:
+        return None
+    if not isinstance(raw, list):
+        raise HTTPException(422, "'swatches' must be a JSON list")
+    out = []
+    for s in raw:
+        if isinstance(s, str):
+            h = s.lstrip("#")
+            if len(h) != 6:
+                raise HTTPException(422, f"bad hex swatch {s!r}")
+            try:
+                out.append([int(h[i:i + 2], 16) for i in (0, 2, 4)])
+            except ValueError as exc:
+                raise HTTPException(422, f"bad hex swatch {s!r}") from exc
+        elif isinstance(s, (list, tuple)) and len(s) == 3:
+            out.append([float(v) for v in s])
+        else:
+            raise HTTPException(422, f"bad swatch {s!r}")
+    return out
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "mixotile", "version": app.version}
+
+
+@app.post("/process-tile")
+async def process_tile(
+    image: UploadFile = File(..., description="Tile photo (JPEG/PNG/WebP)"),
+    corners: str | None = Form(None, description="JSON [[x,y]x4] in image pixels (TL,TR,BR,BL; any order accepted)"),
+    swatches: str | None = Form(None, description='JSON [[r,g,b],...] or ["#rrggbb",...]; empty → k-means'),
+    tile_size_mm: float = Form(150.0),
+    pad_thickness_mm: float = Form(3.0),
+    relief_height_mm: float = Form(3.0, description="edge depth: top of each colour down to its seams"),
+    fillet_radius_mm: float = Form(6.0, description="edge-roll width (wider = softer valley)"),
+    dome_height_mm: float = Form(1.0, description="gentle crown on top (leveler on bigger patches)"),
+    dome_reach_mm: float = Form(12.0, description="crown length scale (bigger = more level tops)"),
+    groove_floor_mm: float = Form(0.4, description="material under the seams between colours"),
+    corner_radius_mm: float = Form(2.0),
+    mesh_resolution_mm: float = Form(0.16),
+    num_colors: int = Form(8, description="max colours; auto-k picks 3..this"),
+    px_per_mm: float = Form(4.0),
+    smoothing_mm: float = Form(0.5),
+    min_feature_mm2: float = Form(2.0),
+    merge_delta_e: float = Form(12.0, description="merge shading bands of one glaze (0 = off)"),
+    bead_height_mm: float = Form(1.2, description="printable minimum height for thin strokes"),
+    clearance_mm: float = Form(0.0, description="gap between neighbouring colour pieces (0 = flush puzzle fit)"),
+    outline_height_mm: float = Form(0.8, description="raised tube-lining ridge along detected outlines (0 = off)"),
+    outline_width_mm: float = Form(1.2, description="width of that ridge"),
+    edge_is_seam: bool = Form(False, description="true = groove along the tile edge too"),
+    symmetry: str = Form("off", description="off | auto | c4 | d4 (opt-in)"),
+    output_format: str = Form("3mf"),
+    stream: bool = Form(False, description="true = progress lines + binary payloads (see _stream)"),
+    preview: bool = Form(True, description="stream: also send a light preview mesh before the file"),
+):
+    data = await image.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, f"image larger than {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
+
+    fmt = output_format.lower().lstrip(".")
+    cfg = tp.TileConfig(
+        tile_size_mm=tile_size_mm, pad_thickness_mm=pad_thickness_mm, relief_height_mm=relief_height_mm,
+        fillet_radius_mm=fillet_radius_mm, groove_floor_mm=groove_floor_mm, corner_radius_mm=corner_radius_mm,
+        dome_height_mm=dome_height_mm, dome_reach_mm=dome_reach_mm,
+        mesh_resolution_mm=mesh_resolution_mm, num_colors=num_colors, px_per_mm=px_per_mm,
+        smoothing_mm=smoothing_mm, min_feature_mm2=min_feature_mm2, merge_delta_e=merge_delta_e,
+        bead_height_mm=bead_height_mm, clearance_mm=clearance_mm, outline_height_mm=outline_height_mm, outline_width_mm=outline_width_mm,
+        edge_is_seam=edge_is_seam, symmetry=symmetry.lower(),
+        output_format=fmt,
+    )
+    corner_pts = _parse_json("corners", corners)
+    swatch_list = _parse_swatches(_parse_json("swatches", swatches))
+
+    fname = f"mixotile_{int(round(tile_size_mm))}mm.{fmt}"
+    if stream:
+        return StreamingResponse(_stream(data, corner_pts, swatch_list, cfg, fmt, fname, preview),
+                                 media_type="application/x-ndjson",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+
+    try:
+        model, stats = await run_in_threadpool(tp.process_tile, data, corner_pts, swatch_list, cfg)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        log.exception("process-tile failed")
+        raise HTTPException(500, f"model generation failed: {type(exc).__name__}") from exc
+
+    log.info("generated %s: %d bytes, bodies=%d, timing=%s", fmt, len(model), stats["bodies"], stats["timing_s"])
+    return Response(
+        content=model,
+        media_type=MEDIA_TYPES[fmt],
+        headers={
+            "Content-Disposition": f'attachment; filename="{fname}"',
+            "X-MixoTile-Stats": json.dumps(_summary(stats), separators=(",", ":")),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+def _summary(stats):
+    # .get: the preview event is sent before timing/raster stats exist
+    return {k: stats.get(k) for k in ("bodies", "triangles", "relief_height_mm", "dome_height_mm", "total_height_mm",
+                                      "colours", "timing_s", "raster_px", "symmetry", "merged_shading_bands")}
+
+
+async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=True):
+    """Progress over the SAME request (Cloud Run only gives CPU while a request is open, and a
+    follow-up poll could land on another instance). Wire format (bytes):
+      one JSON object per line:  {"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}  ...
+      optional     {"type":"preview","layout":[{name,hex,nv,nt}..],"stats":{..},"bytes":N}\n + N bytes
+                   (per part: nv*3 float32 xyz mm, then nt*3 uint32 indices; little-endian)
+      then either  {"type":"error","status":..,"detail":..}\n
+      or           {"type":"done","filename":..,"stats":{..},"bytes":N}\n  followed by N raw model bytes
+    (raw bytes, not base64: 25 % smaller, and the browser never has to parse a 20 MB JSON line)."""
+    loop = asyncio.get_running_loop()
+    q: asyncio.Queue = asyncio.Queue()
+
+    def progress(p, msg):
+        loop.call_soon_threadsafe(q.put_nowait, ("progress", {"type": "progress", "p": p, "msg": msg}))
+
+    def on_parts(parts, stats):
+        if want_preview:
+            layout, blob = tp.preview_mesh(parts)
+            loop.call_soon_threadsafe(q.put_nowait, ("preview", ({"type": "preview", "layout": layout,
+                                                                  "stats": _summary(stats), "bytes": len(blob)}, blob)))
+
+    def work():
+        try:
+            model, stats = tp.process_tile(data, corner_pts, swatch_list, cfg, progress=progress, on_parts=on_parts)
+            log.info("generated %s: %d bytes, bodies=%d, timing=%s", fmt, len(model), stats["bodies"], stats["timing_s"])
+            loop.call_soon_threadsafe(q.put_nowait, ("done", (stats, model)))
+        except ValueError as exc:
+            loop.call_soon_threadsafe(q.put_nowait, ("error", {"type": "error", "status": 422, "detail": str(exc)}))
+        except Exception as exc:  # noqa: BLE001
+            log.exception("process-tile (stream) failed")
+            loop.call_soon_threadsafe(q.put_nowait, ("error", {"type": "error", "status": 500,
+                                                               "detail": f"model generation failed: {type(exc).__name__}"}))
+
+    def line(obj):
+        return (json.dumps(obj, separators=(",", ":")) + "\n").encode()
+
+    task = loop.run_in_executor(None, work)
+    yield line({"type": "progress", "p": 0.0, "msg": "Starting"})
+    while True:
+        try:
+            kind, payload = await asyncio.wait_for(q.get(), timeout=10)
+        except asyncio.TimeoutError:               # keep proxies from closing an idle stream
+            yield line({"type": "ping"})
+            continue
+        if kind == "progress":
+            yield line(payload)
+        elif kind == "preview":
+            head, blob = payload
+            yield line(head)
+            for i in range(0, len(blob), 1 << 20):
+                yield blob[i:i + (1 << 20)]
+        elif kind == "error":
+            yield line(payload)
+            break
+        else:
+            stats, model = payload
+            yield line({"type": "done", "filename": fname, "stats": _summary(stats), "bytes": len(model)})
+            for i in range(0, len(model), 1 << 20):
+                yield model[i:i + (1 << 20)]
+            break
+    await task

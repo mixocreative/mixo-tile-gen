@@ -1,0 +1,8 @@
+*.3mf
+*.glb
+*.pyc
+.playwright-mcp/
+.venv/
+__pycache__/
+backend/tests/out/
+previews/
