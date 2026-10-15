@@ -11,41 +11,50 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 
 ## Why you'll love it
 
-**Point your phone at a tile. Get a 3D-printable copy in about 10–20 seconds** (the first tile after a quiet spell takes up to a minute). There's nothing to install, no account, and it's free.
+**Point your phone at a tile. Get a 3D-printable copy in about 20 seconds** (the first tile after a quiet spell can take up to a minute). There's nothing to install, no account, and it's free. It speaks **English** and **繁體中文**, picked automatically from your phone's language (and you can switch on the first page).
 
-- **📸 Snap it, done.** Take a photo of any tile: in a museum, on an old house, at a flea market. Crooked angles are fine; the app straightens them for you.
-- **🤖 It finds the tile for you.** Google's on-device AI outlines the tile in your browser, and your photo never leaves your phone for that step. You can nudge the four corners with your finger if you want it perfect.
-- **🎨 It understands colours.** It works out the glaze colours by itself: up to 8 by default, or pick your own with a tap. Shadows and shine on the glaze don't fool it into inventing extra colours.
-- **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
-- **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw, so you can print it in several colours in one go. Want a tiny gap so the pieces snap together? Set the **clearance**.
-- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes. Flip it between **Colours** (one glaze colour per part, as it will print) and **Photo** (your actual photo wrapped onto the relief), then download the `.3MF`, or `.GLB`, `.STL` or `.OBJ`. The **photo-textured `.OBJ`** wraps your actual photo onto the relief, so it looks like the real tile in Blender, games or AR.
-- **⏱️ Fast and honest.** A real progress bar shows what's actually happening ("Carving colour 3 of 8…"), with time left. It's usually about 10–20 seconds.
-- **🛠️ Make it yours.** Every setting is a simple number in millimetres. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing). Change the base thickness, how high the colours rise, how round the edges are, how strong the outlines are, the gaps between pieces, the colour count, the mesh smoothness and more.
-- **📱 Works on your phone.** It's designed for phones first: big enough to tap, small enough to stay out of the way.
-- **🆓 Free and open.** The website runs on GitHub Pages and the engine on Google Cloud Run's free allowance, or entirely on your own computer for free. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
+- **📸 Snap it, done.** Take a photo of any tile: in a museum, on an old house, at a flea market. Crooked angles are fine; the app straightens them for you. Your photo is processed in memory and never stored.
+- **🤖 It finds the tile for you, and you stay in charge.** Google's on-device AI suggests the four corners right in your browser. You always get to check them and drag them into place, with a magnifier to help. If the AI can't load, the app says **AI off · manual** and everything still works.
+- **🎨 It works out the colours.** Tell it how many colours you want with **− / +** and it splits the tile for you. Missed one? **Pick from photo** adds it (and keeps it pinned 📌). Tap any swatch to swap in a different colour, or merge two colours into one.
+- **🖼️ Glaze colours or photo skin.** One big switch chooses what you see. **Glaze colours** are flat colours, what a multi-colour printer prints. **Photo skin** wraps your real photo onto the relief, so it looks like the real tile (printers still print the glaze colours).
+- **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into soft valleys at the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
+- **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw. Every body is watertight. Want a tiny gap so the pieces snap together? Set the **clearance**.
+- **👀 See it, then tweak it live.** Spin and zoom a 3D preview in the browser, with a big **Colours / Photo** toggle and **Top** and **3/4** views. The preview opens before anything else is ready. Then drag the **Fine-tune** sliders (base thickness, edge depth, crown, groove floor, outline height) and watch the model move as you drag, even on a phone. **Apply** updates the full model instantly in your browser, with no waiting for the cloud.
+- **📦 Your files, made on your device.** The cloud only builds the shape. Your own browser writes the files when you ask for them: **3MF** for multi-colour printing (PrusaSlicer, OrcaSlicer, Bambu Studio), **GLB** for web viewers, AR and sharing, **OBJ** for Blender, and **STL**, one file per colour. Pick a **+ photo skin** version of 3MF, GLB or OBJ to have your photo on the model too.
+- **🛠️ Make it yours.** Every setting is a simple number in millimetres, with a live cross-section drawing that lights up the setting you're editing. Each one has its own ↺ reset, and your choices are remembered between visits. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing).
+- **📱 Works on your phone.** It's designed for phones first: one **Take or choose photo** button, big tap targets, and downloads that go easy on your phone's memory.
+- **🆓 Free, and yours to run your way.** Use the website, or run the whole app on your own computer with one double-click (your phone can join over the same Wi-Fi, or through a free Cloudflare link with QR codes), or skip the web page and use the `mixo` command for one photo or a whole batch. The online engine has a hard spending cap. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
 
 **Fun ideas:** coasters 🍵 · fridge magnets 🧲 · a wall of your neighbourhood's tiles 🏘️ · gifts from a trip to Taiwan 🎁 · restoring a missing tile in an old floor 🔧 · class projects about Taiwanese heritage 🏫
 
 ## What it does
 
-1. **Capture.** On a phone: **Take photo** or **Upload** (camera roll / files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real test tiles. The photo is never stored.
-2. **Outline.** On-device AI (Google AI Edge / MediaPipe Interactive Segmenter) suggests the tile's four corners.
-   - Drag the white corner handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
-   - Or switch to **Square crop** (Cropper.js).
-   - The **AI pill** at the top shows *AI: on / loading / off*. If the AI can't load (old phone, blocked network, offline), the app says **AI off · manual** and you simply drag the 4 corners yourself; everything else works the same. The 3D engine itself uses no AI.
-3. **Colours.** Tap glaze colours on the flattened tile with the eyedropper, or leave it on **auto**, which picks 3–8 colours.
-4. **Size.** Set the tile size and relief settings. The defaults are tuned for a realistic 150 mm tile.
-5. **Generate.** Click **Generate 3D relief**. A real progress bar shows the server's actual stages. The 3D preview opens as soon as the shape is ready, while the printable file finishes.
-6. **Download** a `.3MF` with **Download .3MF**. At the default 150 mm it's about 10–35 MB, depending on how detailed the tile is. It's one object with one named part per colour, each pre-assigned its own extruder; it opens in PrusaSlicer, OrcaSlicer and Bambu Studio. **Other formats** (the **Other formats…** menu next to the button; each takes about 10–20 s more):
+1. **Capture.** On a phone: one **Take or choose photo** button (camera, photo library or files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real tiles. A big photo shows **Loading photo…** for a moment and is shrunk before it goes to the engine, so it's quick. The photo is never stored.
+2. **Outline.** On-device AI (Google MediaPipe) *suggests* the tile's four corners. You always check them.
+   - Drag the corner handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
+   - Or switch to **Square crop**.
+   - If the AI can't load (old phone, blocked network, offline), the app says **AI off · manual** and you simply drag the 4 corners yourself; everything else works the same. The 3D engine itself uses no AI.
+3. **Colours.** Choose how the tile looks with the two big buttons: **Glaze colours** (each part one flat colour, what a multi-colour printer prints) or **Photo skin** (your real photo on the relief, for viewing and renders; printers still print the glaze colours). The picture follows the mode.
+   - Suggested colours appear automatically. Use **− / +** to set how many colours; the app splits the tile into that many.
+   - **Pick from photo** adds a colour the split missed. It stays pinned 📌 when you change the count.
+   - Tap a swatch to change its colour; its area stays the same (↺ goes back). The **−** on a swatch merges its area into the closest colour.
+   - **Restore suggested** starts over.
+4. **Size.** Settings are in millimetres, with a live cross-section drawing that highlights the setting you're editing. Every setting is remembered between visits and has its own ↺ reset, plus a reset-all. The defaults are tuned for a realistic 150 mm tile (15 mm base, about 19–20 mm tall in total). Max relief is the tile width ÷ 10, above the base.
+5. **Generate.** Click **Generate 3D relief**. The cloud engine builds the 3D shape in about 20 seconds (up to a minute after a quiet spell), with a real progress bar. If it's busy you'll see "waiting — another tile is being made" instead of an error.
+6. **Preview and fine-tune.** The 3D preview opens as soon as the shape is ready. Flip between **Colours** and **Photo**, and between **Top** and **3/4** views. Under **Fine-tune (live)**, sliders for base thickness, edge depth, crown, groove floor and outline height move the model live as you drag. Click **Apply** to update the full model in your browser instantly (within a tiny fraction of a millimetre of a full rebuild; tested), or **Exact rebuild (cloud)** if you prefer. Settings that change the shapes (edge roll, clearance, outline width, colours, corners, tile size) need a cloud rebuild.
+7. **Download.** The cloud only builds the shape (about 20–25 MB, once). **Your browser writes the files, only when you ask**, and they match the engine's own (tested).
+   - **Computer:** tick the formats you want (pre-ticked to match your colour mode) and click **Download .zip**.
+   - **Phone:** one button per format, each saved on its own, which is light on memory.
 
-   Every format comes in two looks: **glaze colours** (one flat colour per part, exactly what prints) or **photo texture** (your photo projected straight down onto the relief, lined up exactly; the backing pad keeps a plain colour because its sides would show streaks). The 3D preview has the same **Colours | Photo** switch.
+   | Format | What it's for |
+   |---|---|
+   | **3MF** | Multi-colour 3D printing: one part per colour, each on its own filament. Opens in PrusaSlicer, OrcaSlicer and Bambu Studio. |
+   | **3MF + photo skin** | Prints exactly the same; 3D viewers also show your photo. |
+   | **GLB** and **GLB + photo skin** | Web viewers, AR and sharing. |
+   | **OBJ** and **OBJ + photo skin** | Blender and other 3D software. |
+   | **STL** | One file per colour. Load them together in any slicer, one filament each. |
 
-   | Format | Glaze colours | Photo texture | Use it for |
-   |---|---|---|---|
-   | `.3MF` | ✓ (the main download) | ✓ `.textured.3mf`: viewers show the photo, slicers still print it in glaze colours | 3D printing |
-   | `.GLB` | ✓ | ✓ `.textured.glb` | Web viewers, AR, quick sharing |
-   | `.OBJ` (zip) | ✓ OBJ + MTL, one object per colour | ✓ OBJ + MTL + `texture.jpg` | Blender, CAD, rendering, games |
-   | `.STL` (zip) | ✓ one STL per colour, all lined up | (STL can't hold colour or texture) | Any slicer: load them together, one filament each |
+   In the photo-skin versions, your photo is projected straight down onto the relief, lined up exactly. The backing pad's four sides continue the border colours, and its underside is white.
 
    STEP isn't offered: it's a format for exact CAD surfaces, and a relief of about a million triangles turns into a huge STEP that CAD programs choke on. Import the STL or OBJ instead.
 
@@ -90,7 +99,7 @@ speck removal (keeps long thin strokes and high-contrast details), highlight abs
 | Raised outlines | Outlines | `outline_height_mm` | 0.8 mm | Height of the raised line ridge. 0 turns it off. |
 | Outline width | Outline width (*Advanced*) | `outline_width_mm` | 1.2 mm | Full width of that ridge. |
 | Clearance between colours | Clearance | `clearance_mm` | 0 mm | 0 is a flush fit; e.g. 0.3 leaves slots. |
-| Max colours | Max colours | `num_colors` | 8 | Auto picks 3 up to this. |
+| Number of colours | Colours (step 03, with − / +) | `num_colors` | 8 | How many colours the tile is split into; the app finds them in the photo. |
 | Mesh smoothness | Mesh grid (*Advanced*) | `mesh_resolution_mm` | 0.16 mm | Finer than this needs much more memory per tile, so the server enforces it. |
 | Smoothing | Smoothing (*Advanced*) | `smoothing_mm` | 1.2 mm | How much the colour regions are tidied. 0 keeps every speck of detail. |
 | Colour detail | Detail (*Advanced*) | `px_per_mm` | 4 px/mm | Resolution of the colour analysis. |
@@ -112,7 +121,7 @@ Measured on the owner's test photos (3024 × 3024):
 | Where the engine runs | Time per tile | Notes |
 |---|---|---|
 | A recent desktop PC (Option A, local) | about 10–12 s | |
-| Google Cloud Run, 4 vCPU / 4 GiB (the live site) | about 17–19 s of engine time, about 30 s in the app including transfer | Google's virtual CPUs are slower than a desktop's. With 2 vCPU it was about 25 s, and 2 GiB ran out of memory on a second tile in a row. |
+| Google Cloud Run, 4 vCPU / 4 GiB (the live site) | about 17–19 s of engine time; in the app the preview opens in about 20 s and the files are ready about 5 s later (your browser writes them) | Google's virtual CPUs are slower than a desktop's. With 2 vCPU it was about 25 s, and 2 GiB ran out of memory on a second tile in a row. |
 
 - Peak memory is about 1.5–2 GB per tile. After each tile the engine hands freed memory back to the system, so tile after tile stays within the limit.
 - The 3D preview appears before the printable file is finished, and the page never freezes for more than about 1 s.
@@ -546,7 +555,7 @@ On a PC with little memory, test one tile per run: `..\.venv\Scripts\python test
 ## Known limits
 
 - **Auto-outline:** the AI only suggests the corners. On framed tiles it sometimes grabs a sliver of the wooden frame (seen on IMG_9255 and IMG_9343 in the tests). Always check the four corners and drag any that are off.
-- **Low-contrast tiles:** a white motif on a pale background can merge into one colour. Picking the colours yourself with the eyedropper may keep them apart.
+- **Low-contrast tiles:** a white motif on a pale background can merge into one colour. Adding the missing colour with **Pick from photo** may keep them apart.
 - **Glossy, painterly glazes** can still split into small patches.
 - **Stickers or labels** on the glaze become relief. The glare/sticker inpaint is implemented but off by default, because it also erased real white glaze.
 
