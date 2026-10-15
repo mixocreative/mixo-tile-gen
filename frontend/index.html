@@ -2528,7 +2528,8 @@ function ftBuild() {
     list.appendChild(row);
     const r = FT.rows[it.k] = { row, lab: row.querySelector('label'), val: row.querySelector('output'), pct: row.querySelector('.ft-pct'), rs: row.querySelector('.rs'), sl: row.querySelector('input'), note: row.querySelector('.ft-note'), capped: false, last: null };
     r.rs.textContent = '↺';
-    r.sl.addEventListener('input', () => ftOnInput(it));
+    r.sl.addEventListener('input', () => { FT.dragging = true; ftOnInput(it); });
+    r.sl.addEventListener('change', () => { FT.dragging = false; ftSettle(true); });
     r.rs.onclick = () => ftResetOne(it);
     r.sl.addEventListener('pointerup', (e) => {            // double-click / double-tap resets this slider
       const now = performance.now(), l = r.last;
@@ -2590,10 +2591,25 @@ function ftOnInput(it) {
 function ftResetOne(it) { FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; ftSetSlider(it); ftRenderRow(it); ftSchedule(); }
 const ftFmt = (it, v) => (Math.abs(v - FT.gen[it.k]) < 1e-9 ? String(FT.gen[it.k]) : v.toFixed(it.dec));
 function ftSchedule() { if (!FT.raf) FT.raf = requestAnimationFrame(ftFlush); }
+// Live drag must keep up with the finger, also on phones: per frame only the vertex z values move
+// (cheap). Lighting normals, the step 04 inputs/diagram and saved settings follow on release or
+// after a 0.5 s pause (owner: commit once the user stops sliding).
 function ftFlush() {
   if (FT.raf) { cancelAnimationFrame(FT.raf); FT.raf = 0; }
   if (!FT.on) return;
-  ftApply(); ftWriteInputs(); ftUpdateUI();
+  ftApply(!FT.dragging);
+  clearTimeout(FT.settleT);
+  if (FT.dragging) FT.settleT = setTimeout(() => ftSettle(false), 500);
+  else { ftWriteInputs(); ftUpdateUI(); }
+}
+function ftSettle(released) {
+  clearTimeout(FT.settleT);
+  if (!FT.on) return;
+  if (released) FT.dragging = false;
+  ftNormals(); ftWriteInputs(); ftUpdateUI();
+}
+function ftNormals() {
+  for (const p of FT.parts || []) p.mesh.geometry.computeVertexNormals();
 }
 function ftWriteInputs() {                                                             // slider -> step 04 inputs (+ diagram, echo, saved settings)
   FT.writing = true;
@@ -2614,7 +2630,7 @@ function ftSyncFromInputs() {                                                   
   if (changed) { ftRenderAll(); ftApply(); }
   ftUpdateUI();
 }
-function ftApply() {
+function ftApply(withNormals = true) {
   if (!FT.on || !V.obj) return;
   const c = FT.cur, g = FT.gen, dPad = c.pad - g.pad, dFl = c.floor - g.floor, dRl = c.relief - g.relief, dCr = c.crown - g.crown, dOl = c.outline - g.outline;
   let zmin = Infinity, zmax = -Infinity;
@@ -2625,7 +2641,8 @@ function ftApply() {
       const z = z0[v] + dPad + h[j] * (dFl + h[j + 1] * dRl + h[j + 2] * dCr + h[j + 3] * dOl);
       a[3 * v + 2] = z; if (z < zmin) zmin = z; if (z > zmax) zmax = z;
     }
-    pos.needsUpdate = true; p.mesh.geometry.computeVertexNormals();
+    pos.needsUpdate = true;
+    if (withNormals) p.mesh.geometry.computeVertexNormals();
   }
   if (!Number.isFinite(zmin)) return;
   V.obj.position.y = -zmin; V.height = zmax - zmin;                                   // Z-up -> world Y (group is rotated -90° about X)
