@@ -62,6 +62,16 @@
   .sec-h .meta { font: 400 11px/1 "Geist Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
   .card { background: var(--white); border: 1px solid var(--line); border-radius: 10px; }
   .hint { color: var(--mute); font-size: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line);
+          border-radius: 6px; background: #fff; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px;
+          text-transform: uppercase; letter-spacing: .04em; color: var(--ink2); white-space: nowrap; }
+  @media (max-width: 640px) { .pill-long { display: none; } }
+  .btn.touch-only { display: none; }
+  @media (pointer: coarse) { .btn.touch-only { display: inline-flex; } .fine-only { display: none; } }
+  #dropOverlay { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(28,26,23,.45);
+                 color: #faf8f5; font-size: 15px; pointer-events: none; }
+  body.dragging #dropOverlay { display: grid; }
+  #dropOverlay span { padding: 14px 18px; border: 1.5px dashed #faf8f5; border-radius: 8px; }
 
   /* buttons: compact */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: var(--h); padding: 0 12px; border-radius: var(--r);
@@ -145,6 +155,7 @@
 
 <body class="font-sans antialiased min-h-screen">
 <!-- ================================================================ header -->
+<div id="dropOverlay" aria-hidden="true"><span>Drop the tile photo</span></div>
 <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur border-b border-line">
   <div class="max-w-[1100px] mx-auto px-4 h-12 flex items-center justify-between gap-3">
     <div class="flex items-center gap-2 min-w-0">
@@ -152,6 +163,11 @@
       <h1 class="font-semibold text-[15px] tracking-tight whitespace-nowrap">mixo-tile-gen</h1>
       <span class="text-[11px] px-1.5 py-0.5 rounded border border-line text-mute" style="font-family:'Noto Sans TC',sans-serif">花磚</span>
     </div>
+    <div class="flex items-center gap-1.5">
+    <span id="aiPill" class="pill" title="On-device AI (Google MediaPipe) finds the tile outline for you. Without it you drag the 4 corners yourself.">
+      <span id="aiDot" class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" aria-hidden="true"></span>
+      <span id="aiLabel">AI<span class="pill-long">: loading</span></span>
+    </span>
     <details class="relative" id="apiBox">
       <summary class="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-line bg-white mono text-[11px] uppercase tracking-wider text-ink2">
         <span id="apiDot" class="w-1.5 h-1.5 rounded-full bg-gray-400" aria-hidden="true"></span>
@@ -159,13 +175,14 @@
       </summary>
       <div class="api-pop card">
         <label for="apiUrl" class="mono text-[11px] uppercase tracking-wider text-mute">Engine URL</label>
-        <input id="apiUrl" type="url" placeholder="https://name-mixo-tile-gen.hf.space" class="w-full mt-1.5 h-9 border border-line rounded-md px-2.5 mono text-[12px] bg-white outline-none focus:border-ink">
+        <input id="apiUrl" type="url" placeholder="https://mixo-tile-gen-xxxx.run.app" class="w-full mt-1.5 h-9 border border-line rounded-md px-2.5 mono text-[12px] bg-white outline-none focus:border-ink">
         <div class="flex items-center gap-2 mt-2.5">
           <button id="apiSave" class="btn btn-primary">Save &amp; test</button>
           <span class="hint">Saved in this browser · <code class="mono">?api=</code> works too</span>
         </div>
       </div>
     </details>
+    </div>
   </div>
 </header>
 
@@ -174,8 +191,8 @@
   <!-- ============================================================ 1. capture -->
   <section class="sec" id="step1" aria-labelledby="h1s">
     <div class="sec-h"><h2 id="h1s">01 Capture</h2><span class="meta">Photo of one tile</span></div>
-    <div class="grid grid-cols-2 gap-2 max-w-md">
-      <label class="btn btn-primary btn-lg">
+    <div class="flex gap-2 max-w-md [&>label]:flex-1">
+      <label class="btn btn-primary btn-lg touch-only">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
         Take photo
         <input id="camInput" type="file" accept="image/*" capture="environment" class="sr-only">
@@ -187,7 +204,7 @@
       </label>
     </div>
     <div class="flex items-center justify-between gap-3 mt-2.5 max-w-md">
-      <p class="hint">Even light, no glare. Angled shots are fine.</p>
+      <p class="hint">Even light, no glare. Angled shots are fine.<span class="fine-only"> Or drop / paste (Ctrl+V) an image here.</span></p>
       <button id="sampleBtn" class="link shrink-0">Try a sample</button>
     </div>
   </section>
@@ -344,7 +361,13 @@
       <p class="absolute right-3 bottom-3 mono text-[10.5px] text-mute hidden sm:block">drag orbit · right-drag pan · scroll zoom</p>
     </div>
     <div class="flex items-center gap-2 px-4 py-3 border-t border-line" style="padding-bottom: max(12px, env(safe-area-inset-bottom))">
-      <button id="glbBtn" class="link mr-auto">.GLB</button>
+      <select id="moreFormats" class="mr-auto h-8 max-w-[44%] sm:max-w-none border border-line rounded-md bg-white px-2 text-[12.5px] text-ink2" aria-label="Download another format">
+        <option value="">Other formats…</option>
+        <option value="glb">.GLB · colours (viewers, web, AR)</option>
+        <option value="stl">.STL · one file per colour (.zip)</option>
+        <option value="obj">.OBJ · colours (.zip)</option>
+        <option value="objtex">.OBJ · photo texture (.zip)</option>
+      </select>
       <button id="tweakBtn" class="btn btn-ghost">Tweak</button>
       <button id="downloadBtn" class="btn btn-primary">Download .3MF</button>
     </div>
@@ -358,7 +381,7 @@ const MP_VERSION = '0.10.14';
 const MP_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}`;
 const MP_MODEL = 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite';
 // Paste your Cloud Run URL here after deploying (or set it from the header pill / ?api=).
-const DEFAULT_API = '';
+const DEFAULT_API = 'https://mixo-tile-gen-616971929665.asia-east1.run.app';
 const MAX_SRC_SIDE = 2000;   // px — photo is normalised (EXIF-rotated, downscaled) to this before anything else
 const FLAT = 600;            // px — flattened preview / eyedropper canvas
 
@@ -374,10 +397,11 @@ const S = {
 // --------------------------------------------------------------------- backend URL + health
 function apiBase() {
   const q = new URLSearchParams(location.search).get('api');
-  if (q) { try { localStorage.setItem('mixotile.api', q); } catch {} return q.replace(/\/+$/, ''); }
   let v = '';
-  try { v = localStorage.getItem('mixotile.api') || ''; } catch {}
+  if (q) { v = q; try { localStorage.setItem('mixotile.api', q); } catch {} }
+  else { try { v = localStorage.getItem('mixotile.api') || ''; } catch {} }
   if (!v) v = DEFAULT_API || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8080' : '');
+  if (v === 'self') return location.origin;            // page is served by the engine itself (local / tunnel)
   return v.replace(/\/+$/, '');
 }
 async function checkHealth() {
@@ -405,7 +429,7 @@ $('apiSave').onclick = () => {
 };
 
 // --------------------------------------------------------------------- 1. load photo
-async function loadFile(file) {
+async function loadFile(file, { detect = true } = {}) {
   if (!file) return;
   let bmp;
   try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
@@ -427,48 +451,44 @@ async function loadFile(file) {
   S.corners = defaultCorners();
   if (S.cropper) { S.cropper.destroy(); S.cropper = null; S.cropReady = false; }
   $('cropImg').src = c.toDataURL('image/jpeg', 0.9);
-  setMode(S.aiState === 'failed' ? 'crop' : 'corners');
+  setMode('corners');
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
   warmBackend();
-  if (S.aiState !== 'failed') autoDetect(undefined, true);
+  if (detect && S.aiState !== 'failed') autoDetect(undefined, true);
 }
 $('camInput').onchange = (e) => loadFile(e.target.files[0]);
 $('fileInput').onchange = (e) => loadFile(e.target.files[0]);
+// computers: drop a photo anywhere on the page, or paste one (Ctrl+V)
+let dragDepth = 0;
+const isFileDrag = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+addEventListener('dragenter', (e) => { if (isFileDrag(e)) { dragDepth++; document.body.classList.add('dragging'); } });
+addEventListener('dragleave', (e) => { if (isFileDrag(e) && --dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+addEventListener('dragover', (e) => { if (isFileDrag(e)) e.preventDefault(); });
+addEventListener('drop', (e) => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+  const f = [...e.dataTransfer.files].find((x) => x.type.startsWith('image/'));
+  if (f) loadFile(f);
+});
+addEventListener('paste', (e) => {
+  if (e.target.closest?.('input, textarea')) return;
+  const f = [...(e.clipboardData?.files || [])].find((x) => x.type.startsWith('image/'));
+  if (f) { e.preventDefault(); loadFile(f); }
+});
 
-function makeSampleTile() {   // synthetic angled tile so the flow can be tried without a photo
-  const N = 600, t = document.createElement('canvas'); t.width = t.height = N;
-  const g = t.getContext('2d');
-  g.fillStyle = '#ece4d0'; g.fillRect(0, 0, N, N);
-  g.strokeStyle = '#284696'; g.lineWidth = 22; g.strokeRect(24, 24, N - 48, N - 48);
-  g.fillStyle = '#3c8c50';
-  for (const [x, y, a] of [[130, 130, 45], [470, 470, 45], [470, 130, -45], [130, 470, -45]]) { g.save(); g.translate(x, y); g.rotate(a * Math.PI / 180); g.beginPath(); g.ellipse(0, 0, 70, 28, 0, 0, 7); g.fill(); g.restore(); }
-  g.fillStyle = '#284696'; g.beginPath(); g.arc(300, 300, 150, 0, 7); g.fill();
-  g.fillStyle = '#e68c78';
-  for (let k = 0; k < 8; k++) { g.save(); g.translate(300, 300); g.rotate(k * Math.PI / 4); g.beginPath(); g.ellipse(80, 0, 56, 25, 0, 0, 7); g.fill(); g.restore(); }
-  g.fillStyle = '#f5cd46'; g.beginPath(); g.arc(300, 300, 36, 0, 7); g.fill();
-  g.fillStyle = '#b42832'; g.beginPath(); g.arc(300, 300, 14, 0, 7); g.fill();
-  const P = document.createElement('canvas'); P.width = 1200; P.height = 900;
-  const p = P.getContext('2d'); p.fillStyle = '#5a5046'; p.fillRect(0, 0, 1200, 900);
-  const quad = [[290, 120], [950, 160], [920, 810], [250, 760]];
-  warpInto(t.getContext('2d').getImageData(0, 0, N, N), quad, p.getImageData(0, 0, 1200, 900), (img) => p.putImageData(img, 0, 0));
-  return new Promise((r) => P.toBlob(r, 'image/jpeg', 0.9));
-}
-// forward-map a square image into a quad of a destination ImageData (sample generator only)
-function warpInto(srcImg, quad, dstImg, done) {
-  const N = srcImg.width, Hm = homography(quad, [[0, 0], [N, 0], [N, N], [0, N]]);
-  const d = dstImg.data, s = srcImg.data, W = dstImg.width;
-  const xs = quad.map((q) => q[0]), ys = quad.map((q) => q[1]);
-  for (let y = Math.floor(Math.min(...ys)); y < Math.max(...ys); y++) for (let x = Math.floor(Math.min(...xs)); x < Math.max(...xs); x++) {
-    const [u, v] = applyH(Hm, x, y);
-    if (u < 0 || v < 0 || u >= N || v >= N) continue;
-    const si = ((v | 0) * N + (u | 0)) * 4, di = (y * W + x) * 4;
-    d[di] = s[si]; d[di + 1] = s[si + 1]; d[di + 2] = s[si + 2];
-  }
-  done(dstImg);
-}
-$('sampleBtn').onclick = async () => loadFile(await makeSampleTile());
+// "Try a sample": one of the owner's real tile photos, with its tile corners pre-placed
+const SAMPLE = { url: 'samples/rose.jpg', corners: [[304, 330], [1677, 330], [1689, 1717], [280, 1717]], ref: 2048 };
+$('sampleBtn').onclick = async () => {
+  const blob = await (await fetch(SAMPLE.url)).blob();
+  await loadFile(new File([blob], 'sample-rose.jpg', { type: 'image/jpeg' }), { detect: false });
+  const k = S.W / SAMPLE.ref;
+  S.corners = SAMPLE.corners.map(([x, y]) => [x * k, y * k]);
+  S.cornerEdits++;                       // counts as a manual edit: auto-detect won't move them
+  drawOverlay(); updateWarp();
+  setAiStatus('Sample photo: corners already placed on the glaze. Drag them to adjust.', 'ok');
+};
 
 // --------------------------------------------------------------------- homography helpers
 // 3x3 H with H·[x,y,1] ∝ [u,v,1], mapping from[i] -> to[i]
@@ -643,6 +663,14 @@ function setAiStatus(text, kind = 'info') {
   const icon = { info: '○', ok: '✓', warn: '!', busy: '' }[kind];
   $('aiStatus').innerHTML = (kind === 'busy' ? '<span class="spinner"></span>' : `<span aria-hidden="true" class="text-ink">${icon}</span>`) + `<span>${text}</span>`;
 }
+function setAiPill(state) {
+  const t = { loading: ['bg-gray-400 animate-pulse', ': loading'], ready: ['bg-emerald-500', ': on'], off: ['bg-amber-500', ': off · manual'] }[state];
+  $('aiDot').className = 'w-1.5 h-1.5 rounded-full ' + t[0];
+  $('aiLabel').innerHTML = `AI<span class="pill-long">${t[1]}</span>`;
+  // detection buttons do nothing without the model
+  ['tapDetectBtn', 'autoBtn'].forEach((id) => $(id).classList.toggle('hidden', state === 'off'));
+  $('cornerTools').querySelectorAll('.text-faint').forEach((e) => e.classList.toggle('hidden', state === 'off'));
+}
 async function initSegmenter() {
   setAiStatus('Loading on-device AI (MediaPipe)…', 'busy');
   const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
@@ -660,13 +688,14 @@ async function initSegmenter() {
     }
     if (!S.segmenter) throw last;
     S.aiState = 'ready';
+    setAiPill('ready');
     setAiStatus('On-device AI ready.', 'ok');
     if (S.src && S.mode === 'corners') autoDetect(undefined, true);
   } catch (e) {
     console.warn('[MixoTile] MediaPipe unavailable, falling back to manual crop:', e);
     S.aiState = 'failed';
-    setAiStatus('AI outline unavailable on this device — using manual square crop (switch to 4-corner any time).', 'warn');
-    if (S.src) setMode('crop');
+    setAiPill('off');
+    setAiStatus('AI off: manual mode. Drag the 4 corners onto the tile (or use Square crop).', 'warn');
   }
 }
 
@@ -1144,10 +1173,15 @@ function saveBlob(buf, name, type) {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 $('downloadBtn').onclick = () => { if (S.model && S.model.buf) saveBlob(S.model.buf, `mixotile_${Math.round(S.model.size)}mm.3mf`, 'model/3mf'); };
-$('glbBtn').onclick = async () => {
+// other formats: re-run the engine with the same settings (≈ 10 s) and save the result
+const FORMAT_FILES = { glb: ['glb', 'model/gltf-binary'], stl: ['stl.zip', 'application/zip'],
+                       obj: ['obj.zip', 'application/zip'], objtex: ['textured.obj.zip', 'application/zip'] };
+$('moreFormats').onchange = async (e) => {
+  const fmt = e.target.value; e.target.value = '';
+  if (!FORMAT_FILES[fmt]) return;
   showLoading(true);
-  try { const r = await requestModel('glb'); saveBlob(r.buf, `mixotile_${Math.round(r.size)}mm.glb`, 'model/gltf-binary'); }
-  catch (e) { alertInModal(e.message); }
+  try { const r = await requestModel(fmt); saveBlob(r.buf, `mixotile_${Math.round(r.size)}mm.${FORMAT_FILES[fmt][0]}`, FORMAT_FILES[fmt][1]); }
+  catch (err) { alertInModal(err.message); }
   finally { showLoading(false); }
 };
 function alertInModal(msg) { $('pvStats').textContent = '! ' + msg; }

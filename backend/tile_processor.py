@@ -25,6 +25,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import math
+import re
 import time
 import zipfile
 from dataclasses import asdict, dataclass
@@ -71,7 +72,7 @@ class TileConfig:
     edge_is_seam: bool = False       # False: fields run level to the tile edge with a soft roll-off
     remove_glare: bool = False       # opt-in glare/sticker inpaint; off by default (eats white motifs)
     symmetry: str = "off"            # "off" | "auto" | "c4" | "d4" — opt-in: averaging a slightly misaligned photo smears detail
-    output_format: str = "3mf"       # "3mf" | "glb"
+    output_format: str = "3mf"       # see EXPORT_FORMATS
 
     def validate(self) -> "TileConfig":
         def rng(name, lo, hi):
@@ -101,8 +102,8 @@ class TileConfig:
         rng("outline_width_mm", 0.4, 4)
         if self.symmetry not in ("auto", "off", "c4", "d4"):
             raise ValueError("symmetry must be auto, off, c4 or d4")
-        if self.output_format not in ("3mf", "glb"):
-            raise ValueError("output_format must be '3mf' or 'glb'")
+        if self.output_format not in EXPORT_FORMATS:
+            raise ValueError("output_format must be one of " + ", ".join(EXPORT_FORMATS))
         self.num_colors = int(self.num_colors)
         self.corner_radius_mm = min(self.corner_radius_mm, self.tile_size_mm / 4)
         # keep rasters bounded so huge tiles don't blow up memory / time
@@ -1034,8 +1035,111 @@ def preview_mesh(parts, max_tris: int = 300_000) -> tuple[list, bytes]:
     return layout, b"".join(blobs)
 
 
-def export_parts(parts, fmt: str) -> bytes:
-    return write_3mf(parts) if fmt == "3mf" else write_glb(parts)
+def _part_files(parts):
+    """Stable, readable per-part file/material names: 01_pad_#e8e0d0, 02_colour_2_#2a6b9c ..."""
+    out = []
+    for i, (name, rgb, _, _) in enumerate(parts, 1):
+        nm, hx = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_"), "%02x%02x%02x" % tuple(int(c) for c in rgb)
+        out.append(f"{i:02d}_{nm}" if hx in nm.lower() else f"{i:02d}_{nm}_{hx}")
+    return out
+
+
+def _split_pinches(v: np.ndarray, f: np.ndarray, eps: float = 0.002) -> np.ndarray:
+    """Formats without vertex indices (STL) weld vertices by position. Where the surface touches
+    itself (a pinch), two distinct vertices share one position and welding makes a non-manifold
+    edge. Nudge each such vertex `eps` mm toward the centroid of its own triangles."""
+    v = np.asarray(v, np.float32)
+    _, inv, cnt = np.unique(v, axis=0, return_inverse=True, return_counts=True)
+    dup = np.nonzero(cnt[inv.ravel()] > 1)[0]
+    if not len(dup):
+        return v
+    v = v.copy()
+    cen = v[f].mean(1)                                            # triangle centroids
+    acc = np.zeros_like(v); n = np.zeros(len(v), np.float32)
+    for k in range(3):
+        np.add.at(acc, f[:, k], cen); np.add.at(n, f[:, k], 1)
+    d = acc[dup] / np.maximum(n[dup], 1)[:, None] - v[dup]
+    v[dup] += eps * d / np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
+    return v
+
+
+def write_stl_zip(parts) -> bytes:
+    """One binary STL per colour body, zipped: STL has no colour, so multi-colour printing takes
+    one file per filament (load them together; they share coordinates)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for fname, (_, _, v, f) in zip(_part_files(parts), parts):
+            tri = _split_pinches(v, np.asarray(f))[np.asarray(f)]               # (n, 3, 3)
+            nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+            nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
+            rec = np.zeros(len(f), np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]))
+            rec["n"], rec["v"] = nrm, tri
+            z.writestr(fname + ".stl", (b"mixo-tile-gen " + fname.encode()).ljust(80, b" ")[:80]
+                       + np.uint32(len(f)).tobytes() + rec.tobytes())
+    return buf.getvalue()
+
+
+def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
+    """OBJ + MTL, one object per colour body (Z-up, mm), zipped.
+    texture=None: each body gets its glaze colour as a material (Kd).
+    texture=RGB image of the flattened tile: the photo is projected straight down from the top,
+    u = x / size, v = y / size, so every point shows the photo pixel directly above it (the same
+    warped photo the colours were read from, so the texture lines up with the relief exactly)."""
+    names = _part_files(parts)
+    mtl, obj = [], ["mtllib model.mtl\n"]
+    if texture is not None:
+        mtl.append("newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n")
+    base = vt_base = 1
+    for nm, (name, rgb, v, f) in zip(names, parts):
+        v = np.asarray(v, np.float64); f = np.asarray(f, np.int64)
+        # the backing pad is seen almost only from the side, where a top-down photo smears into
+        # streaks: it keeps its plain glaze colour
+        textured = texture is not None and "pad" not in name
+        if not textured:
+            r, g, b = (int(c) / 255 for c in rgb)
+            mtl.append(f"newmtl {nm}\nKa {r:.4f} {g:.4f} {b:.4f}\nKd {r:.4f} {g:.4f} {b:.4f}\nKs 0.08 0.08 0.08\nNs 40\nillum 2\n")
+        obj.append(f"o {nm}\nusemtl {'photo' if textured else nm}\n")
+        obj.append(("v %.3f %.3f %.3f\n" * len(v)) % tuple(v.ravel()))
+        idx = f + base
+        if textured:                     # OBJ numbers v and vt separately (the pad has no vt)
+            uv = np.clip(v[:, :2] / size_mm, 0.0, 1.0)
+            obj.append(("vt %.5f %.5f\n" * len(uv)) % tuple(uv.ravel()))
+            fv = np.stack([idx, f + vt_base], axis=2)                 # (n, 3, [v, vt])
+            obj.append(("f %d/%d %d/%d %d/%d\n" * len(f)) % tuple(fv.ravel()))
+            vt_base += len(v)
+        else:
+            obj.append(("f %d %d %d\n" * len(f)) % tuple(idx.ravel()))
+        base += len(v)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("model.obj", "".join(obj))
+        z.writestr("model.mtl", "".join(mtl))
+        if texture is not None:
+            ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 90])
+            z.writestr("texture.jpg", jpg.tobytes())
+    return buf.getvalue()
+
+
+# format -> (file extension, media type)
+EXPORT_FORMATS = {
+    "3mf": ("3mf", "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"),
+    "glb": ("glb", "model/gltf-binary"),
+    "stl": ("stl.zip", "application/zip"),
+    "obj": ("obj.zip", "application/zip"),
+    "objtex": ("textured.obj.zip", "application/zip"),
+}
+
+
+def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
+    if fmt == "3mf":
+        return write_3mf(parts)
+    if fmt == "glb":
+        return write_glb(parts)
+    if fmt == "stl":
+        return write_stl_zip(parts)
+    if fmt in ("obj", "objtex"):
+        return write_obj_zip(parts, texture if fmt == "objtex" else None, size_mm)
+    raise ValueError(f"unknown format {fmt!r}")
 
 
 # --------------------------------------------------------------------------- pipeline
@@ -1053,6 +1157,11 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     n_px = int(round(cfg.tile_size_mm * cfg.px_per_mm))
     flat = warp_tile(rgb, corners, n_px, corners_scale, inset=0.015)
     flat, sym = symmetrise(flat, cfg.symmetry)
+    texture = None
+    if cfg.output_format == "objtex":
+        texture = warp_tile(rgb, corners, 2048, corners_scale, inset=0.015)
+        if sym not in ("off", "none"):     # same symmetry group the geometry used
+            texture, _ = symmetrise(texture, sym)
     report(0.04, "Finding the glaze colours")
 
     mm_per_px = cfg.tile_size_mm / n_px
@@ -1098,7 +1207,7 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
         on_parts(parts, stats)
     report(0.90, "Writing the 3D file")
     t2 = time.monotonic()
-    data = export_parts(parts, cfg.output_format)
+    data = export_parts(parts, cfg.output_format, texture, cfg.tile_size_mm)
     t3 = time.monotonic()
 
     stats.update({

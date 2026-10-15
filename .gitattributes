@@ -3,3 +3,5 @@
 *.png binary
 *.3mf binary
 *.glb binary
+*.bat text eol=crlf
+*.sh text eol=lf

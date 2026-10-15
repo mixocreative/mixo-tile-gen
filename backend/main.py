@@ -19,10 +19,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(
 log = logging.getLogger("mixotile.api")
 
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024
-MEDIA_TYPES = {
-    "3mf": "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
-    "glb": "model/gltf-binary",
-}
+MEDIA_TYPES = {fmt: media for fmt, (_ext, media) in tp.EXPORT_FORMATS.items()}
 
 
 @asynccontextmanager
@@ -111,7 +108,7 @@ async def process_tile(
     outline_width_mm: float = Form(1.2, description="width of that ridge"),
     edge_is_seam: bool = Form(False, description="true = groove along the tile edge too"),
     symmetry: str = Form("off", description="off | auto | c4 | d4 (opt-in)"),
-    output_format: str = Form("3mf"),
+    output_format: str = Form("3mf", description="3mf | glb | stl (zip, one per colour) | obj (zip, colours) | objtex (zip, photo texture)"),
     stream: bool = Form(False, description="true = progress lines + binary payloads (see _stream)"),
     preview: bool = Form(True, description="stream: also send a light preview mesh before the file"),
 ):
@@ -133,7 +130,9 @@ async def process_tile(
     corner_pts = _parse_json("corners", corners)
     swatch_list = _parse_swatches(_parse_json("swatches", swatches))
 
-    fname = f"mixotile_{int(round(tile_size_mm))}mm.{fmt}"
+    if fmt not in tp.EXPORT_FORMATS:
+        raise HTTPException(422, "output_format must be one of " + ", ".join(tp.EXPORT_FORMATS))
+    fname = f"mixotile_{int(round(tile_size_mm))}mm.{tp.EXPORT_FORMATS[fmt][0]}"
     if stream:
         return StreamingResponse(_stream(data, corner_pts, swatch_list, cfg, fmt, fname, preview),
                                  media_type="application/x-ndjson",
@@ -226,3 +225,12 @@ async def _stream(data, corner_pts, swatch_list, cfg, fmt, fname, want_preview=T
                 yield model[i:i + (1 << 20)]
             break
     await task
+
+
+# Self-hosting: serve the website from the engine too (one address for the PC, phone and tunnel).
+# Mounted last so the API routes above take precedence.
+_frontend = os.getenv("FRONTEND_DIR")
+if _frontend and os.path.isdir(_frontend):
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=_frontend, html=True), name="frontend")

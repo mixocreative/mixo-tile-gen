@@ -1,9 +1,9 @@
 # mixo-tile-gen · 花磚 3D relief generator
 
-Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, optional `.GLB`) ready for multi-material 3D printing.
+Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a watertight, multi-colour 3D relief (`.3MF`, plus `.GLB`, `.STL` and `.OBJ`, even one wearing your photo as a texture) ready for multi-material 3D printing.
 
 **Live app:** https://mixocreative.github.io/mixo-tile-gen/
-**Backend:** Python engine on Hugging Face Spaces (free, no card). It's Google Cloud Run-ready too; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
+**Engine:** Python, running on Google Cloud Run (with a hard spending cap). You can also run the whole app on your own computer with one double-click, phone included; see the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed).
 
 ![16 real tiles: photo vs generated relief](docs/results/all_tiles.jpg)
 
@@ -18,24 +18,34 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 - **🎨 It understands colours.** It works out the glaze colours by itself: up to 8 by default, or pick your own with a tap. Shadows and shine on the glaze don't fool it into inventing extra colours.
 - **🏺 It looks like real ceramic, not a stack of pancakes.** Every colour swells gently like glaze, and the edges roll softly down into the seams, the way a real pressed tile does. The thin raised outlines that make 花磚 special are found and rebuilt as smooth ridges.
 - **🧩 Ready to print in colour.** Each colour is its own piece, cut to fit its neighbours exactly like a jigsaw, so you can print it in several colours in one go. Want a tiny gap so the pieces snap together? Set the **clearance**.
-- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes, then download the `.3MF` (or `.GLB`).
+- **👀 See it before you print.** Spin, zoom and inspect a live 3D preview right in the browser while the file finishes, then download the `.3MF`, or `.GLB`, `.STL` or `.OBJ`. The **photo-textured `.OBJ`** wraps your actual photo onto the relief, so it looks like the real tile in Blender, games or AR.
 - **⏱️ Fast and honest.** A real progress bar shows what's actually happening ("Carving colour 3 of 8…"), with time left. It's usually about 10 seconds.
 - **🛠️ Make it yours.** Every setting is a simple number in millimetres. Go big (a 30 cm wall plaque) or tiny (a 5 cm fridge magnet; small tiles automatically get bolder relief so detail survives printing). Change the base thickness, how high the colours rise, how round the edges are, how strong the outlines are, the gaps between pieces, the colour count, the mesh smoothness and more.
 - **📱 Works on your phone.** It's designed for phones first: big enough to tap, small enough to stay out of the way.
-- **🆓 Free and open.** The website runs on GitHub Pages and the engine on a free Hugging Face Space. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
+- **🆓 Free and open.** The website runs on GitHub Pages and the engine on Google Cloud Run's free allowance, or entirely on your own computer for free. Want your own copy? Follow the [step-by-step guide](#set-it-up-yourself-step-by-step-guide-no-experience-needed); no coding needed.
 
 **Fun ideas:** coasters 🍵 · fridge magnets 🧲 · a wall of your neighbourhood's tiles 🏘️ · gifts from a trip to Taiwan 🎁 · restoring a missing tile in an old floor 🔧 · class projects about Taiwanese heritage 🏫
 
 ## What it does
 
-1. **Capture.** Snap or upload a photo of a tile. The photo is never stored.
+1. **Capture.** On a phone: **Take photo** or **Upload** (camera roll / files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real test tiles. The photo is never stored.
 2. **Outline.** On-device AI (Google AI Edge / MediaPipe Interactive Segmenter) suggests the tile's four corners.
-   - Drag the yellow handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
-   - Or switch to **Square crop** (Cropper.js). This is also the automatic fallback if the AI model can't load.
+   - Drag the white corner handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
+   - Or switch to **Square crop** (Cropper.js).
+   - The **AI pill** at the top shows *AI: on / loading / off*. If the AI can't load (old phone, blocked network, offline), the app says **AI off · manual** and you simply drag the 4 corners yourself; everything else works the same. The 3D engine itself uses no AI.
 3. **Colours.** Tap glaze colours on the flattened tile with the eyedropper, or leave it on **auto**, which picks 3–8 colours.
 4. **Proportions.** Set the tile size and relief settings. The defaults are tuned for a realistic 150 mm tile.
 5. **Generate.** A real progress bar shows the server's actual stages. The 3D preview opens as soon as the shape is ready, while the printable file finishes.
-6. **Download** a `.3MF`. It's one object with one named part per colour, each pre-assigned its own extruder; it opens in PrusaSlicer, OrcaSlicer and Bambu Studio. `.GLB` is optional.
+6. **Download** a `.3MF`. It's one object with one named part per colour, each pre-assigned its own extruder; it opens in PrusaSlicer, OrcaSlicer and Bambu Studio. **Other formats** (menu next to the button; each takes about 10 s more):
+
+   | Format | What you get | Use it for |
+   |---|---|---|
+   | `.GLB` | One file, colours included | Web viewers, AR, quick sharing |
+   | `.STL` (zip) | One STL per colour, all lined up | Any slicer: load them together, one filament each |
+   | `.OBJ` (zip) | OBJ + MTL, one object per colour with its glaze colour | Blender, CAD, rendering |
+   | `.OBJ` photo texture (zip) | OBJ + MTL + `texture.jpg`: your photo projected straight down onto the relief, lined up exactly (the backing pad keeps a plain colour) | Realistic renders, games, AR |
+
+   STEP isn't offered: it's a format for exact CAD surfaces, and a relief of about a million triangles turns into a huge STEP that CAD programs choke on. Import the STL or OBJ instead.
 
 ## How the relief is built (design decisions)
 
@@ -86,128 +96,198 @@ All numbers were measured under exact Cloud Run limits (2 vCPU, 2 GiB, no swap) 
 
 - **Server:** 5–9 s per tile. Peak memory is about 1.5 GB.
 - **In the app, warm server:** the 3D preview is on screen in about 7 s and the download is ready in about 8.5 s. The page never freezes for more than about 1 s.
-- **Cold start:** the free tier sleeps when idle, so the first request after a quiet spell adds roughly 20–40 s. To hide this, the app wakes the server as soon as a photo is loaded, and the progress bar says so if it's still waking.
+- **Cold start:** the engine sleeps when idle, so the first request after a quiet spell adds roughly 20–40 s. To hide this, the app wakes the server as soon as a photo is loaded, and the progress bar says so if it's still waking.
 
 ## Set it up yourself: step-by-step guide (no experience needed)
 
+> **Just want to use it?** Open https://mixocreative.github.io/mixo-tile-gen/. It's already connected to an engine, so skip this whole section.
+
 The app has two halves:
 
-| Half | What it is | Where it runs | Cost |
-|---|---|---|---|
-| **Website** (front end) | The page you open in a browser. | GitHub Pages (`github.io`) | Free |
-| **Engine** (back end, Python) | Turns the photo into the 3D file. | **Hugging Face** *or* **Google Cloud** *or* **your own computer** | Free (Google needs a card on file) |
+| Half | What it is | Where it can run |
+|---|---|---|
+| **Website** (front end) | The page you see in the browser. | GitHub Pages (free), or your own computer |
+| **Engine** (back end, Python) | Turns the photo into the 3D file. | **Your own computer** (free), or **Google Cloud Run** (online all the time) |
 
-The website only *talks to* an engine. You set up one engine, then **connect** the website to it.
+Pick one:
 
-> **Just want to use it?** Open https://mixocreative.github.io/mixo-tile-gen/ and skip this whole section.
+| | Cost | Works when your computer is off? | Phone? | Difficulty |
+|---|---|---|---|---|
+| **[A. Your own computer](#option-a-run-everything-on-your-own-computer-free)** | Free | No | Yes, same Wi-Fi or a free Cloudflare link | Easiest: double-click a file |
+| **[B. Google Cloud Run](#option-b-google-cloud-run-online-all-the-time-with-a-hard-spending-cap)** | About $0, card required, hard cap | Yes | Yes | Copy and paste 6 blocks |
+| **[C. Docker](#option-c-docker-for-tinkerers)** | Free | No | Yes | Needs Docker |
 
----
-
-### Option A: Hugging Face (free, no credit card, recommended)
-
-You only need a web browser.
-
-1. **Create a free account** at https://huggingface.co/join and confirm your email.
-2. **Get the engine files.** On https://github.com/mixocreative/mixo-tile-gen click the green **Code** button, then **Download ZIP**. Unzip it. You need 4 files from the `backend` folder:
-   - `Dockerfile`
-   - `main.py`
-   - `tile_processor.py`
-   - `requirements.txt`
-3. **Create the Space.** Go to https://huggingface.co/new-space:
-   - **Space name:** `mixo-tile-gen`
-   - **License:** your choice
-   - **Select the Space SDK:** **Docker**, then **Blank**
-   - **Hardware:** *CPU basic · free*
-   - **Visibility:** **Public**. The website needs to reach it.
-   - Click **Create Space**.
-4. **Upload the files.** In your new Space, open **Files**, then **+ Add file → Upload files**. Drag in the 4 files from step 2 and click **Commit changes to main**.
-5. **Tell it which port to use.** Still in **Files**, click `README.md`, then **Edit**. In the block between the two `---` lines at the top, add this line, then click **Commit changes**:
-   ```
-   app_port: 8080
-   ```
-6. **Allow your website to talk to it.** Go to **Settings → Variables and secrets → New variable**:
-   - **Name:** `ALLOWED_ORIGINS`
-   - **Value:** `https://mixocreative.github.io`. If you made your own website copy (Option D), use `https://YOUR-GITHUB-NAME.github.io`.
-   - Save. The Space rebuilds by itself.
-7. **Wait for "Running".** The status badge next to the name goes *Building → Running*. The first build takes about 5–10 minutes.
-8. **Find your engine address.** It's `https://YOUR-HF-NAME-mixo-tile-gen.hf.space`, in lower case. To test it, open `https://YOUR-HF-NAME-mixo-tile-gen.hf.space/health`. You should see `{"status":"ok", …}`.
-9. **Connect the website.** See [Connect the website to your engine](#connect-the-website-to-your-engine) below.
-
-> **Note:** a free Space goes to sleep after about 2 days with no visitors. The next visitor wakes it up, which takes about 1 minute; the progress bar says "Waking up the server".
+> **What about Hugging Face?** Since July 2026, Hugging Face only runs this kind of engine (a "Docker Space") for paying PRO accounts. If you have PRO, see [the note at the end](#hugging-face-pro-accounts-only).
 
 ---
 
-### Option B: Google Cloud Run
+### Option A: run everything on your own computer (free)
 
-You need a Google account, and Google requires a credit card on file even for its free tier. Normal use of this app stays within the free tier, but check your billing page now and then.
+Website and engine both run on your computer. Nothing to sign up for.
 
-1. **Create a project.** Open https://console.cloud.google.com, click the project picker at the top, choose **New Project**, name it `mixo-tile-gen`, and click **Create**.
-2. **Turn on billing.** Go to **☰ Menu → Billing** and link a billing account (card) to the project. Optionally, under **Budgets & alerts**, set a budget of US$1 so Google emails you if anything is ever charged.
-3. **Open Cloud Shell.** Click the **>_** icon at the top right of the console. A terminal opens in your browser, so nothing needs installing.
-4. **Paste these lines** into Cloud Shell, one block at a time. Press **Enter** after each, and click **Authorize** if asked.
-   ```bash
-   git clone https://github.com/mixocreative/mixo-tile-gen.git
-   cd mixo-tile-gen
-   gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-   ```
-   ```bash
-   gcloud run deploy mixo-tile-gen --source backend --region asia-east1 \
-     --allow-unauthenticated --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 \
-     --min-instances 0 --max-instances 3 \
-     --set-env-vars ALLOWED_ORIGINS=https://mixocreative.github.io
-   ```
-   If it asks *"Allow unauthenticated invocations?"*, answer **y**. If it asks to create an Artifact Registry repository, answer **y**.
-5. **Copy the address.** After 5–10 minutes the last line shows `Service URL: https://mixo-tile-gen-xxxxx.asia-east1.run.app`. Open it with `/health` added on the end; you should see `{"status":"ok", …}`.
-6. **Connect the website.** See the next section.
+**1. Install Python (one time).**
+- **Windows:** go to https://www.python.org/downloads/ and click the big yellow **Download Python** button. Run the installer, tick **"Add python.exe to PATH"** at the bottom of the first screen, then click **Install Now**.
+- **Mac:** same page; open the downloaded `.pkg` and click through.
+- **Linux:** usually already installed. You need version 3.11 or newer (`python3 --version`).
 
-`asia-east1` is Taiwan. Pick a region near your users. `--memory 2Gi` is required; the engine needs it.
+**2. Download the app.** On https://github.com/mixocreative/mixo-tile-gen click the green **Code** button, then **Download ZIP**. Unzip it somewhere easy, like your Desktop.
 
----
+**3. Start it.**
+- **Windows:** open the unzipped folder and double-click **`start-windows.bat`**.
+  - If a blue "Windows protected your PC" box appears, click **More info → Run anyway**. It's a plain text script you can open in Notepad to check.
+- **Mac / Linux:** open Terminal in the folder (Mac: right-click the folder → **New Terminal at Folder**) and run:
+  ```bash
+  ./start-mac-linux.sh
+  ```
 
-### Option C: on your own computer
+The **first start takes 3–10 minutes** because it downloads the engine's parts (about 400 MB). Later starts take about 10 seconds. When you see
 
-**The easy way, with Docker:**
-1. Install **Docker Desktop** (https://www.docker.com/products/docker-desktop/) and start it.
-2. Download the project ZIP (Option A, step 2) and unzip it.
-3. Open a terminal *inside the unzipped folder*. On Windows: open the folder, then right-click → **Open in Terminal**. On macOS: right-click the folder → **New Terminal at Folder**. Then run:
-   ```bash
-   docker build -t mixo-tile-gen backend
-   docker run --rm -p 8088:8080 mixo-tile-gen
-   ```
-   Leave that window open; it is the engine.
-4. In a **second** terminal, in the same folder, start the website:
-   ```bash
-   python -m http.server 8790 --directory frontend
-   ```
-5. Open **http://localhost:8790/?api=http://localhost:8088**. The engine is connected automatically.
-
-**Without Docker (Python only):** install Python 3.11 or newer from https://www.python.org/downloads/ and tick **"Add Python to PATH"**. Then:
-```bash
-cd backend
-python -m pip install -r requirements.txt
-python -m uvicorn main:app --port 8088
 ```
-Then do steps 4 and 5 above.
+[mixo] READY  ->  open http://localhost:8088/?api=self
+```
+
+your browser opens the app by itself. **Keep the black window open** while you use the app; closing it (or pressing **Ctrl + C**) stops everything.
+
+**4. Use it on your phone (optional).**
+- **Windows:** double-click **`start-windows-phone.bat`** instead.
+- **Mac / Linux:** run `./start-mac-linux.sh phone`.
+
+A page with **QR codes** opens. Scan one with your phone's camera:
+
+| QR code | When to use it | Notes |
+|---|---|---|
+| **Same Wi-Fi** | Phone and computer on the same Wi-Fi | Fastest. If it doesn't load, see the firewall tip below. |
+| **Anywhere (Cloudflare link)** | Phone on mobile data, or a friend elsewhere | Free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/). No account needed. The tool downloads itself the first time. |
+
+> 🔒 The Cloudflare link works for **anyone who has it** while the window is open. It's a long random address that changes every time you start, and it stops working when you close the window. Only share it with people you trust.
+
+**Troubleshooting (Option A)**
+- **"Python is not installed"** but you did install it: restart the computer, or re-run the installer and tick "Add python.exe to PATH".
+- **Windows asks "Allow Python on networks?"** Tick **Private networks** and click **Allow**. The same-Wi-Fi QR code needs this.
+- **"port 8088 is busy"**: the app is already running in another window. Use that one, or close it first.
+- **Install failed halfway** (internet dropped): delete the `.venv` folder inside the app folder and start again.
+
+---
+
+### Option B: Google Cloud Run (online all the time, with a hard spending cap)
+
+The engine runs on Google's servers, so the website works even when your computer is off. Google's free allowance covers several thousand tiles a month (each tile uses about 20 CPU-seconds), so **normal use costs $0**. Google still requires a card on file, so this guide adds a **kill switch**: if spending ever reaches the cap you choose, billing switches off automatically and nothing more can be charged.
+
+**1. Turn on billing (one time, in the browser).**
+1. Open https://console.cloud.google.com/billing.
+   > **Several Google accounts?** Google picks the first one. Add `?authuser=you@gmail.com` to the address (for example `https://console.cloud.google.com/billing?authuser=you@gmail.com`), or open a private window (**Ctrl + Shift + N**) and sign in with only the account you want. Check the avatar at the top right.
+2. Click **Create account** (or start the **Free trial** if offered). Choose **Individual**, enter your card, and submit. A small temporary card check may appear; it's refunded.
+
+**2. Open Cloud Shell.** Go to https://console.cloud.google.com (same account), then click the **>_** icon at the top right. A terminal opens at the bottom of the page. Nothing to install.
+
+**3. Paste the blocks below one at a time**, pressing **Enter** after each. Click **Authorize** if asked.
+
+Block 1: settings. **Change the first line** to a name that's yours (lower case, letters, digits and dashes, 6–30 characters, must be unique on Google):
+```bash
+PROJECT=mixo-tile-gen-yourname
+REGION=asia-east1        # Taiwan. Others: us-central1, europe-west1, asia-northeast1 ...
+SITE=https://mixocreative.github.io   # the website allowed to use your engine (no path, no trailing /)
+gcloud billing accounts list
+```
+The last command shows a table. Copy the **ACCOUNT_ID** of the account with `OPEN True`, then paste this (with your ID):
+```bash
+BILLING=000000-000000-000000
+```
+
+Block 2: project, billing and services:
+```bash
+gcloud projects create $PROJECT && gcloud config set project $PROJECT
+gcloud billing projects link $PROJECT --billing-account=$BILLING
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
+  cloudfunctions.googleapis.com eventarc.googleapis.com pubsub.googleapis.com \
+  billingbudgets.googleapis.com cloudbilling.googleapis.com
+NUM=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+for r in cloudbuild.builds.builder storage.objectViewer artifactregistry.writer logging.logWriter; do
+  gcloud projects add-iam-policy-binding $PROJECT --member=serviceAccount:$NUM-compute@developer.gserviceaccount.com \
+    --role=roles/$r --condition=None --quiet >/dev/null; done
+echo OK
+```
+
+Block 3: the engine. Takes 5–10 minutes. If it says *Permission denied … Artifact Registry*, wait one minute and paste it again; new projects need a moment.
+```bash
+git clone https://github.com/mixocreative/mixo-tile-gen.git && cd mixo-tile-gen
+gcloud run deploy mixo-tile-gen --source backend --region $REGION --allow-unauthenticated \
+  --cpu 2 --memory 2Gi --concurrency 1 --timeout 300 --min-instances 0 --max-instances 1 \
+  --set-env-vars ALLOWED_ORIGINS=$SITE --quiet
+```
+The last line shows `Service URL: https://mixo-tile-gen-….run.app`. **That's your engine address.** Open it with `/health` added; you should see `{"status":"ok", …}`.
+
+Block 4: the kill switch (a tiny function that switches billing off):
+```bash
+gcloud pubsub topics create budget-alerts
+gcloud iam service-accounts create budget-killswitch --display-name=budget-killswitch
+KS=budget-killswitch@$PROJECT.iam.gserviceaccount.com
+gcloud projects add-iam-policy-binding $PROJECT --member=serviceAccount:$KS --role=roles/billing.projectManager --condition=None --quiet >/dev/null
+gcloud projects add-iam-policy-binding $PROJECT --member=serviceAccount:$KS --role=roles/browser --condition=None --quiet >/dev/null
+gcloud functions deploy budget-killswitch --gen2 --runtime python312 --region $REGION \
+  --source ops/budget_killswitch --entry-point stop_billing --trigger-topic budget-alerts \
+  --service-account $KS --set-env-vars TARGET_PROJECT=$PROJECT --memory 256Mi --max-instances 1 --quiet
+gcloud run services add-iam-policy-binding budget-killswitch --region $REGION \
+  --member=serviceAccount:$KS --role=roles/run.invoker >/dev/null && echo OK
+```
+
+Block 5: the budget (the cap). Use your billing account's currency, shown by `gcloud billing accounts describe $BILLING`: for example `30TWD`, `1USD` or `1EUR`.
+```bash
+gcloud billing budgets create --billing-account=$BILLING --display-name=mixo-tile-gen-cap \
+  --budget-amount=1USD --filter-projects=projects/$PROJECT \
+  --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 \
+  --notifications-rule-pubsub-topic=projects/$PROJECT/topics/budget-alerts
+```
+You also get an **email** at 50 % and 90 % of the cap.
+
+Block 6 (optional, recommended): test the kill switch. This pretends the cap was reached, checks that billing went off, then switches it back on:
+```bash
+gcloud pubsub topics publish budget-alerts --message='{"costAmount": 2, "budgetAmount": 1, "currencyCode": "USD"}'
+sleep 60; gcloud billing projects describe $PROJECT --format='value(billingEnabled)'   # should print False
+gcloud billing projects link $PROJECT --billing-account=$BILLING >/dev/null; echo "billing back on"
+```
+
+**4. Connect the website** to your engine address. See [Connect the website to your engine](#connect-the-website-to-your-engine).
+
+**Good to know**
+- **When nobody uses it,** the engine sleeps and costs nothing. The first tile after a quiet spell takes 20–40 s longer while it wakes up; the progress bar says so.
+- **If the cap is ever reached,** the engine stops working (the site shows "Engine: unreachable"). To turn it back on, open Billing → **My projects**, then link the project to your billing account again. Google's cost reports lag a few hours, so the final bill can be a few cents above the cap. Allowing only one engine copy at a time (`--max-instances 1`) keeps that small.
+- **To remove everything,** go to https://console.cloud.google.com/cloud-resource-manager, select the project and click **Delete**.
+
+---
+
+### Option C: Docker (for tinkerers)
+
+Install **Docker Desktop** (https://www.docker.com/products/docker-desktop/) and start it. In the unzipped app folder:
+```bash
+docker build -t mixo-tile-gen backend
+docker run --rm -p 8088:8080 -v "$PWD/frontend:/frontend" -e FRONTEND_DIR=/frontend mixo-tile-gen
+```
+Open **http://localhost:8088/?api=self**. On Windows PowerShell use `${PWD}` instead of `$PWD`. Without the `-v … -e …` part you get the engine only, with no website.
 
 ---
 
 ### Connect the website to your engine
 
-**Way 1, for yourself (no coding):**
-1. Open the website (https://mixocreative.github.io/mixo-tile-gen/, or your own copy).
-2. Click the pill at the **top right** that says *Backend: …*.
-3. Paste your engine address, e.g. `https://YOUR-HF-NAME-mixo-tile-gen.hf.space`, with no `/health` on the end.
-4. Click **Save & test**. The dot turns green and says *Backend: ready*. Your browser remembers the address.
+The website needs to know the engine's address. Choose one:
 
-**Way 2, a link to share:** add `?api=` and your engine address to the website link, e.g.
-`https://mixocreative.github.io/mixo-tile-gen/?api=https://YOUR-HF-NAME-mixo-tile-gen.hf.space`
+| How | Steps | Best for |
+|---|---|---|
+| **The Engine pill** | On the website, click the pill at the **top right** ("Engine: …"). Paste your engine address (no `/health` on the end), then **Save & test**. The dot turns green ("Engine: ready"). Your browser remembers it. | Just you |
+| **A link** | Add `?api=` plus the address to the website link, e.g. `https://mixocreative.github.io/mixo-tile-gen/?api=https://mixo-tile-gen-xxxx.asia-east1.run.app` | Sharing with friends |
+| **The default** (your own copy) | In `frontend/index.html`, find `const DEFAULT_API = '…';` and put your address between the quotes. Commit; your site updates in about a minute. | Everyone who visits your copy |
 
-**Way 3, make it the default for everyone (your own copy):** in `frontend/index.html`, find `const DEFAULT_API = '…';` and put your engine address between the quotes. Then commit; your website updates in about a minute.
+`?api=self` means "the engine is at this same address". Option A's links use it, because there the engine also serves the website.
+
+**Self-hosting everything?**
+- **Option A or C:** the website comes with the engine; nothing to connect.
+- **Your own GitHub Pages site + your own Cloud Run engine:** deploy the engine with `SITE=https://YOUR-GITHUB-NAME.github.io` (Option B, block 1), then set `DEFAULT_API` in your copy.
+- **Website already deployed and only the allowed site needs changing:** run `gcloud run services update mixo-tile-gen --region $REGION --update-env-vars ALLOWED_ORIGINS=https://YOUR-GITHUB-NAME.github.io`.
 
 **If the dot is red ("unreachable"):**
-- Check the address works on its own with `/health` added.
-- Check the engine's `ALLOWED_ORIGINS` exactly matches your website's address: `https://NAME.github.io`, with no path and no trailing `/`.
-- A sleeping Hugging Face Space takes about a minute to wake. Try again.
+- Open the engine address with `/health` on the end. If that fails, the engine is off or asleep (or its spending cap was reached).
+- The engine's `ALLOWED_ORIGINS` must exactly match your website's address: `https://NAME.github.io`, with no path and no trailing `/`.
+- A sleeping engine takes 20–60 s to wake. Try again.
 
 ---
 
@@ -218,14 +298,25 @@ Then do steps 4 and 5 above.
 3. In your fork, go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**.
 4. Go to the **Actions** tab, click **Deploy frontend to GitHub Pages**, then **Run workflow**.
 5. After about a minute your website is at `https://YOUR-GITHUB-NAME.github.io/mixo-tile-gen/`.
-6. Connect it to your engine (previous section). Remember the engine's `ALLOWED_ORIGINS` must be `https://YOUR-GITHUB-NAME.github.io`.
+6. Connect it to your engine (previous section).
+
+---
+
+### Hugging Face (PRO accounts only)
+
+Free accounts get `402 Payment Required` when creating a Docker Space. With **PRO**:
+1. Create a Space at https://huggingface.co/new-space: SDK **Docker → Blank**, **Public**.
+2. Upload `backend/Dockerfile`, `main.py`, `tile_processor.py` and `requirements.txt`.
+3. Add `app_port: 8080` to the front matter of the Space's `README.md`.
+4. Add the variable `ALLOWED_ORIGINS` = your website (Settings → Variables and secrets).
+5. Your engine address is `https://YOUR-HF-NAME-SPACE-NAME.hf.space`.
 
 ## API
 
 - `GET /health` returns `{"status":"ok"}`.
 - `POST /process-tile` takes `multipart/form-data`:
   - **Required:** `image`.
-  - **Optional:** `corners` (JSON `[[x,y]×4]`), `swatches` (JSON hex list), plus any setting above, using the names in `TileConfig`: `tile_size_mm`, `pad_thickness_mm`, `relief_height_mm`, `fillet_radius_mm`, `dome_height_mm`, `groove_floor_mm`, `clearance_mm`, `outline_height_mm`, `outline_width_mm`, `num_colors`, `mesh_resolution_mm`, `symmetry`, `output_format` (`3mf`|`glb`).
+  - **Optional:** `corners` (JSON `[[x,y]×4]`), `swatches` (JSON hex list), plus any setting above, using the names in `TileConfig`: `tile_size_mm`, `pad_thickness_mm`, `relief_height_mm`, `fillet_radius_mm`, `dome_height_mm`, `groove_floor_mm`, `clearance_mm`, `outline_height_mm`, `outline_width_mm`, `num_colors`, `mesh_resolution_mm`, `symmetry`, `output_format` (`3mf` | `glb` | `stl` = zip, one STL per colour | `obj` = zip, OBJ+MTL colours | `objtex` = zip, OBJ+MTL+texture.jpg).
 - `stream=false` (default) returns the model bytes, plus stats in the `X-MixoTile-Stats` header.
 - `stream=true` returns a single streamed response, used by the app:
   - JSON lines: `{"type":"progress","p":0.42,"msg":"Carving colour 3 of 8"}`.
@@ -241,6 +332,7 @@ The owner's **16 real tile photos are a permanent regression set**: `backend/tes
 docker run --rm -m 2g --memory-swap 2g --cpus 2 -v "$PWD:/repo" -w /repo/backend mixo-tile-gen \
   python tests/check_borders.py 09_single_rose 0     # watertight + puzzle-fit (gap/overlap) + time
 python tests/run_local.py        # synthetic sample, end to end
+python tests/check_formats.py 09_single_rose   # STL closed per colour, OBJ materials, texture lined up
 python tests/lines_sheet.py      # visual sheet: photo | outlines | colours | height map
 ```
 
