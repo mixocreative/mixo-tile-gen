@@ -151,8 +151,10 @@ async def process_tile(
 
     log.info("generated %s: %d bytes, bodies=%d, timing=%s", fmt, len(model), stats["bodies"], stats["timing_s"])
     _trim_memory()
-    return Response(
-        content=model,
+    # sent chunked: Cloud Run rejects a plain (Content-Length) response over 32 MiB, and a
+    # textured .glb is ~40 MB; chunked transfer has no such limit
+    return StreamingResponse(
+        (model[i:i + (1 << 20)] for i in range(0, len(model), 1 << 20)),
         media_type=MEDIA_TYPES[fmt],
         headers={
             "Content-Disposition": f'attachment; filename="{fname}"',

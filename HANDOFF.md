@@ -238,6 +238,7 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 6. Gotchas
 
+- Cloud Run rejects non-streamed responses over 32 MiB (textured .glb is ~41 MB): `main.py` sends files chunked (StreamingResponse) in both the plain and the streamed path. Verified: online `mixo --format glbtex` 41 MB OK.
 - In Git Bash, a heredoc that writes Python containing `'\\n'` gets mangled. Write files with an editor tool or `<<'EOF'` plus plain `\n` inside a Python script, and run `python -c "import ast; ast.parse(...)"` after editing.
 - Windows Python can't see Git-Bash `/tmp`. Use the project dir or the scratchpad.
 - The browser caches `index.html`, so add `&v=<n>` to the URL.
