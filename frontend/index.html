@@ -1000,7 +1000,9 @@ $('overlay').addEventListener('pointerdown', (e) => {
   if (S.tapMode) { e.preventDefault(); const [x, y] = stageToImage(e); S.tapMode = false; $('tapDetectBtn').classList.remove('flash'); autoDetect([{ x: x / S.W, y: y / S.H }]); return; }
   const g = e.target.closest('.handle'); if (!g) return;
   e.preventDefault(); drag = { i: +g.dataset.i, id: e.pointerId };
-  $('overlay').setPointerCapture(e.pointerId); $('loupe').style.display = 'block'; moveHandle(e);
+  $('overlay').setPointerCapture(e.pointerId);
+  $('loupe').style.display = S.shape === 'square' ? 'block' : 'none';
+  moveHandle(e);
 });
 $('overlay').addEventListener('pointermove', (e) => { if (drag && e.pointerId === drag.id) moveHandle(e); });
 const endDrag = (e) => { if (!drag || e.pointerId !== drag.id) return; drag = null; $('loupe').style.display = 'none'; updateWarp(); };
@@ -1017,7 +1019,7 @@ function moveHandle(e) {
   S.cornerEdits++;                       // a manual edit beats any auto-detect still in flight
   let [x, y] = stageToImage(e);
   x = Math.min(Math.max(x, 0), S.W); y = Math.min(Math.max(y, 0), S.H);
-  S.corners[drag.i] = [x, y]; drawOverlay(); drawLoupe(x, y, e);
+  S.corners[drag.i] = [x, y]; drawOverlay(); if (S.shape === 'square') drawLoupe(x, y, e);
   scheduleWarp(true);
 }
 function drawLoupe(x, y, e) {
@@ -1026,8 +1028,10 @@ function drawLoupe(x, y, e) {
   g.fillStyle = '#000'; g.fillRect(0, 0, 132, 132);
   g.drawImage(S.src, x - n / 2, y - n / 2, n, n, 0, 0, 132, 132);
   g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(66, 0); g.lineTo(66, 132); g.moveTo(0, 66); g.lineTo(132, 66); g.stroke();
-  const r = $('cornerStage').getBoundingClientRect();   // keep loupe away from the finger
-  L.style.left = (e.clientX - r.left < r.width / 2 ? r.width - 142 : 10) + 'px';
+  const r = $('cornerStage').getBoundingClientRect();   // keep loupe away from the finger / cursor
+  const px = e.clientX - r.left, py = e.clientY - r.top, gap = 10, diameter = 132;
+  L.style.left = (px < r.width / 2 ? Math.max(gap, r.width - diameter - gap) : gap) + 'px';
+  L.style.top = (py < r.height / 2 ? Math.min(r.height - diameter - gap, py + 18) : Math.max(gap, py - diameter - 18)) + 'px';
 }
 window.addEventListener('resize', () => drawOverlay());
 
