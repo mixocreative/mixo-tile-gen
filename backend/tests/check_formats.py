@@ -14,6 +14,7 @@ import tile_processor as tp
 
 D = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "real_tiles", "originals")
 name = sys.argv[1] if len(sys.argv) > 1 else "IMG_9255"
+shape = os.environ.get("TILE_SHAPE", "square")
 c = json.load(open(os.path.join(D, "..", "corners.json"), encoding="utf-8"))[name]   # corners in photo pixels
 img = open(os.path.join(D, name + ".jpg"), "rb").read()
 rgb0, scale = tp.decode_image(img)
@@ -28,7 +29,7 @@ def closed(f):
 ok = True
 for fmt in ("stl", "obj", "objtex"):
     t = time.time()
-    data, stats = tp.process_tile(img, corners, None, tp.TileConfig(output_format=fmt))
+    data, stats = tp.process_tile(img, corners, None, tp.TileConfig(output_format=fmt, tile_shape=shape))
     z = zipfile.ZipFile(io.BytesIO(data)) if fmt != "stl" else None
     names = z.namelist() if z else ["mixotile.stl"]
     line = f"{fmt:7s} {len(data) / 1e6:6.1f} MB  {time.time() - t:5.1f} s  files={names[:3]}{'…' if len(names) > 3 else ''}"
@@ -85,7 +86,7 @@ for fmt in ("stl", "obj", "objtex"):
     print(line, flush=True)
 # plain 3MF: one model object retains a base material for every displayed glaze colour
 t = time.time()
-data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="3mf"))
+data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="3mf", tile_shape=shape))
 z = zipfile.ZipFile(io.BytesIO(data)); plain = z.read("3D/3dmodel.model").decode()
 plain_bases = re.findall(r'<base name="[^"]+" displaycolor="#[0-9A-F]{8}"/>', plain)
 plain_p1 = np.array(re.findall(r'<triangle [^>]* p1="(\d+)"', plain), int)
@@ -96,7 +97,7 @@ ok &= plain_one_model and len(plain_bases) > 1 and len(plain_p1) > 0 and plain_p
 # textured 3MF: per-corner tex2coord must be the vertex's top-down position; the slicer part
 # table (extruders) must still be there, so it prints in glaze colours
 t = time.time()
-data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="3mftex"))
+data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="3mftex", tile_shape=shape))
 z = zipfile.ZipFile(io.BytesIO(data)); x = z.read("3D/3dmodel.model").decode()
 v = np.array(re.findall(r'<vertex x="([^"]+)" y="([^"]+)" z="([^"]+)"', x), float)
 uv = np.array(re.findall(r'<m:tex2coord u="([^"]+)" v="([^"]+)"', x), float)
@@ -120,7 +121,7 @@ def glb_json(data):
     return json.loads(data[20:20 + n])
 
 t = time.time()
-data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="glbtex"))
+data, _ = tp.process_tile(img, corners, None, tp.TileConfig(output_format="glbtex", tile_shape=shape))
 doc = glb_json(data); prim = doc["meshes"][0]["primitives"]
 tex_prim = [p for p in prim if "TEXCOORD_0" in p["attributes"] and p["material"] == 0]
 under_prim = [p for p in prim if p["material"] == 1]
@@ -129,7 +130,7 @@ ok &= len(doc["nodes"]) == len(doc["meshes"]) == 1 and len(tex_prim) > 0 and len
 
 # bundle: every format from one run, one zip
 t = time.time()
-data, st = tp.process_tile(img, corners, None, tp.TileConfig(output_format="bundle"))
+data, st = tp.process_tile(img, corners, None, tp.TileConfig(output_format="bundle", tile_shape=shape))
 names = zipfile.ZipFile(io.BytesIO(data)).namelist()
 want = [".3mf", ".textured.3mf", ".glb", ".textured.glb", "_obj/model.obj", "_obj_textured/texture.jpg", ".stl"]
 miss = [w for w in want if not any(w in n for n in names)]

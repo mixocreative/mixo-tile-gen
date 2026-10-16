@@ -52,6 +52,7 @@ BODY_WORKERS = int(os.environ.get("MIXOTILE_BODY_WORKERS", 1))     # measured: 2
 # --------------------------------------------------------------------------- config
 @dataclass
 class TileConfig:
+    tile_shape: str = "square"          # "square" | "circle"; circle is an inscribed disk after rectification
     tile_size_mm: float = 150.0
     pad_thickness_mm: float = 15.0   # solid ceramic-like base slab (owner default); relief sits on top
     relief_height_mm: float = 3.0    # edge depth: how far each colour rolls down from its top to the seam
@@ -107,6 +108,8 @@ class TileConfig:
         rng("outline_height_mm", 0, 3)
         rng("clearance_mm", 0, 2)
         rng("outline_width_mm", 0.4, 4)
+        if self.tile_shape not in ("square", "circle"):
+            raise ValueError("tile_shape must be square or circle")
         if self.symmetry not in ("auto", "off", "c4", "d4"):
             raise ValueError("symmetry must be auto, off, c4 or d4")
         if self.output_format not in EXPORT_FORMATS:
@@ -187,7 +190,7 @@ def _lab_to_rgb(lab: np.ndarray) -> np.ndarray:
     return np.clip(np.round(rgb * 255), 0, 255).astype(np.uint8)
 
 
-def quantize(rgb: np.ndarray, swatches: list | None, k: int) -> tuple[np.ndarray, np.ndarray]:
+def quantize(rgb: np.ndarray, swatches: list | None, k: int, valid_mask: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Map every pixel to the nearest palette colour (CIE76 ΔE in Lab).
 
     Returns (labels HxW int32, palette Nx3 uint8). Palette = user swatches, or k-means centres.
@@ -195,6 +198,9 @@ def quantize(rgb: np.ndarray, swatches: list | None, k: int) -> tuple[np.ndarray
     # edge-preserving denoise: kills photo grain / glaze crazing / soft shading without blurring motif edges
     smooth = cv2.bilateralFilter(rgb, 9, 45, 9)
     lab = _rgb_to_lab(smooth).reshape(-1, 3)
+    sample_lab = lab if valid_mask is None else lab[valid_mask.ravel()]
+    if not len(sample_lab):
+        raise ValueError("selected tile area is too small")
 
     if swatches:
         pal = np.asarray(swatches, np.float64).reshape(-1, 3)
@@ -206,7 +212,7 @@ def quantize(rgb: np.ndarray, swatches: list | None, k: int) -> tuple[np.ndarray
         pal_lab = _rgb_to_lab(pal[None])[0]
     else:
         rs = np.random.default_rng(0)
-        sample = lab[rs.choice(len(lab), size=min(len(lab), 40000), replace=False)]
+        sample = sample_lab[rs.choice(len(sample_lab), size=min(len(sample_lab), 40000), replace=False)]
         km = KMeans(n_clusters=k, n_init=4, random_state=0).fit(sample)
         pal_lab = km.cluster_centers_.astype(np.float32)
         pal = _lab_to_rgb(pal_lab)
@@ -217,7 +223,8 @@ def quantize(rgb: np.ndarray, swatches: list | None, k: int) -> tuple[np.ndarray
 
 
 def merge_shading_bands(labels: np.ndarray, palette: np.ndarray, delta_e: float = 12.0,
-                        shared: float = 0.15, max_colors: int | None = None) -> tuple[np.ndarray, np.ndarray, int]:
+                        shared: float = 0.15, max_colors: int | None = None,
+                        valid_mask: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, int]:
     """k-means splits one shaded glaze (photo light, painted shading) into 2–3 bands, which would
     become fake grooves and extra bodies. Merge two colours when they are close (ΔE76 < delta_e)
     AND their regions share > `shared` of either one's outline. Distinct glazes that merely look
@@ -227,14 +234,15 @@ def merge_shading_bands(labels: np.ndarray, palette: np.ndarray, delta_e: float 
     if delta_e <= 0 and not max_colors:
         return labels, palette, 0
     k3 = np.ones((3, 3), np.uint8)
+    valid_mask = np.ones(labels.shape, bool) if valid_mask is None else valid_mask
     merges = 0
     while True:
         n = len(palette)
         lab = _rgb_to_lab(palette[None])[0]
-        cover = np.bincount(labels.ravel(), minlength=n).astype(np.float64)
-        masks = [(labels == i).astype(np.uint8) for i in range(n)]
+        cover = np.bincount(labels[valid_mask], minlength=n).astype(np.float64)
+        masks = [((labels == i) & valid_mask).astype(np.uint8) for i in range(n)]
         perim = [max(1, cv2.countNonZero(cv2.morphologyEx(m, cv2.MORPH_GRADIENT, k3))) for m in masks]
-        grown = [cv2.dilate(m, k3) for m in masks]
+        grown = [cv2.dilate(m, k3) & valid_mask.astype(np.uint8) for m in masks]
         best = None
         for i in range(n):
             for j in range(i + 1, n):
@@ -285,7 +293,8 @@ def remove_glare(rgb: np.ndarray, mm_per_px: float, max_frac: float = 0.03, min_
 
 
 def quantize_auto(rgb: np.ndarray, k_max: int = 12, k_cap: int = 8, l_weight: float = 0.5,
-                  min_de: float = 14.0, shade_de: float = 12.0, k_min: int = 3):
+                  min_de: float = 14.0, shade_de: float = 12.0, k_min: int = 3,
+                  valid_mask: np.ndarray | None = None):
     """Auto colour count (Fable photo report, #3). Over-segment with k_max clusters in Lab with L
     down-weighted (hue/chroma dominate, so light/shadow on one glaze doesn't split it), merge
     touching shading bands (ΔE < shade_de), then keep merging the closest pair while it is closer
@@ -295,17 +304,20 @@ def quantize_auto(rgb: np.ndarray, k_max: int = 12, k_cap: int = 8, l_weight: fl
     w = np.array([l_weight, 1.0, 1.0], np.float32)
     feat = (lab * w).reshape(-1, 3)
     rs = np.random.default_rng(0)
-    sample = feat[rs.choice(len(feat), size=min(len(feat), 30000), replace=False)]
+    pool = feat if valid_mask is None else feat[valid_mask.ravel()]
+    if not len(pool):
+        raise ValueError("selected tile area is too small")
+    sample = pool[rs.choice(len(pool), size=min(len(pool), 30000), replace=False)]
     cen = KMeans(n_clusters=k_max, n_init=3, random_state=0).fit(sample).cluster_centers_
     labels = ((feat[:, None, :] - cen[None]) ** 2).sum(-1).argmin(1).astype(np.int32).reshape(rgb.shape[:2])
     pal = _lab_to_rgb((cen / w).astype(np.float32))
-    labels, pal, merged = merge_shading_bands(labels, pal, shade_de)
+    labels, pal, merged = merge_shading_bands(labels, pal, shade_de, valid_mask=valid_mask)
     while len(pal) > k_min:
         li = _rgb_to_lab(pal[None])[0] * w
         closest = min(np.linalg.norm(li[i] - li[j]) for i in range(len(pal)) for j in range(i + 1, len(pal)))
         if closest >= min_de and len(pal) <= k_cap:
             break
-        labels, pal, m = merge_shading_bands(labels, pal, 0.0, max_colors=len(pal) - 1)
+        labels, pal, m = merge_shading_bands(labels, pal, 0.0, max_colors=len(pal) - 1, valid_mask=valid_mask)
         merged += m
     return labels, pal, merged
 
@@ -430,7 +442,8 @@ def _prune_skeleton(sk: np.ndarray, n: int) -> np.ndarray:
 
 def detect_outlines(rgb: np.ndarray, mm_per_px: float, max_width_mm: float = 2.0, hi: float = 10.0,
                     lo: float = 5.0, min_len_mm: float = 4.0, min_width_mm: float = 0.4,
-                    texture_density: float = 0.05, short_len_mm: float = 8.0, short_hi: float = 14.0):
+                    texture_density: float = 0.05, short_len_mm: float = 8.0, short_hi: float = 14.0,
+                    valid_mask: np.ndarray | None = None):
     """Tube-lining / contour lines, independent of colour clustering (Fable, verified on 16 photos).
 
     Primitive: morphological top-hat (light lines) and black-hat (dark lines) of L with a disc wider
@@ -457,6 +470,8 @@ def detect_outlines(rgb: np.ndarray, mm_per_px: float, max_width_mm: float = 2.0
     from skimage.morphology import skeletonize
 
     H, W = rgb.shape[:2]
+    valid_mask = np.ones((H, W), bool) if valid_mask is None else valid_mask
+    valid_up = cv2.resize(valid_mask.astype(np.uint8), (W * up, H * up), interpolation=cv2.INTER_NEAREST).astype(bool)
     skel_all = np.zeros((H * up, W * up), bool)
     comps = []
     for resp in (L - cv2.morphologyEx(L, cv2.MORPH_OPEN, disc), cv2.morphologyEx(L, cv2.MORPH_CLOSE, disc) - L):
@@ -464,6 +479,7 @@ def detect_outlines(rgb: np.ndarray, mm_per_px: float, max_width_mm: float = 2.0
         m = apply_hysteresis_threshold(resp, lo, hi).astype(np.uint8)
         m = cv2.morphologyEx(m, cv2.MORPH_OPEN, k_open)
         m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, k_close)
+        m &= valid_up.astype(np.uint8)
         sk = _prune_skeleton(skeletonize(m.astype(bool)), int(round(0.5 / px)))
         density = cv2.blur(sk.astype(np.float32), (box, box))
         n, cc, st, _ = cv2.connectedComponentsWithStats(sk, connectivity=8)
@@ -486,8 +502,8 @@ def detect_outlines(rgb: np.ndarray, mm_per_px: float, max_width_mm: float = 2.0
         for j in np.unique(mc[sk_keep]):
             if j == 0:
                 continue
-            full = cv2.resize((mc == j).astype(np.uint8), (W, H), interpolation=cv2.INTER_AREA) > 0.4
-            centre = cv2.resize((sk_keep & (mc == j)).astype(np.uint8), (W, H), interpolation=cv2.INTER_AREA) > 0.2
+            full = (cv2.resize((mc == j).astype(np.uint8), (W, H), interpolation=cv2.INTER_AREA) > 0.4) & valid_mask
+            centre = (cv2.resize((sk_keep & (mc == j)).astype(np.uint8), (W, H), interpolation=cv2.INTER_AREA) > 0.2) & valid_mask
             if centre.any():
                 comps.append((full, centre))
     dist = cv2.distanceTransform((~skel_all).astype(np.uint8), cv2.DIST_L2, cv2.DIST_MASK_PRECISE) * px
@@ -587,6 +603,42 @@ def _rounded_square_sdf(x: np.ndarray, y: np.ndarray, size: float, rc: float) ->
     h = size / 2
     qx, qy = np.abs(x - h) - (h - rc), np.abs(y - h) - (h - rc)
     return np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - rc
+
+
+def _tile_sdf(x: np.ndarray, y: np.ndarray, size: float, corner_r: float, shape: str) -> np.ndarray:
+    """Signed distance to the finished plan-view tile: negative inside."""
+    if shape == "circle":
+        h = size / 2
+        return np.hypot(x - h, y - h) - h
+    return _rounded_square_sdf(x, y, size, corner_r)
+
+
+def circle_mask(shape: tuple[int, int]) -> np.ndarray:
+    """Pixel-centre mask of the inscribed circular tile after perspective flattening."""
+    h, w = shape
+    yy, xx = np.ogrid[:h, :w]
+    cx, cy = (w - 1) / 2, (h - 1) / 2
+    r = min(w, h) / 2
+    return (xx - cx) ** 2 + (yy - cy) ** 2 <= r ** 2
+
+
+def extend_labels_to_mask(labels: np.ndarray, valid_mask: np.ndarray) -> np.ndarray:
+    """Copy the nearest valid label just beyond a masked rim.
+
+    Colour/seam operators expect a rectangular raster.  For a round tile, extending the nearest
+    in-circle label through the discarded corners gives the rim a zero-normal-gradient boundary:
+    no photo pixel outside the target can introduce a false seam or alter its edge roll-off.
+    """
+    if valid_mask.all():
+        return labels
+    outside = (~valid_mask).astype(np.uint8)
+    _, nearest = cv2.distanceTransformWithLabels(outside, cv2.DIST_L2, 5,
+                                                  labelType=cv2.DIST_LABEL_PIXEL)
+    lut = np.zeros(int(nearest.max()) + 1, np.int32)
+    lut[nearest[valid_mask]] = labels[valid_mask]
+    out = labels.copy()
+    out[~valid_mask] = lut[nearest[~valid_mask]]
+    return out
 
 
 # --------------------------------------------------------------------------- bodies
@@ -720,7 +772,8 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
                       bead_h: float = 0.0, bead_r: float = 0.8, edge_is_seam: bool = False,
                       edge_band_w: float = 4.0, edge_drop: float = 0.35,
                       ridge_dist: np.ndarray | None = None, line_h: float = 0.0, line_w: float = 1.2,
-                      return_top: bool = False, clearance: float = 0.0, coef_out: list | None = None):
+                      return_top: bool = False, clearance: float = 0.0, coef_out: list | None = None,
+                      tile_shape: str = "square"):
     """Closed mesh for one colour, "extrude everything to the shared top, then carve the edges down
     into the seams" (profile designed + verified with Fable):
 
@@ -753,14 +806,15 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
     # cell centres in model mm (image rows run down, model Y runs up)
     xs = (np.arange(c0, c1) - margin + 0.5) * h
     ys_img = (np.arange(r0, r1) - margin + 0.5) * h
-    d_tile = _rounded_square_sdf(xs[None, :], ys_img[:, None], size, corner_r)
+    d_tile = _tile_sdf(xs[None, :], ys_img[:, None], size, corner_r, tile_shape)
     lateral = np.maximum(d_own + 0.5 * clearance, d_tile)
 
     if edge_is_seam:                       # tile edge treated like a colour seam (groove all round)
         inside = (d_own < 0) & (d_tile < 0)
         d_fine = np.maximum(np.minimum(-d_own, -d_tile), 0).astype(np.float32)
     else:                                  # tile edge is an edge: fields run level to it, soft roll-off
-        inside = d_own < 0
+        # The circular rim is always a real domain boundary, even when the rim is not a colour seam.
+        inside = (d_own < 0) & (d_tile < 0)
         d_fine = np.maximum(-d_own, 0).astype(np.float32)
     pin = 1 - (1 - np.clip(d_fine / shoulder, 0, 1)) ** 2          # exact groove floor at each seam
 
@@ -832,18 +886,22 @@ def cushion_body_mesh(phi_full: np.ndarray, size: float, z0: float, floor: float
 
 
 @functools.lru_cache(maxsize=16)
-def pad_mesh(size: float, thickness: float, corner_r: float, seg: int = 24):
+def pad_mesh(size: float, thickness: float, corner_r: float, seg: int = 24, tile_shape: str = "square"):
     """Backing pad: a rounded-corner square slab (corners = quarter circles, `seg` segments each),
     built directly as a closed, outward-oriented triangle mesh. The outline is convex, so top and
     bottom are triangle fans around the centre."""
     r = min(max(corner_r, 0.0), size / 2)
     pts = []
-    for cx, cy, a0 in ((size - r, r, -90), (size - r, size - r, 0), (r, size - r, 90), (r, r, 180)):
-        if r <= 0:
-            pts.append((cx, cy)); continue
-        for k in range(seg + 1):
-            a = np.radians(a0 + 90 * k / seg)
-            pts.append((cx + r * np.cos(a), cy + r * np.sin(a)))
+    if tile_shape == "circle":
+        a = np.linspace(0, 2 * np.pi, max(64, seg * 4), endpoint=False)
+        pts = list(zip(size / 2 + size / 2 * np.cos(a), size / 2 + size / 2 * np.sin(a)))
+    else:
+        for cx, cy, a0 in ((size - r, r, -90), (size - r, size - r, 0), (r, size - r, 90), (r, r, 180)):
+            if r <= 0:
+                pts.append((cx, cy)); continue
+            for k in range(seg + 1):
+                a = np.radians(a0 + 90 * k / seg)
+                pts.append((cx + r * np.cos(a), cy + r * np.sin(a)))
     ring = np.array(pts, np.float64)
     ring = ring[np.r_[True, np.linalg.norm(np.diff(ring, axis=0), axis=1) > 1e-9]]   # drop duplicates
     m = len(ring)
@@ -858,7 +916,7 @@ def pad_mesh(size: float, thickness: float, corner_r: float, seg: int = 24):
 
 
 def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge_dist: np.ndarray | None = None,
-                 progress=None, want_heights: bool = False):
+                 progress=None, want_heights: bool = False, valid_mask: np.ndarray | None = None):
     """Return (list of (name, rgb, vertices, faces)), stats dict. ridge_dist = detect_outlines()[0].
 
     All colours are equal: each is one cushion body on the pad. Colours are listed by
@@ -866,7 +924,8 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
     filament it would share anyway — not an assumption that it is a "background"."""
     size, pad = cfg.tile_size_mm, cfg.pad_thickness_mm
     mm_per_px = size / labels.shape[0]
-    coverage = np.bincount(labels.ravel(), minlength=len(palette)) / labels.size
+    valid_mask = np.ones(labels.shape, bool) if valid_mask is None else valid_mask
+    coverage = np.bincount(labels[valid_mask], minlength=len(palette)) / max(1, valid_mask.sum())
     order = np.argsort(-coverage, kind="stable")
 
     n_fine = int(round(size / cfg.mesh_resolution_mm))
@@ -889,13 +948,13 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
         band[sel] = np.clip(0.6 * half[cc[sel]], lo_band, shoulder)
 
     parts = []
-    pv, pf = pad_mesh(size, pad, cfg.corner_radius_mm)
+    pv, pf = pad_mesh(size, pad, cfg.corner_radius_mm, tile_shape=cfg.tile_shape)
     parts.append(("backing_pad", palette[order[0]], pv, pf))
 
     coefs: list = []                       # per-body height coefficients (live preview sliders)
 
     def one_body(ci):
-        own = (labels == ci).astype(np.uint8)
+        own = ((labels == ci) & valid_mask).astype(np.uint8)
         if not own.any():
             return None
         res = cushion_body_mesh(phis[int(ci)], size, pad, cfg.groove_floor_mm,
@@ -905,7 +964,8 @@ def build_relief(labels: np.ndarray, palette: np.ndarray, cfg: TileConfig, ridge
                                 edge_is_seam=cfg.edge_is_seam,
                                 edge_band_w=min(4.0, 0.027 * size), edge_drop=0.35,
                                 ridge_dist=ridge_dist, line_h=cfg.outline_height_mm, line_w=cfg.outline_width_mm,
-                                clearance=cfg.clearance_mm, coef_out=coefs if want_heights else None)
+                                clearance=cfg.clearance_mm, coef_out=coefs if want_heights else None,
+                                tile_shape=cfg.tile_shape)
         if res is not None:
             v, f = res
             # budget scales with how much outline the colour has (shoulders need triangles, plateaus don't)
@@ -1404,6 +1464,7 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     n_px = int(round(cfg.tile_size_mm * cfg.px_per_mm))
     flat = warp_tile(rgb, corners, n_px, corners_scale, inset=0.015)
     flat, sym = symmetrise(flat, cfg.symmetry)
+    valid_mask = circle_mask(flat.shape[:2]) if cfg.tile_shape == "circle" else np.ones(flat.shape[:2], bool)
     # photo texture = the same warp as the geometry (inset, symmetry), projected top-down:
     # 2048 px for the textured OBJ, 1024 px for the browser preview's "Photo" view
     texture = preview_tex = None
@@ -1424,9 +1485,11 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
         flat, glare_px = remove_glare(flat, mm_per_px)
     merged = 0
     if swatches:                         # user-picked swatches are intentional: map to them, never merge
-        labels, palette = quantize(flat, swatches, cfg.num_colors)
+        labels, palette = quantize(flat, swatches, cfg.num_colors, valid_mask=valid_mask)
     else:                                # auto colour count, capped at num_colors
-        labels, palette, merged = quantize_auto(flat, k_cap=cfg.num_colors, shade_de=cfg.merge_delta_e or 12.0)
+        labels, palette, merged = quantize_auto(flat, k_cap=cfg.num_colors, shade_de=cfg.merge_delta_e or 12.0,
+                                                valid_mask=valid_mask)
+    labels = extend_labels_to_mask(labels, valid_mask)
     n = len(palette)
     # paint = optional replacement colour per swatch (None = keep). Areas are decided with the picked
     # colours; the replacement only recolours that area (applied after every area decision below).
@@ -1436,21 +1499,25 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
             raise ValueError("paint must have one entry per swatch")
         paint_arr = [None if c is None else np.asarray(c, np.uint8) for c in paint]
     labels = majority_filter(labels, n, int(round(cfg.smoothing_mm / mm_per_px)))
+    labels = extend_labels_to_mask(labels, valid_mask)
     labels = remove_specks(labels, n, int(cfg.min_feature_mm2 / mm_per_px ** 2),
                            keep_len_px=4.0 / mm_per_px,           # ≥ 4 mm long = outline stroke, keep
                            palette=palette, keep_de=25.0, keep_min_px=int(1.0 / mm_per_px ** 2))
+    labels = extend_labels_to_mask(labels, valid_mask)
     labels, glare_islands = absorb_glare_islands(labels, palette, mm_per_px)   # highlight holes on glossy glaze
+    labels = extend_labels_to_mask(labels, valid_mask)
     report(0.10, "Tracing raised outlines")
 
     # tube-lining outlines, found on the photo itself (not on the colour clusters): high-contrast ones
     # snap to an existing glaze colour, all of them become a raised ridge in the geometry
     ridge_dist, snapped = None, 0
     if cfg.outline_height_mm > 0:
-        ridge_dist, comps = detect_outlines(flat, mm_per_px)
+        ridge_dist, comps = detect_outlines(flat, mm_per_px, valid_mask=valid_mask)
         labels, snapped = snap_outline_colours(labels, palette, flat, comps)
+        labels = extend_labels_to_mask(labels, valid_mask)
 
     # drop palette entries nobody uses
-    used = np.unique(labels)
+    used = np.unique(labels[valid_mask])
     if len(used) < n:
         remap = np.full(n, -1, np.int32)
         remap[used] = np.arange(len(used))
@@ -1465,13 +1532,14 @@ def process_tile(image_bytes: bytes, corners, swatches, cfg: TileConfig, progres
     t1 = time.monotonic()
 
     report(0.14, "Shaping the relief")
-    n_bodies = len(np.unique(labels))
+    n_bodies = len(np.unique(labels[valid_mask]))
     done = [0]
     def body_done(_):
         done[0] += 1
         report(0.22 + 0.66 * done[0] / max(n_bodies, 1), f"Carving colour {done[0]} of {n_bodies}")
     parts, stats = build_relief(labels, palette, cfg, ridge_dist, progress=body_done,
-                                want_heights=on_parts is not None or cfg.output_format == "mesh")
+                                want_heights=on_parts is not None or cfg.output_format == "mesh",
+                                valid_mask=valid_mask)
     if on_parts:                         # e.g. stream a light preview mesh before the slow file export
         on_parts(parts, stats, preview_tex)
     heights = stats.pop("_heights", None)  # big rasters: only the preview / mesh export need them

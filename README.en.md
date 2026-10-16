@@ -38,7 +38,7 @@ Turn a phone photo of a traditional Taiwanese majolica tile (花磚) into a wate
 1. **Capture.** On a phone: one **Take or choose photo** button (camera, photo library or files). On a computer: **Upload**, **drag and drop** the photo onto the page, or **paste** it (Ctrl+V). No photo handy? **Try a sample** loads one of the real tiles. A big photo shows **Loading photo…** for a moment and is shrunk before it goes to the engine, so it's quick. The photo is never stored.
 2. **Outline.** On-device AI (Google MediaPipe) *suggests* the tile's four corners. You always check them.
    - Drag the corner handles to fine-tune; a magnifier appears while you drag. A manual edit always wins over the AI.
-   - Or switch to **Square crop**.
+   - Choose **Square** or **Round**, independently from **Simple** or **Perspective** alignment. Simple uses a straight-on bounding crop. Perspective keeps four virtual bounding-square corners and rectifies an angled tile before making the round mask; for a round tile it also shows the projected circle, centre and diameter guides.
    - If the AI can't load (old phone, blocked network, offline), the app says **AI off · manual** and you simply drag the 4 corners yourself; everything else works the same. The 3D engine itself uses no AI.
 3. **Colours.** Choose how the tile looks with the two big buttons: **Glaze colours** (each part one flat colour, what a multi-colour printer prints) or **Photo skin** (your real photo on the relief, for viewing and renders; printers still print the glaze colours). The picture follows the mode.
    - Suggested colours appear automatically. Use **− / +** to set how many colours; the app splits the tile into that many.

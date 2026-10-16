@@ -126,6 +126,10 @@
   .cropper-view-box { outline: 2px solid #fff; outline-color: rgba(255,255,255,.95); }
   .cropper-point { background-color: #fff; width: 9px; height: 9px; opacity: 1; }
   .cropper-line { background-color: #fff; }
+  #circleCropGuide { position:absolute; pointer-events:none; border:2px solid rgba(255,255,255,.96); border-radius:50%; box-shadow:0 0 0 9999px rgba(20,18,15,.18); }
+  #circleCropGuide::before, #circleCropGuide::after { content:""; position:absolute; background:rgba(255,255,255,.88); box-shadow:0 0 0 1px rgba(28,26,23,.22); }
+  #circleCropGuide::before { left:0; right:0; top:50%; height:1px; }
+  #circleCropGuide::after { top:0; bottom:0; left:50%; width:1px; }
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
   details[open] .chev { transform: rotate(90deg); }
@@ -317,13 +321,20 @@
           <svg id="overlay" preserveAspectRatio="none" aria-label="Drag the four corner handles onto the tile corners" data-i18n-aria="s2.overlay"></svg>
           <canvas id="loupe" width="132" height="132"></canvas>
         </div>
-        <div id="cropStage" class="hidden rounded-lg overflow-hidden bg-[#2a2723]" style="max-height:70vh">
+        <div id="cropStage" class="hidden relative rounded-lg overflow-hidden bg-[#2a2723]" style="max-height:70vh">
           <img id="cropImg" alt="Tile photo for square cropping" data-i18n-alt="s2.cropAlt" class="block max-w-full">
+          <div id="circleCropGuide" class="hidden" aria-hidden="true"></div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
-          <div class="seg" role="group" aria-label="Outline mode" data-i18n-aria="s2.modeAria">
-            <button id="modeCorners" aria-pressed="true" data-i18n="s2.corners">4-corner</button>
-            <button id="modeCrop" aria-pressed="false" data-i18n="s2.crop">Square crop</button>
+          <div class="flex flex-wrap gap-2">
+          <div class="seg" role="group" aria-label="Tile shape" data-i18n-aria="s2.shapeAria">
+            <button id="shapeSquare" aria-pressed="true" data-i18n="s2.square">Square</button>
+            <button id="shapeRound" aria-pressed="false" data-i18n="s2.round">Round</button>
+          </div>
+          <div class="seg" role="group" aria-label="Alignment mode" data-i18n-aria="s2.alignAria">
+            <button id="alignSimple" aria-pressed="false" data-i18n="s2.simple">Simple</button>
+            <button id="alignPerspective" aria-pressed="true" data-i18n="s2.perspective">Perspective</button>
+          </div>
           </div>
           <div class="flex items-center gap-3" id="cornerTools">
             <button id="tapDetectBtn" class="btn-text btn" data-i18n="s2.tap">Tap to detect</button>
@@ -561,7 +572,9 @@ const D = {
     's1.hint': 'Even light, no glare. Angled shots are fine.', 's1.drop': ' Or drop / paste (Ctrl+V) an image here.', 's1.sample': 'Try a sample',
     's2.h': '02 Outline', 's2.meta': 'Flatten to 1:1', 's2.overlay': 'Drag the four corner handles onto the tile corners', 's2.cropAlt': 'Tile photo for square cropping',
     's2.modeAria': 'Outline mode', 's2.corners': '4-corner', 's2.crop': 'Square crop', 's2.tap': 'Tap to detect', 's2.again': 'Detect again', 's2.reset': 'Reset',
+    's2.shapeAria': 'Tile shape', 's2.square': 'Square', 's2.round': 'Round', 's2.alignAria': 'Alignment mode', 's2.simple': 'Simple', 's2.perspective': 'Perspective',
     's2.rect': 'Rectified 1:1', 'o.hintCorners': 'Drag the handles onto the four glazed corners.', 'o.hintCrop': 'Square crop: move / resize the box around the tile. Best for straight-on photos.',
+    'o.hintRoundPerspective': 'Place the virtual square on the round tile. The circle, centre and diameters show the round result.', 'o.hintRoundSimple': 'Move or resize the bounding box; the white circle marks the round tile and its centre.',
     'corner.TL': 'Top-left corner', 'corner.TR': 'Top-right corner', 'corner.BR': 'Bottom-right corner', 'corner.BL': 'Bottom-left corner',
     'a.sample': 'Sample photo: corners already placed on the glaze. Drag them to adjust.', 'a.unavailable': 'AI unavailable — drag corners manually.', 'a.tap': 'Tap anywhere on the tile…',
     'a.loadingMP': 'Loading on-device AI (MediaPipe)…', 'a.ready': 'On-device AI ready.', 'a.off': 'AI off: manual mode. Drag the 4 corners onto the tile (or use Square crop).',
@@ -637,7 +650,9 @@ const D = {
     's1.hint': '光線均勻、避免反光；斜拍也沒問題。', 's1.drop': '也可以直接拖放或貼上（Ctrl+V）圖片。', 's1.sample': '試用範例',
     's2.h': '02 輪廓', 's2.meta': '校正成 1:1', 's2.overlay': '把四個角的控制點拖到磚的四個角上', 's2.cropAlt': '用於方形裁切的花磚照片',
     's2.modeAria': '輪廓模式', 's2.corners': '四角點', 's2.crop': '方形裁切', 's2.tap': '點選偵測', 's2.again': '重新偵測', 's2.reset': '重設',
+    's2.shapeAria': '磚形', 's2.square': '方形', 's2.round': '圓形', 's2.alignAria': '校正方式', 's2.simple': '直接裁切', 's2.perspective': '透視校正',
     's2.rect': '校正後 1:1', 'o.hintCorners': '把控制點拖到釉面的四個角上。', 'o.hintCrop': '方形裁切：移動並調整方框，框住整塊花磚。適合正面拍攝的照片。',
+    'o.hintRoundPerspective': '把虛擬方框對準圓磚；圓線、中心與直徑線會顯示最後的圓形結果。', 'o.hintRoundSimple': '移動或調整外框；白色圓線標示圓磚與中心。',
     'corner.TL': '左上角', 'corner.TR': '右上角', 'corner.BR': '右下角', 'corner.BL': '左下角',
     'a.sample': '範例照片：四個角已對齊釉面，可拖曳微調。', 'a.unavailable': 'AI 無法使用，請手動拖曳四個角。', 'a.tap': '請點一下花磚上的任意位置…',
     'a.loadingMP': '正在載入裝置端 AI（MediaPipe）…', 'a.ready': '裝置端 AI 已就緒。', 'a.off': 'AI 未啟用，改用手動模式：請把四個角拖到磚上（或使用方形裁切）。',
@@ -749,7 +764,7 @@ const COLMODE_KEY = 'mixotile.colMode';
 const loadColMode = () => { try { return localStorage.getItem(COLMODE_KEY) === 'photo' ? 'photo' : 'glaze'; } catch { return 'glaze'; } };
 const S = {
   src: null, srcData: null, W: 0, H: 0, blob: null,
-  corners: null, mode: 'corners', cropper: null,
+  corners: null, shape: 'square', alignment: 'perspective', cropper: null,
   flat: null, view: 'photo', swatches: [],
   segmenter: null, aiState: 'loading', tapMode: false,
   model: null, stats: null, abort: null, lastPayloadKey: null, cornerEdits: 0, cropReady: false,
@@ -829,7 +844,7 @@ async function loadFileInner(file, { detect = true } = {}) {
   S.corners = defaultCorners();
   if (S.cropper) { S.cropper.destroy(); S.cropper = null; S.cropReady = false; }
   $('cropImg').src = c.toDataURL('image/jpeg', 0.9);
-  setMode('corners');
+  setAlignment(S.alignment);
   drawOverlay(); updateWarp();
   $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   S.cornerEdits = 0;                     // fresh photo: no manual edits yet
@@ -932,6 +947,25 @@ function drawOverlay() {
   poly.setAttribute('points', S.corners.map((p) => p.join(',')).join(' '));
   poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#ffffff'); poly.setAttribute('stroke-width', sw);
   svg.appendChild(poly);
+  if (S.shape === 'circle') {
+    // A photographed circle projects to an ellipse-like conic. Sample the circle through the same
+    // homography as the backend, rather than drawing a misleading screen-space SVG ellipse.
+    const N = 100, hm = homography([[0, 0], [N, 0], [N, N], [0, N]], S.corners);
+    const project = (u, v) => applyH(hm, u, v);
+    const ring = [];
+    for (let i = 0; i <= 72; i++) { const a = 2 * Math.PI * i / 72; ring.push(project(N / 2 + N / 2 * Math.cos(a), N / 2 + N / 2 * Math.sin(a))); }
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', 'M' + ring.map(([x, y]) => `${x},${y}`).join(' L '));
+    p.setAttribute('fill', 'rgba(255,255,255,.05)'); p.setAttribute('stroke', '#ffffff'); p.setAttribute('stroke-width', sw * .85); p.setAttribute('stroke-dasharray', `${sw * 2} ${sw * 1.5}`);
+    svg.appendChild(p);
+    const [cx, cy] = project(N / 2, N / 2);
+    for (const [[x1, y1], [x2, y2]] of [[project(0, N / 2), project(N, N / 2)], [project(N / 2, 0), project(N / 2, N)]]) {
+      const line = document.createElementNS(NS, 'line'); line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#ffffff'); line.setAttribute('stroke-width', sw * .55); line.setAttribute('stroke-dasharray', `${sw * 1.5} ${sw * 1.5}`); line.setAttribute('opacity', '.85'); svg.appendChild(line);
+    }
+    const cross = document.createElementNS(NS, 'path');
+    cross.setAttribute('d', `M${cx-r},${cy}H${cx+r}M${cx},${cy-r}V${cx},${cy+r}`); cross.setAttribute('stroke', '#ffffff'); cross.setAttribute('stroke-width', sw); svg.appendChild(cross);
+  }
   ['TL', 'TR', 'BR', 'BL'].forEach((name, i) => {
     const [x, y] = S.corners[i];
     const g = document.createElementNS(NS, 'g'); g.classList.add('handle'); g.dataset.i = i;
@@ -991,31 +1025,47 @@ $('tapDetectBtn').onclick = () => {
 };
 
 // --------------------------------------------------------------------- 2b. Cropper.js fallback
-function renderOutlineHint() { $('outlineHint').textContent = t(S.mode === 'corners' ? 'o.hintCorners' : 'o.hintCrop'); }
-function setMode(m) {
-  S.mode = m;
-  $('modeCorners').setAttribute('aria-pressed', m === 'corners'); $('modeCrop').setAttribute('aria-pressed', m === 'crop');
-  $('cornerStage').classList.toggle('hidden', m !== 'corners'); $('cornerTools').classList.toggle('hidden', m !== 'corners');
-  $('cropStage').classList.toggle('hidden', m !== 'crop');
+function renderOutlineHint() {
+  if (S.shape === 'circle' && S.alignment === 'perspective') $('outlineHint').textContent = t('o.hintRoundPerspective');
+  else if (S.shape === 'circle') $('outlineHint').textContent = t('o.hintRoundSimple');
+  else $('outlineHint').textContent = t(S.alignment === 'perspective' ? 'o.hintCorners' : 'o.hintCrop');
+}
+function updateCircleCropGuide() {
+  const guide = $('circleCropGuide');
+  guide.classList.toggle('hidden', S.shape !== 'circle' || S.alignment !== 'simple' || !S.cropper);
+  if (S.shape !== 'circle' || S.alignment !== 'simple' || !S.cropper) return;
+  const b = S.cropper.getCropBoxData();
+  guide.style.left = b.left + 'px'; guide.style.top = b.top + 'px'; guide.style.width = b.width + 'px'; guide.style.height = b.height + 'px';
+}
+function setAlignment(alignment) {
+  S.alignment = alignment;
+  $('alignPerspective').setAttribute('aria-pressed', alignment === 'perspective'); $('alignSimple').setAttribute('aria-pressed', alignment === 'simple');
+  $('cornerStage').classList.toggle('hidden', alignment !== 'perspective'); $('cornerTools').classList.toggle('hidden', alignment !== 'perspective');
+  $('cropStage').classList.toggle('hidden', alignment !== 'simple');
   renderOutlineHint();
-  if (m === 'crop' && S.src) {
+  if (alignment === 'simple' && S.src) {
     if (!S.cropper) {
       S.cropper = new Cropper($('cropImg'), {
         aspectRatio: 1, viewMode: 1, autoCropArea: 0.85, rotatable: false, zoomOnWheel: false, background: false,
-        ready: () => { S.cropReady = true; },   // crop events before this are the initial box, not user edits
+        ready: () => { S.cropReady = true; updateCircleCropGuide(); },   // crop events before this are the initial box, not user edits
         crop: () => {
           const d = S.cropper.getData(true);
           if (!d.width) return;
           if (S.cropReady) S.cornerEdits++;
           S.corners = [[d.x, d.y], [d.x + d.width, d.y], [d.x + d.width, d.y + d.height], [d.x, d.y + d.height]];
+          updateCircleCropGuide();
           scheduleWarp(false);
         },
       });
     } else S.cropper.crop();
-  } else if (m === 'corners') { drawOverlay(); updateWarp(); }
+  } else if (alignment === 'perspective') { drawOverlay(); updateWarp(); }
 }
-$('modeCorners').onclick = () => setMode('corners');
-$('modeCrop').onclick = () => setMode('crop');
+$('alignPerspective').onclick = () => setAlignment('perspective');
+$('alignSimple').onclick = () => setAlignment('simple');
+for (const [id, shape] of [['shapeSquare', 'square'], ['shapeRound', 'circle']]) $(id).onclick = () => {
+  S.shape = shape; $('shapeSquare').setAttribute('aria-pressed', shape === 'square'); $('shapeRound').setAttribute('aria-pressed', shape === 'circle');
+  drawOverlay(); updateCircleCropGuide(); renderOutlineHint(); updateWarp();
+};
 
 // --------------------------------------------------------------------- flatten preview
 let warpTimer = null;
@@ -1073,7 +1123,7 @@ async function initSegmenter() {
     S.aiState = 'ready';
     setAiPill('ready');
     setAiStatus('a.ready', 'ok');
-    if (S.src && S.mode === 'corners') autoDetect(undefined, true);
+    if (S.src && S.alignment === 'perspective') autoDetect(undefined, true);
   } catch (e) {
     console.warn('[MixoTile] MediaPipe unavailable, falling back to manual crop:', e);
     S.aiState = 'failed';
@@ -1137,7 +1187,7 @@ async function autoDetect(points, auto = false) {
   if (S.cornerEdits !== gen || (auto && S.cornerEdits > 0)) { setAiStatus('a.kept', 'info'); return; }
   S.corners = orderCorners(best.q.map(([x, y]) => [x * best.sx, y * best.sy]));
   setAiStatus('a.suggest', 'ok');
-  if (S.mode !== 'corners') setMode('corners'); else { drawOverlay(); updateWarp(); }
+  if (S.alignment !== 'perspective') setAlignment('perspective'); else { drawOverlay(); updateWarp(); }
 }
 
 // --------------------------------------------------------------------- 3. eyedropper + palette
@@ -1246,6 +1296,11 @@ function renderFlat() {
     }
     g.putImageData(out, 0, 0);
   } else g.putImageData(S.flat, 0, 0);
+  if (S.shape === 'circle') {
+    g.save(); g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(250,248,245,.82)';
+    g.beginPath(); g.rect(0, 0, FLAT, FLAT); g.arc(FLAT / 2, FLAT / 2, FLAT / 2, 0, 2 * Math.PI, true); g.fill('evenodd');
+    g.strokeStyle = '#1c1a17'; g.lineWidth = 1.5; g.beginPath(); g.arc(FLAT / 2, FLAT / 2, FLAT / 2 - .75, 0, 2 * Math.PI); g.stroke(); g.restore();
+  }
 }
 // two big modes (Glaze colours / Photo skin) + a small Photo | In-your-colours view switch for the flattened tile
 function updateModeButtons() {
@@ -1266,7 +1321,8 @@ $('restoreBtn').onclick = () => { if (!S.flat) return; S.manualPalette = false; 
 // pick from photo: tapping the picture adds that colour as a pinned area (count + 1)
 function pickAt(e) {
   if (!S.flat || S.colMode !== 'glaze') return;
-  const [u, v] = flatCoords(e), c = sampleAt(u, v).map(Math.round), L = srgbToLab(c);
+  const [u, v] = flatCoords(e); if (S.shape === 'circle' && (u - FLAT / 2) ** 2 + (v - FLAT / 2) ** 2 > (FLAT / 2) ** 2) return;
+  const c = sampleAt(u, v).map(Math.round), L = srgbToLab(c);
   syncPaint();
   const dup = S.swatches.findIndex((q) => { const l = srgbToLab(q); return Math.hypot(l[0] - L[0], l[1] - L[1], l[2] - L[2]) < 6; });
   if (dup >= 0) { flashSwatch(dup); return; }
@@ -1589,6 +1645,7 @@ async function requestModel(o, hooks = {}) {
   const fd = new FormData();
   fd.append('image', S.blob, 'tile.jpg');
   fd.append('corners', JSON.stringify(orderCorners(S.corners).map((p) => p.map((x) => +x.toFixed(2)))));
+  fd.append('tile_shape', S.shape);
   if (S.swatches.length) fd.append('swatches', JSON.stringify(S.swatches.map(toHex)));
   syncPaint();
   if (S.paint.some(Boolean)) fd.append('paint', JSON.stringify(S.paint.map((c) => (c ? toHex(c) : null))));
@@ -2345,6 +2402,7 @@ function snapKey() {
   const o = {};
   for (const id of settingIds) if (id !== 'maxH' && !FT_KEYS.some((k) => k.id === id)) o[id] = parseFloat($(id).value);
   o.sym = $('symmetry').value; o.edge = $('edgeSeam').checked; o.nc = $('numColors').value;
+  o.shape = S.shape;
   o.sw = S.swatches.map(toHex).join(',') + '|' + (S.paint || []).map((c) => (c ? toHex(c) : '-')).join(','); o.c = S.corners ? S.corners.map((p) => p.map(Math.round)).join(';') : '';
   return JSON.stringify(o);
 }

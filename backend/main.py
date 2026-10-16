@@ -117,6 +117,7 @@ async def process_tile(
     swatches: str | None = Form(None, description='JSON [[r,g,b],...] or ["#rrggbb",...]; empty → k-means'),
     paint: str | None = Form(None, description='JSON, one entry per swatch: replacement colour "#rrggbb" or null (= keep). '
                                                'The area still comes from the swatch; only its colour changes'),
+    tile_shape: str = Form("square", description="square | circle (a circular tile inscribed after rectification)"),
     tile_size_mm: float = Form(150.0),
     pad_thickness_mm: float = Form(15.0),
     relief_height_mm: float = Form(3.0, description="edge depth: top of each colour down to its seams"),
@@ -148,7 +149,7 @@ async def process_tile(
 
     fmt = output_format.lower().lstrip(".")
     cfg = tp.TileConfig(
-        tile_size_mm=tile_size_mm, pad_thickness_mm=pad_thickness_mm, relief_height_mm=relief_height_mm,
+        tile_shape=tile_shape.lower(), tile_size_mm=tile_size_mm, pad_thickness_mm=pad_thickness_mm, relief_height_mm=relief_height_mm,
         fillet_radius_mm=fillet_radius_mm, groove_floor_mm=groove_floor_mm, corner_radius_mm=corner_radius_mm,
         dome_height_mm=dome_height_mm, dome_reach_mm=dome_reach_mm,
         mesh_resolution_mm=mesh_resolution_mm, num_colors=num_colors, px_per_mm=px_per_mm,
