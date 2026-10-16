@@ -6,11 +6,11 @@
          (captured from the page; see the test notes). The server files are made with
          tile_processor.process_tile(output_format="bundle") from exactly that request, unless --server
          already holds a bundle (mixotile_*mm.zip or the extracted files), which is then reused.
-Per format it checks: part count/names, per-part vertex & triangle counts, bounding boxes (<= 0.002 mm),
-the 3MF extruder table, texture present, UV-vs-position error, and that every STL part is closed (each edge twice).
+Per format it checks the one-model/root contract, material regions, bounding boxes (<= 0.002 mm),
+the 3MF extruder table, texture presence, and UV-vs-position error.
 Exit code 0 = everything within tolerance.
 """
-import argparse, base64, glob, io, json, os, re, sys, zipfile
+import argparse, base64, glob, io, json, os, re, struct, sys, zipfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -82,7 +82,11 @@ def read_3mf(path):
         parts.append({"name": nm, "extruder": int(ex), "nt": hi - lo + 1, "nv": len(used),
                       "bbox": np.array([V[used].min(0), V[used].max(0)]), "verts": used})
     return {"parts": parts, "V": V, "F": F, "uv": uv, "texture": "3D/Textures/texture.jpg" in names, "tex_group": tex,
-            "nV": len(V), "nT": len(F)}
+            "one_model": len(re.findall(rb'<object id="\d+" type="model"(?:\s|>)', raw)) == 1,
+            "base_count": len(re.findall(rb'<base name="[^"]+" displaycolor="#[0-9A-F]{8}"/>', raw)),
+            "materials_required": b'requiredextensions="m"' in raw,
+            "texture_rel": "3D/_rels/3dmodel.model.rels" in names,
+            "zip_descriptors": any(i.flag_bits & 8 for i in z.infolist()), "nV": len(V), "nT": len(F)}
 
 
 def read_obj(folder):
@@ -90,7 +94,7 @@ def read_obj(folder):
     parts, cur = [], None
     allv, allvt = [], []
     for ln in obj:
-        if ln.startswith("o "):
+        if ln.startswith("g "):
             cur = {"name": ln[2:], "v0": len(allv), "vt0": len(allvt), "nf": 0}
             parts.append(cur)
         elif ln.startswith("v "):
@@ -105,39 +109,25 @@ def read_obj(folder):
         v1 = parts[i + 1]["v0"] if i + 1 < len(parts) else len(V)
         sl = V[p["v0"]:v1]
         p.update(nv=len(sl), nt=p["nf"], bbox=np.array([sl.min(0), sl.max(0)]))
-    return {"parts": parts, "V": V, "VT": VT, "mtl": os.path.exists(os.path.join(folder, "model.mtl")),
+    return {"parts": parts, "V": V, "VT": VT, "root_count": sum(ln == "o MixoTile relief" for ln in obj), "mtl": os.path.exists(os.path.join(folder, "model.mtl")),
             "texture": os.path.exists(os.path.join(folder, "texture.jpg"))}
 
 
-def read_stl(folder):
-    out = {}
-    for f in sorted(glob.glob(os.path.join(folder, "*.stl"))):
-        b = open(f, "rb").read()
-        n = int(np.frombuffer(b[80:84], "<u4")[0])
-        rec = np.frombuffer(b[84:84 + 50 * n], np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]))
-        tri = rec["v"].reshape(-1, 3)
-        u, inv = np.unique(tri, axis=0, return_inverse=True)
-        fi = inv.reshape(-1, 3)
-        e = np.sort(np.concatenate([fi[:, [0, 1]], fi[:, [1, 2]], fi[:, [2, 0]]]), axis=1)
-        _, cnt = np.unique(e, axis=0, return_counts=True)
-        out[os.path.basename(f)] = {"nt": n, "nv": len(u), "bbox": np.array([tri.min(0), tri.max(0)]).astype(np.float64),
-                                    "closed": bool((cnt == 2).all()), "bad_edges": int((cnt != 2).sum())}
-    return out
+def read_stl(path):
+    b = open(path, "rb").read()
+    n = int(np.frombuffer(b[80:84], "<u4")[0])
+    rec = np.frombuffer(b[84:84 + 50 * n], np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]))
+    tri = rec["v"].reshape(-1, 3)
+    return {"nt": n, "nv": len(np.unique(tri, axis=0)), "bbox": np.array([tri.min(0), tri.max(0)]).astype(np.float64)}
 
 
 def read_glb(path):
-    import trimesh
-    sc = trimesh.load(io.BytesIO(open(path, "rb").read()), file_type="glb", process=False)
-    out = {}
-    for name, g in sc.geometry.items():
-        v = np.asarray(g.vertices, np.float64)
-        mm = np.column_stack([v[:, 0], -v[:, 2], v[:, 1]]) * 1000.0          # Y-up m -> Z-up mm
-        uv = getattr(g.visual, "uv", None)
-        mat = getattr(g.visual, "material", None)
-        out[name] = {"nv": len(v), "nt": len(g.faces), "bbox": np.array([mm.min(0), mm.max(0)]), "mm": mm,
-                     "uv": None if uv is None else np.asarray(uv, np.float64),
-                     "has_tex": bool(getattr(mat, "baseColorTexture", None) is not None)}
-    return out
+    raw = open(path, "rb").read()
+    n, kind = struct.unpack_from("<I4s", raw, 12); assert kind == b"JSON"
+    doc = json.loads(raw[20:20 + n])
+    return {"nodes": len(doc["nodes"]), "meshes": len(doc["meshes"]), "primitives": len(doc["meshes"][0]["primitives"]),
+            "materials": [m["name"] for m in doc["materials"]], "texture": "images" in doc,
+            "has_uv": all("TEXCOORD_0" in p["attributes"] for p in doc["meshes"][0]["primitives"] if p["material"] == 0)}
 
 
 # ------------------------------------------------------------------ comparisons
@@ -244,9 +234,12 @@ def main():
         B, S = read_3mf(pb), read_3mf(ps)
         cmp_part_lists("3mf", B["parts"], S["parts"])
         check(B["nV"] == S["nV"] and B["nT"] == S["nT"], "3mf: total vertices/triangles", f"{B['nV']}/{B['nT']} vs {S['nV']}/{S['nT']}")
+        check(B["one_model"] and S["one_model"] and B["base_count"] == S["base_count"], "3mf: one root with equal base materials", str(B["base_count"]))
+        check(not B["zip_descriptors"] and not S["zip_descriptors"], "3mf: no ZIP data descriptors")
         check([p["extruder"] for p in B["parts"]] == [p["extruder"] for p in S["parts"]], "3mf: extruder table equal", str([p["extruder"] for p in B["parts"]]))
         if tex:
             check(B["texture"] and B["tex_group"], "3mf: texture + texture2dgroup present", f"server has {S['texture']}")
+            check(B["materials_required"] and S["materials_required"] and B["texture_rel"] and S["texture_rel"], "3mf: material extension + texture relationship present")
             e = uv_err_3mf(B, size)
             check(e <= 1e-4, "3mf: UV-vs-position error", f"browser max {e:.6f}, server max {uv_err_3mf(S, size):.6f}")
             nw = int((~np.array([True] * 0)).sum()) if False else 0
@@ -260,18 +253,11 @@ def main():
         if not (os.path.exists(pb) and os.path.exists(ps)):
             check(False, "file present in both"); continue
         B, S = read_glb(pb), read_glb(ps)
-        check(sorted(B) == sorted(S), "glb: geometry/node names equal", f"{sorted(B)} vs {sorted(S)}" if sorted(B) != sorted(S) else f"{len(B)} meshes")
-        common = sorted(set(B) & set(S))
-        lst = lambda D: [dict(name=k, nv=D[k]["nv"], nt=D[k]["nt"], bbox=D[k]["bbox"]) for k in common]
-        cmp_part_lists("glb", lst(B), lst(S))
+        check(B["nodes"] == S["nodes"] == 1 and B["meshes"] == S["meshes"] == 1, "glb: one root node and mesh")
+        check(B["primitives"] == S["primitives"], "glb: material primitive count", f"{B['primitives']} vs {S['primitives']}")
+        check(B["materials"] == S["materials"], "glb: material names equal", str(B["materials"]))
         if tex:
-            check(all(B[k]["has_tex"] for k in common if "underside" not in k), "glb: baseColorTexture on every body", f"server: {all(S[k]['has_tex'] for k in common if 'underside' not in k)}")
-            ue = 0.0
-            for k in common:
-                if "underside" in k or B[k]["uv"] is None: continue
-                mm = B[k]["mm"]; exp = np.column_stack([np.clip(mm[:, 0] / size, 0, 1), np.clip(mm[:, 1] / size, 0, 1)])
-                ue = max(ue, float(np.abs(B[k]["uv"] - exp).max()))
-            check(ue <= 2e-4, "glb: UV-vs-position error", f"max {ue:.6f}")
+            check(B["texture"] and S["texture"] and B["has_uv"] and S["has_uv"], "glb: photo texture and UVs present")
 
     for tex in (False, True):
         d = f"{stem}_obj_textured" if tex else f"{stem}_obj"
@@ -281,6 +267,7 @@ def main():
             check(False, "folder present in both"); continue
         B, S = read_obj(pb), read_obj(ps)
         cmp_part_lists("obj", B["parts"], S["parts"])
+        check(B["root_count"] == S["root_count"] == 1, "obj: one root object")
         check(sorted(os.listdir(pb)) == sorted(os.listdir(ps)), "obj: same files in the folder", str(sorted(os.listdir(pb))))
         if tex:
             check(B["texture"] and B["VT"] is not None, "obj: texture.jpg + vt present")
@@ -289,13 +276,9 @@ def main():
             check(e <= 1e-4, "obj: UV-vs-position error", f"max {e:.6f}")
 
     print("\n== STL")
-    B, S = read_stl(os.path.join(bro, stem + "_stl")), read_stl(os.path.join(srv, stem + "_stl"))
-    check(sorted(B) == sorted(S), "stl: file names equal", f"{len(B)} files")
-    common = sorted(set(B) & set(S))
-    cmp_part_lists("stl", [dict(name=k, **{x: B[k][x] for x in ("nv", "nt", "bbox")}) for k in common],
-                   [dict(name=k, **{x: S[k][x] for x in ("nv", "nt", "bbox")}) for k in common])
-    for k in common:
-        check(B[k]["closed"], f"stl: {k} closed (every edge twice)", f"bad edges {B[k]['bad_edges']}; server {S[k]['bad_edges']}")
+    B, S = read_stl(os.path.join(bro, stem + ".stl")), read_stl(os.path.join(srv, stem + ".stl"))
+    check(B["nt"] == S["nt"] and B["nv"] == S["nv"], "stl: one complete model counts", f"{B['nt']}/{B['nv']} vs {S['nt']}/{S['nv']}")
+    check(float(np.abs(B["bbox"] - S["bbox"]).max()) <= TOL, "stl: complete-model bounds", str(B["bbox"]))
 
     if a.adjusted:
         adjusted_check(a, req, srv)

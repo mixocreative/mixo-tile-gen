@@ -601,7 +601,7 @@ const D = {
     'fm.title': 'Files in the .zip', 'fm.all': 'All', 'fm.none': 'None', 'fm.note': '“+ photo skin” = your real photo wrapped onto the relief, for viewing and renders. Printers still print the glaze colours.',
     'fmt.3mf': '3MF', 'fmt.3mf.d': 'multi-colour printing', 'fmt.3mf.h': 'For multi-colour 3D printing: one part per colour, each set to its own filament (PrusaSlicer, OrcaSlicer, Bambu Studio).',
     'fmt.3mftex': '3MF + photo skin', 'fmt.3mftex.d': 'prints like 3MF', 'fmt.3mftex.h': 'Prints exactly like 3MF; 3D viewers also show your photo on it.',
-    'fmt.stl': 'STL', 'fmt.stl.d': 'one file per colour', 'fmt.stl.h': 'One file per colour; load them together in any slicer, one filament each (no colour inside).',
+    'fmt.stl': 'STL', 'fmt.stl.d': 'one complete model', 'fmt.stl.h': 'One complete tile for any slicer. STL cannot store the glaze colours or filament assignments.',
     'fmt.glb': 'GLB', 'fmt.glb.d': 'web, AR, sharing', 'fmt.glb.h': 'One file for web viewers, AR and quick sharing.',
     'fmt.glbtex': 'GLB + photo skin', 'fmt.glbtex.d': 'with your photo', 'fmt.glbtex.h': 'The GLB with your real photo wrapped onto the relief (viewing and renders).',
     'fmt.obj': 'OBJ', 'fmt.obj.d': 'Blender, 3D apps', 'fmt.obj.h': 'For Blender and other 3D software.',
@@ -677,7 +677,7 @@ const D = {
     'fm.title': '壓縮檔內容', 'fm.all': '全選', 'fm.none': '全不選', 'fm.note': '「+ 照片貼面」：把你的真實照片貼在浮雕上，供檢視與渲染；列印機仍會印出釉色。',
     'fmt.3mf': '3MF', 'fmt.3mf.d': '多色列印', 'fmt.3mf.h': '多色 3D 列印用：每種顏色一個零件，各設定一種線材（PrusaSlicer、OrcaSlicer、Bambu Studio）。',
     'fmt.3mftex': '3MF + 照片貼面', 'fmt.3mftex.d': '列印同 3MF', 'fmt.3mftex.h': '列印結果與 3MF 完全相同；3D 檢視軟體還會在上面顯示你的照片。',
-    'fmt.stl': 'STL', 'fmt.stl.d': '每種顏色一個檔', 'fmt.stl.h': '每種顏色一個檔案；在任何切片軟體一起載入，各用一種線材（檔案內不含顏色）。',
+    'fmt.stl': 'STL', 'fmt.stl.d': '完整單一模型', 'fmt.stl.h': '任何切片軟體都能載入的一個完整花磚；STL 無法保存釉色或線材指定。',
     'fmt.glb': 'GLB', 'fmt.glb.d': '網頁、AR、分享', 'fmt.glb.h': '單一檔案，適合網頁檢視、AR 與快速分享。',
     'fmt.glbtex': 'GLB + 照片貼面', 'fmt.glbtex.d': '含你的照片', 'fmt.glbtex.h': '把你的真實照片貼在浮雕上的 GLB（供檢視與渲染）。',
     'fmt.obj': 'OBJ', 'fmt.obj.d': 'Blender、3D 軟體', 'fmt.obj.h': '適用於 Blender 與其他 3D 軟體。',
@@ -1711,7 +1711,7 @@ function warmBackend() {
 $('cancelBtn').onclick = () => S.abort?.abort();
 
 // ---- file writers: the cloud only builds the shapes (mesh.zip); this browser writes every format, on demand.
-// Faithful ports of tile_processor.py write_3mf / write_glb / write_obj_zip / write_stl_zip. Every writer streams
+// Faithful ports of tile_processor.py write_3mf / write_glb / write_obj_zip / write_stl. Every writer streams
 // into fflate's Zip (or a plain chunk list) in ~1 MB pieces and yields to the UI between blocks, so even the biggest
 // file never exists as one giant string / array.
 const FFLATE_URL = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js';
@@ -1835,7 +1835,8 @@ async function write3mf(ctx, push, textured) {
   z.put('_rels/.rels', B8(RELS3));
   const f = z.begin('3D/3dmodel.model', 6), w = new BW((u) => f.push(u));
   w.s('<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
-    + 'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n'
+    + 'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06"'
+    + (T ? ' requiredextensions="m"' : '') + '>\n'
     + '<metadata name="slic3rpe:Version3mf">1</metadata>\n<metadata name="Title">MixoTile relief</metadata>\n<metadata name="Application">MixoTile 3D Relief Generator</metadata>\n'
     + '<resources>\n<basematerials id="2">\n');
   for (const p of parts) w.s(`<base name="${xe(p.name)}" displaycolor="#${HEX2(p.rgb)}FF"/>\n`);
@@ -1854,7 +1855,7 @@ async function write3mf(ctx, push, textured) {
     }
     w.s('</m:texture2dgroup>\n');
   }
-  w.s('<object id="1" type="model" name="MixoTile relief" pid="2" pindex="0">\n<mesh>\n<vertices>\n');
+  w.s('<object id="1" type="model" pid="2" pindex="0">\n<mesh>\n<vertices>\n');
   for (const p of parts) {
     const a = p.pos, n = p.nv;
     for (let i0 = 0; i0 < n; i0 += 2048) {
@@ -1928,7 +1929,7 @@ function vertexNormalsYup(pos, idx) {     // area-weighted smooth normals, retur
 const srgb2lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 async function writeGlb(ctx, push, textured) {
   const { parts, size } = ctx, T = textured && ctx.tex;
-  const views = [], accessors = [], meshes = [], nodes = [], materials = [], plan = [];
+  const views = [], accessors = [], primitives = [], materials = [], plan = [];
   let off = 0;
   const view = (bytes, target) => { views.push({ buffer: 0, byteOffset: off, byteLength: bytes, ...(target ? { target } : {}) }); off += bytes; return views.length - 1; };
   const acc = (bv, componentType, count, type, extra) => { accessors.push({ bufferView: bv, componentType, count, type, ...extra }); return accessors.length - 1; };
@@ -1957,22 +1958,19 @@ async function writeGlb(ctx, push, textured) {
     let matIdx;
     if (T) matIdx = 0;
     else { const lin = p.rgb.map(srgb2lin); materials.push({ name: p.name, pbrMetallicRoughness: { baseColorFactor: [lin[0], lin[1], lin[2], 1], metallicFactor: 0, roughnessFactor: 0.5 } }); matIdx = materials.length - 1; }
-    const prims = [];
     const aMain = acc(view(main.length * 4, 34963), 5125, main.length, 'SCALAR');
-    prims.push({ attributes: { POSITION: aPos, NORMAL: aNrm, ...(T ? { TEXCOORD_0: aUv } : {}) }, indices: aMain, material: matIdx });
-    meshes.push({ name: p.name, primitives: [prims[0]] }); nodes.push({ name: p.name, mesh: meshes.length - 1 });
+    primitives.push({ attributes: { POSITION: aPos, NORMAL: aNrm, ...(T ? { TEXCOORD_0: aUv } : {}) }, indices: aMain, material: matIdx });
     let aDown = -1;
     if (down) {
       aDown = acc(view(down.length * 4, 34963), 5125, down.length, 'SCALAR');
-      meshes.push({ name: p.name + ' underside', primitives: [{ attributes: { POSITION: aPos, NORMAL: aNrm, TEXCOORD_0: aUv }, indices: aDown, material: 1 }] });
-      nodes.push({ name: p.name + ' underside', mesh: meshes.length - 1 });
+      primitives.push({ attributes: { POSITION: aPos, NORMAL: aNrm, TEXCOORD_0: aUv }, indices: aDown, material: 1 });
     }
     plan.push({ main, down });
   });
   let imgView = -1, texLen = 0;
-  if (T) { texLen = ctx.tex.length; imgView = view((texLen + 3) & ~3); }
+  if (T) { texLen = ctx.tex.length; imgView = view(texLen); off = (off + 3) & ~3; }
   const gltf = {
-    asset: { version: '2.0', generator: 'MixoTile (browser)' }, scene: 0, scenes: [{ nodes: nodes.map((_, i) => i) }], nodes, meshes, materials,
+    asset: { version: '2.0', generator: 'MixoTile (browser)' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ name: 'MixoTile relief', mesh: 0 }], meshes: [{ name: 'MixoTile relief', primitives }], materials,
     ...(T ? { textures: [{ source: 0, sampler: 0 }], images: [{ bufferView: imgView, mimeType: 'image/jpeg' }], samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 33071, wrapT: 33071 }] } : {}),
     accessors, bufferViews: views, buffers: [{ byteLength: off }],
   };
@@ -1999,7 +1997,7 @@ async function writeGlb(ctx, push, textured) {
   if (T) { push(ctx.tex); if (texLen & 3) push(new Uint8Array(4 - (texLen & 3))); }
 }
 
-// ---- STL: one binary file per colour; vertices that share a position (surface pinches) are nudged apart by 0.002 mm
+// ---- STL: one complete binary model; vertices that share a position (surface pinches) are nudged apart by 0.002 mm
 function splitPinches(pos, idx, eps = 0.002) {
   const nv = pos.length / 3, bits = new Uint32Array(nv * 3), fl = new Float32Array(1), fu = new Uint32Array(fl.buffer);
   for (let i = 0; i < pos.length; i++) { fl[0] = pos[i] + 0; bits[i] = fu[0]; }       // +0 folds -0 into 0
@@ -2032,14 +2030,13 @@ function splitPinches(pos, idx, eps = 0.002) {
   }
   return out;
 }
-async function writeStl(ctx, files) {
-  const names = partFiles(ctx.parts);
+async function writeStl(ctx, push) {
+  const total = ctx.parts.reduce((n, p) => n + p.nt, 0);
+  const head = new Uint8Array(84), hs = B8('MixoTile relief');
+  head.fill(32, 0, 80); head.set(hs); new DataView(head.buffer).setUint32(80, total, true);
+  push(head);
   for (let pi = 0; pi < ctx.parts.length; pi++) {
     const P = ctx.parts[pi], v = splitPinches(P.pos, P.idx), f = P.idx, nt = P.nt;
-    const h = files.begin(names[pi] + '.stl', 4);
-    const head = new Uint8Array(84), hs = B8('mixo-tile-gen ' + names[pi]).slice(0, 80);
-    head.fill(32, 0, 80); head.set(hs); new DataView(head.buffer).setUint32(80, nt, true);
-    h.push(head);
     const BLK = 4096, blk = new Uint8Array(BLK * 50), dv = new DataView(blk.buffer);
     for (let t0 = 0; t0 < nt; t0 += BLK) {
       const e = Math.min(nt, t0 + BLK);
@@ -2054,19 +2051,18 @@ async function writeStl(ctx, files) {
         dv.setFloat32(o + 36, v[c], true); dv.setFloat32(o + 40, v[c + 1], true); dv.setFloat32(o + 44, v[c + 2], true);
         dv.setUint16(o + 48, 0, true);
       }
-      h.push(blk.slice(0, (e - t0) * 50));
+      push(blk.slice(0, (e - t0) * 50));
       await maybeYield();
     }
-    h.end();
   }
 }
 
-// ---- OBJ + MTL (+ texture.jpg): one object per colour body, Z-up mm; textured = top-down photo, pad underside plain white
+// ---- OBJ + MTL (+ texture.jpg): one root object with colour groups, Z-up mm; textured = top-down photo, pad underside plain white
 const L_V = B8('v '), L_VT = B8('vt '), L_F = B8('f '), L_SP = B8(' '), L_SL = B8('/'), L_NL = B8('\n');
 async function writeObj(ctx, files, textured) {
   const { parts, size } = ctx, T = textured && ctx.tex, names = partFiles(parts), mtl = [];
   const h = files.begin('model.obj', 6), w = new BW((u) => h.push(u));
-  w.s('mtllib model.mtl\n');
+  w.s('mtllib model.mtl\no MixoTile relief\n');
   if (T) {
     mtl.push('newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n');
     mtl.push('newmtl underside\nKa 1 1 1\nKd 1 1 1\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n');
@@ -2075,7 +2071,7 @@ async function writeObj(ctx, files, textured) {
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i], a = p.pos, n = p.nv, f = p.idx, nt = p.nt, nm = names[i];
     if (!T) { const [r, g, b] = p.rgb.map((c) => c / 255); mtl.push(`newmtl ${nm}\nKa ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKd ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKs 0.08 0.08 0.08\nNs 40\nillum 2\n`); }
-    w.s(`o ${nm}\nusemtl ${T ? 'photo' : nm}\n`);
+    w.s(`g ${nm}\nusemtl ${T ? 'photo' : nm}\n`);
     for (let i0 = 0; i0 < n; i0 += 2048) {
       const e = Math.min(n, i0 + 2048);
       for (let v = i0; v < e; v++) { w.b(L_V); w.fx(a[3 * v], 3); w.b(L_SP); w.fx(a[3 * v + 1], 3); w.b(L_SP); w.fx(a[3 * v + 2], 3); w.b(L_NL); }
@@ -2130,12 +2126,12 @@ const FMT = {
   '3mftex': { ext: 'textured.3mf', kind: 'file', level: 0, run: (c, sink) => write3mf(c, sink, true) },
   glb: { ext: 'glb', kind: 'file', level: 4, run: (c, sink) => writeGlb(c, sink, false) },
   glbtex: { ext: 'textured.glb', kind: 'file', level: 4, run: (c, sink) => writeGlb(c, sink, true) },
-  stl: { ext: 'stl.zip', kind: 'zip', dir: 'stl', run: (c, z) => writeStl(c, z) },
+  stl: { ext: 'stl', kind: 'file', run: (c, sink) => writeStl(c, sink) },
   obj: { ext: 'obj.zip', kind: 'zip', dir: 'obj', run: (c, z) => writeObj(c, z, false) },
   objtex: { ext: 'textured.obj.zip', kind: 'zip', dir: 'obj_textured', run: (c, z) => writeObj(c, z, true) },
 };
-const MIME = { '3mf': 'application/vnd.ms-package.3dmanufacturing-3dmodel+xml', glb: 'model/gltf-binary', zip: 'application/zip' };
-const mimeOf = (code) => (FMT[code].ext.endsWith('3mf') ? MIME['3mf'] : FMT[code].ext.endsWith('glb') ? MIME.glb : MIME.zip);
+const MIME = { '3mf': 'application/vnd.ms-package.3dmanufacturing-3dmodel+xml', glb: 'model/gltf-binary', stl: 'model/stl', zip: 'application/zip' };
+const mimeOf = (code) => (FMT[code].ext.endsWith('3mf') ? MIME['3mf'] : FMT[code].ext.endsWith('glb') ? MIME.glb : FMT[code].ext.endsWith('stl') ? MIME.stl : MIME.zip);
 
 // one format -> one file (phone buttons); same names as the server's single downloads
 async function buildSingle(meshZip, code, adj) {
@@ -2147,14 +2143,15 @@ async function buildSingle(meshZip, code, adj) {
   return { blob, name: `mixotile_${Math.round(ctx.size)}mm.${F.ext}` };
 }
 // several formats -> one .zip, built one format at a time (each format's source bytes are released before the next)
-async function buildBundle(meshZip, codes, step, adj) {
+async function buildBundle(meshZip, codes, step, adj, serverFiles = {}) {
   const ctx = await loadMeshCtx(meshZip, adj), stem = `mixotile_${Math.round(ctx.size)}mm`, chunks = [];
   const out = zipOut(ctx.FF, (u) => chunks.push(u));
   for (let i = 0; i < codes.length; i++) {
     step && step(i, codes.length, codes[i]);
     await maybeYield(true);
     const F = FMT[codes[i]];
-    if (F.kind === 'file') { const h = out.begin(`${stem}.${F.ext}`, F.level); await F.run(ctx, (u) => h.push(u)); h.end(); }
+    if (serverFiles[codes[i]]) out.put(`${stem}.${F.ext}`, serverFiles[codes[i]], 0);
+    else if (F.kind === 'file') { const h = out.begin(`${stem}.${F.ext}`, F.level); await F.run(ctx, (u) => h.push(u)); h.end(); }
     else await F.run(ctx, prefixed(out, `${stem}_${F.dir}/`));
   }
   out.end();
@@ -2281,7 +2278,16 @@ async function downloadOne(code) {
     await ensureExact();
     S.fst[code] = { state: 'busy' }; renderPhoneBtns();
     await maybeYield(true);
-    const t0 = performance.now(), { blob, name } = await buildSingle(S.dl.mesh, code, S.dl.adj);
+    const t0 = performance.now();
+    // lib3mf is strict about streaming ZIP data descriptors. 3MF downloads therefore use the
+    // server's zipfile writer (also used by the CLI), while the preview and other formats stay local.
+    let built;
+    if (code === '3mf' || code === '3mftex') {
+      showLoading(true);
+      try { const r = await requestModel({ format: code }); built = { blob: new Blob([r.buf], { type: MIME['3mf'] }), name: r.filename }; }
+      finally { showLoading(false); }
+    } else built = await buildSingle(S.dl.mesh, code, S.dl.adj);
+    const { blob, name } = built;
     const size = blob.size;
     saveBlobFile(blob, name);
     S.fst[code] = { state: 'done', size, ms: Math.round(performance.now() - t0), name };
@@ -2299,7 +2305,13 @@ $('downloadBtn').onclick = async () => {
   try {
     await ensureExact();
     const t0 = performance.now();
-    const { blob, name } = await buildBundle(S.dl.mesh, list, (i, n, code) => { S.dlStep = { i, n, code }; updateDownloadBtn(); }, S.dl.adj);
+    const serverFiles = {};
+    for (const code of list.filter((c) => c === '3mf' || c === '3mftex')) {
+      S.dlStep = { i: 0, n: list.length, code }; updateDownloadBtn(); showLoading(true);
+      try { serverFiles[code] = new Uint8Array((await requestModel({ format: code })).buf); }
+      finally { showLoading(false); }
+    }
+    const { blob, name } = await buildBundle(S.dl.mesh, list, (i, n, code) => { S.dlStep = { i, n, code }; updateDownloadBtn(); }, S.dl.adj, serverFiles);
     const size = blob.size;
     saveBlobFile(blob, name);
     S.lastZip = { ms: Math.round(performance.now() - t0), size, name };

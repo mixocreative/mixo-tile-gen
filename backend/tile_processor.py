@@ -27,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 import math
 import re
+import struct
 import time
 import zipfile
 from dataclasses import asdict, dataclass
@@ -994,7 +995,8 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
       '<model unit="millimeter" xml:lang="en-US" '
       'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
       'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" '
-      'xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n'
+      'xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06"'
+      + (' requiredextensions="m"' if texture is not None else '') + '>\n'
       '<metadata name="slic3rpe:Version3mf">1</metadata>\n'
       '<metadata name="Title">MixoTile relief</metadata>\n'
       '<metadata name="Application">MixoTile 3D Relief Generator</metadata>\n'
@@ -1016,7 +1018,7 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
                 uv = np.clip(np.asarray(v, np.float64)[:, :2] / size_mm, 0.0, 1.0)
                 w(('<m:tex2coord u="%.5f" v="%.5f"/>\n' * len(uv)) % tuple(uv.ravel().tolist()))
         w('</m:texture2dgroup>\n')
-    w(f'<object id="{obj_id}" type="model" name="MixoTile relief" pid="{mat_id}" pindex="0">\n'
+    w(f'<object id="{obj_id}" type="model" pid="{mat_id}" pindex="0">\n'
       '<mesh>\n<vertices>\n')
     # one big %-format per array is ~10x faster than a per-row generator; 3 decimals = 1 um
     for _, _, v, _ in parts:
@@ -1079,34 +1081,84 @@ def write_3mf(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) 
 
 
 def write_glb(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
-    """glTF is Y-up and in metres: rotate Z-up mm -> Y-up m. texture = flattened photo: every body
-    gets it top-down (u = x/size, v = y/size), the pad's sides included; downward faces (the pad's
-    underside) are split off as a white mesh."""
-    import trimesh
+    """One glTF mesh/node, with one primitive per glaze material region. glTF is Y-up and
+    metres, so positions/normals are rotated from the Z-up millimetre model. A direct writer is
+    intentional: trimesh exports each source geometry as a separate scene node."""
+    views, accessors, materials, primitives, blob = [], [], [], [], bytearray()
 
-    scene = trimesh.Scene()
-    img = None
-    if texture is not None:
-        from PIL import Image
-        img = Image.fromarray(np.ascontiguousarray(texture))
+    def add_view(data: bytes, target: int | None = None) -> int:
+        while len(blob) % 4:
+            blob.append(0)
+        offset = len(blob)
+        blob.extend(data)
+        item = {"buffer": 0, "byteOffset": offset, "byteLength": len(data)}
+        if target is not None:
+            item["target"] = target
+        views.append(item)
+        return len(views) - 1
+
+    def add_accessor(view: int, component: int, count: int, kind: str, **extra) -> int:
+        accessors.append({"bufferView": view, "componentType": component, "count": count, "type": kind, **extra})
+        return len(accessors) - 1
+
+    def normals(v: np.ndarray, f: np.ndarray) -> np.ndarray:
+        face = np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]])
+        out = np.zeros_like(v, dtype=np.float64)
+        for k in range(3):
+            np.add.at(out, f[:, k], face)
+        out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+        return np.column_stack([out[:, 0], out[:, 2], -out[:, 1]]).astype("<f4")
+
+    def linear(c: int) -> float:
+        c = c / 255.0
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    textured = texture is not None
+    if textured:
+        materials.extend([
+            {"name": "photo", "pbrMetallicRoughness": {"baseColorTexture": {"index": 0}, "metallicFactor": 0, "roughnessFactor": .5}},
+            {"name": "underside", "pbrMetallicRoughness": {"baseColorFactor": [1, 1, 1, 1], "metallicFactor": 0, "roughnessFactor": .5}},
+        ])
     for name, rgb, v, f in parts:
-        vv = np.column_stack([v[:, 0], v[:, 2], -v[:, 1]]) / 1000.0
-        if img is not None:
+        v = np.asarray(v, np.float64); f = np.asarray(f, np.uint32)
+        vv = np.column_stack([v[:, 0], v[:, 2], -v[:, 1]]).astype("<f4") / 1000.0
+        pos = add_accessor(add_view(vv.tobytes(), 34962), 5126, len(vv), "VEC3",
+                           min=vv.min(axis=0).astype(float).tolist(), max=vv.max(axis=0).astype(float).tolist())
+        nrm = add_accessor(add_view(normals(v, f).tobytes(), 34962), 5126, len(v), "VEC3")
+        attrs = {"POSITION": pos, "NORMAL": nrm}
+        if textured:
+            uv = np.column_stack([np.clip(v[:, 0] / size_mm, 0, 1), 1 - np.clip(v[:, 1] / size_mm, 0, 1)]).astype("<f4")
+            attrs["TEXCOORD_0"] = add_accessor(add_view(uv.tobytes(), 34962), 5126, len(v), "VEC2")
             down = _bottom_faces(v, f) if _is_pad(name) else np.zeros(len(f), bool)
-            uv = np.clip(np.asarray(v, np.float64)[:, :2] / size_mm, 0.0, 1.0)
-            mat = trimesh.visual.material.PBRMaterial(baseColorTexture=img, metallicFactor=0.0, roughnessFactor=0.5)
-            mesh = trimesh.Trimesh(vv, f[~down], process=False)
-            mesh.visual = trimesh.visual.TextureVisuals(uv=uv, material=mat)
-            scene.add_geometry(mesh, geom_name=name, node_name=name)
-            if down.any():
-                under = trimesh.Trimesh(vv, f[down], process=False)
-                under.visual = trimesh.visual.ColorVisuals(under, face_colors=[*WHITE, 255])
-                scene.add_geometry(under, geom_name=name + " underside", node_name=name + " underside")
-            continue
-        mesh = trimesh.Trimesh(vv, f, process=False)
-        mesh.visual = trimesh.visual.ColorVisuals(mesh, face_colors=[*map(int, rgb), 255])
-        scene.add_geometry(mesh, geom_name=name, node_name=name)
-    return scene.export(file_type="glb")
+            batches = ((f[~down], 0), (f[down], 1))
+        else:
+            materials.append({"name": name, "pbrMetallicRoughness": {
+                "baseColorFactor": [*(linear(int(c)) for c in rgb), 1], "metallicFactor": 0, "roughnessFactor": .5}})
+            batches = ((f, len(materials) - 1),)
+        for faces, material in batches:
+            if len(faces):
+                ind = add_accessor(add_view(np.ascontiguousarray(faces.reshape(-1), "<u4").tobytes(), 34963), 5125, faces.size, "SCALAR")
+                primitives.append({"attributes": attrs, "indices": ind, "material": material, "mode": 4})
+
+    extra = {}
+    if textured:
+        ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(texture, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not ok:
+            raise ValueError("could not encode GLB texture")
+        image_view = add_view(jpg.tobytes())
+        extra = {"textures": [{"source": 0, "sampler": 0}], "images": [{"bufferView": image_view, "mimeType": "image/jpeg"}],
+                 "samplers": [{"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071}]}
+    while len(blob) % 4:
+        blob.append(0)
+    doc = {"asset": {"version": "2.0", "generator": "MixoTile"}, "scene": 0,
+           "scenes": [{"nodes": [0]}], "nodes": [{"name": "MixoTile relief", "mesh": 0}],
+           "meshes": [{"name": "MixoTile relief", "primitives": primitives}], "materials": materials,
+           "accessors": accessors, "bufferViews": views, "buffers": [{"byteLength": len(blob)}], **extra}
+    json_bytes = json.dumps(doc, separators=(",", ":")).encode("utf-8")
+    json_bytes += b" " * (-len(json_bytes) % 4)
+    total = 12 + 8 + len(json_bytes) + 8 + len(blob)
+    return (struct.pack("<4sII", b"glTF", 2, total) + struct.pack("<I4s", len(json_bytes), b"JSON") + json_bytes
+            + struct.pack("<I4s", len(blob), b"BIN\0") + bytes(blob))
 
 
 def preview_heights(layout_parts, heights) -> bytes:
@@ -1204,24 +1256,20 @@ def _split_pinches(v: np.ndarray, f: np.ndarray, eps: float = 0.002) -> np.ndarr
     return v
 
 
-def write_stl_zip(parts) -> bytes:
-    """One binary STL per colour body, zipped: STL has no colour, so multi-colour printing takes
-    one file per filament (load them together; they share coordinates)."""
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for fname, (_, _, v, f) in zip(_part_files(parts), parts):
-            tri = _split_pinches(v, np.asarray(f))[np.asarray(f)]               # (n, 3, 3)
-            nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-            nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
-            rec = np.zeros(len(f), np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]))
-            rec["n"], rec["v"] = nrm, tri
-            z.writestr(fname + ".stl", (b"mixo-tile-gen " + fname.encode()).ljust(80, b" ")[:80]
-                       + np.uint32(len(f)).tobytes() + rec.tobytes())
-    return buf.getvalue()
+def write_stl(parts) -> bytes:
+    """One binary STL for the complete tile. STL cannot carry the individual glaze materials,
+    but its disconnected colour shells remain intact inside one importable model."""
+    tris = [_split_pinches(v, np.asarray(f))[np.asarray(f)] for _, _, v, f in parts]
+    tri = np.concatenate(tris, axis=0)
+    nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
+    rec = np.zeros(len(tri), np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]))
+    rec["n"], rec["v"] = nrm, tri
+    return b"MixoTile relief".ljust(80, b" ") + np.uint32(len(tri)).tobytes() + rec.tobytes()
 
 
 def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150.0) -> bytes:
-    """OBJ + MTL, one object per colour body (Z-up, mm), zipped.
+    """OBJ + MTL, one root object with one group per colour body (Z-up, mm), zipped.
     texture=None: each body gets its glaze colour as a material (Kd).
     texture=RGB image of the flattened tile: the photo is projected straight down from the top,
     u = x / size, v = y / size, so every point shows the photo pixel directly above it (the same
@@ -1229,7 +1277,7 @@ def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150
     The pad's sides take the same projection (they continue the border colours downward); its
     underside is white."""
     names = _part_files(parts)
-    mtl, obj = [], ["mtllib model.mtl\n"]
+    mtl, obj = [], ["mtllib model.mtl\n", "o MixoTile relief\n"]
     if texture is not None:
         mtl.append("newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n")
         mtl.append("newmtl underside\nKa 1 1 1\nKd 1 1 1\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n")
@@ -1240,7 +1288,7 @@ def write_obj_zip(parts, texture: np.ndarray | None = None, size_mm: float = 150
         if not textured:
             r, g, b = (int(c) / 255 for c in rgb)
             mtl.append(f"newmtl {nm}\nKa {r:.4f} {g:.4f} {b:.4f}\nKd {r:.4f} {g:.4f} {b:.4f}\nKs 0.08 0.08 0.08\nNs 40\nillum 2\n")
-        obj.append(f"o {nm}\nusemtl {'photo' if textured else nm}\n")
+        obj.append(f"g {nm}\nusemtl {'photo' if textured else nm}\n")
         obj.append(("v %.3f %.3f %.3f\n" * len(v)) % tuple(v.ravel()))
         idx = f + base
         if textured:                     # OBJ numbers v and vt separately (the pad has no vt)
@@ -1271,15 +1319,15 @@ EXPORT_FORMATS = {
     "3mftex": ("textured.3mf", "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"),
     "glb": ("glb", "model/gltf-binary"),
     "glbtex": ("textured.glb", "model/gltf-binary"),
-    "stl": ("stl.zip", "application/zip"),
+    "stl": ("stl", "model/stl"),
     "obj": ("obj.zip", "application/zip"),
     "objtex": ("textured.obj.zip", "application/zip"),
     "bundle": ("all.zip", "application/zip"),    # several formats from ONE run (TileConfig.formats)
     "mesh": ("mesh.zip", "application/zip"),     # raw shapes + photo: the browser writes the formats itself
 }
 BUNDLE_DEFAULT = ("3mf", "3mftex", "glb", "glbtex", "obj", "objtex", "stl")
-# inside the bundle zip: single files as they are, the zipped formats unpacked into folders
-_BUNDLE_DIR = {"stl": "stl", "obj": "obj", "objtex": "obj_textured"}
+# inside the bundle zip: zipped formats are unpacked into folders; other formats stay one file
+_BUNDLE_DIR = {"obj": "obj", "objtex": "obj_textured"}
 
 
 def write_bundle(parts, formats, texture, size_mm: float, stem: str, progress=None) -> bytes:
@@ -1332,7 +1380,7 @@ def export_parts(parts, fmt: str, texture: np.ndarray | None = None, size_mm: fl
     if fmt in ("glb", "glbtex"):
         return write_glb(parts, texture if fmt == "glbtex" else None, size_mm)
     if fmt == "stl":
-        return write_stl_zip(parts)
+        return write_stl(parts)
     if fmt in ("obj", "objtex"):
         return write_obj_zip(parts, texture if fmt == "objtex" else None, size_mm)
     if fmt == "mesh":

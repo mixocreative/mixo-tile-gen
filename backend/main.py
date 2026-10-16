@@ -138,7 +138,7 @@ async def process_tile(
     edge_is_seam: bool = Form(False, description="true = groove along the tile edge too"),
     symmetry: str = Form("off", description="off | auto | c4 | d4 (opt-in)"),
     formats: str = Form(",".join(tp.BUNDLE_DEFAULT_NAMES), description="output_format=bundle: comma list of formats to put in the zip"),
-    output_format: str = Form("3mf", description="3mf | 3mftex | glb | glbtex | stl (zip, one per colour) | obj (zip, colours) | objtex (zip, photo texture). *tex = the photo as a texture; 3mftex still prints in glaze colours | bundle = zip of the `formats` list from one run"),
+    output_format: str = Form("3mf", description="3mf | 3mftex | glb | glbtex | stl (one complete model, no colours) | obj (zip, material groups) | objtex (zip, photo texture). *tex = the photo as a texture; 3mftex still prints in glaze colours | bundle = zip of the `formats` list from one run"),
     stream: bool = Form(False, description="true = progress lines + binary payloads (see _stream)"),
     preview: bool = Form(True, description="stream: also send a light preview mesh before the file"),
 ):
