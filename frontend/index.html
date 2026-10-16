@@ -1765,6 +1765,39 @@ function zipOut(FF, push) {
   };
   return o;
 }
+// 3MF readers such as lib3mf reject ZIP data descriptors even though ordinary streaming ZIPs
+// permit them. Keep compression local but buffer only the compressed chunks, then write known
+// sizes/CRC values into each local header (bit 3 clear). This avoids a second cloud build.
+const CRC32_TABLE = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (c & 1 ? 0xEDB88320 : 0); t[i] = c >>> 0; } return t; })();
+const crc32Step = (c, u) => { for (let i = 0; i < u.length; i++) c = CRC32_TABLE[(c ^ u[i]) & 255] ^ (c >>> 8); return c; };
+function zipOutKnown(FF, push) {
+  const entries = [];
+  const o = {
+    begin(name, level = 6) {
+      const nb = B8(name), chunks = []; let raw = 0, crc = 0xFFFFFFFF;
+      const def = level ? new FF.Deflate({ level }, (u) => chunks.push(u)) : null;
+      return {
+        push(u) { raw += u.length; crc = crc32Step(crc, u); if (def) def.push(u, false); else chunks.push(u); },
+        end() { if (def) def.push(new Uint8Array(0), true); entries.push({ nb, chunks, raw, crc: (crc ^ 0xFFFFFFFF) >>> 0, method: level ? 8 : 0 }); },
+      };
+    },
+    put(name, u8, level = 6) { const h = o.begin(name, level); h.push(u8); h.end(); },
+    end() {
+      let off = 0;
+      for (const e of entries) { e.size = e.chunks.reduce((n, u) => n + u.length, 0); e.off = off; off += 30 + e.nb.length + e.size; }
+      const u16 = (d, p, n) => d.setUint16(p, n, true), u32 = (d, p, n) => d.setUint32(p, n >>> 0, true);
+      for (const e of entries) {
+        const h = new Uint8Array(30 + e.nb.length), d = new DataView(h.buffer); u32(d, 0, 0x04034B50); u16(d, 4, 20); u16(d, 6, 0); u16(d, 8, e.method); u32(d, 14, e.crc); u32(d, 18, e.size); u32(d, 22, e.raw); u16(d, 26, e.nb.length); h.set(e.nb, 30); push(h); for (const u of e.chunks) push(u);
+      }
+      const cd = off;
+      for (const e of entries) {
+        const h = new Uint8Array(46 + e.nb.length), d = new DataView(h.buffer); u32(d, 0, 0x02014B50); u16(d, 4, 20); u16(d, 6, 20); u16(d, 8, 0); u16(d, 10, e.method); u32(d, 16, e.crc); u32(d, 20, e.size); u32(d, 24, e.raw); u16(d, 28, e.nb.length); u32(d, 42, e.off); h.set(e.nb, 46); push(h); off += h.length;
+      }
+      const eocd = new Uint8Array(22), d = new DataView(eocd.buffer); u32(d, 0, 0x06054B50); u16(d, 8, entries.length); u16(d, 10, entries.length); u32(d, 12, off - cd); u32(d, 16, cd); push(eocd);
+    },
+  };
+  return o;
+}
 const prefixed = (z, pre) => ({ begin: (n, lv) => z.begin(pre + n, lv), put: (n, u8, lv) => z.put(pre + n, u8, lv) });
 
 // mesh.zip -> { size, parts: [{name, hex, rgb, extruder, nv, nt, pos: Float32Array, idx: Uint32Array}], tex: Uint8Array|null }
@@ -1830,7 +1863,7 @@ const L_T0 = B8('<triangle v1="'), L_T1 = B8('" v2="'), L_T2 = B8('" v3="'), L_T
   L_TP1 = B8('" p1="'), L_TMAT = B8('" pid="2" p1="');
 
 async function write3mf(ctx, push, textured) {
-  const { parts, size } = ctx, T = textured && ctx.tex, z = zipOut(ctx.FF, push);
+  const { parts, size } = ctx, T = textured && ctx.tex, z = zipOutKnown(ctx.FF, push);
   z.put('[Content_Types].xml', B8(T ? CT3.replace('</Types>', '<Default Extension="jpg" ContentType="image/jpeg"/></Types>') : CT3));
   z.put('_rels/.rels', B8(RELS3));
   const f = z.begin('3D/3dmodel.model', 6), w = new BW((u) => f.push(u));
@@ -2143,15 +2176,14 @@ async function buildSingle(meshZip, code, adj) {
   return { blob, name: `mixotile_${Math.round(ctx.size)}mm.${F.ext}` };
 }
 // several formats -> one .zip, built one format at a time (each format's source bytes are released before the next)
-async function buildBundle(meshZip, codes, step, adj, serverFiles = {}) {
+async function buildBundle(meshZip, codes, step, adj) {
   const ctx = await loadMeshCtx(meshZip, adj), stem = `mixotile_${Math.round(ctx.size)}mm`, chunks = [];
   const out = zipOut(ctx.FF, (u) => chunks.push(u));
   for (let i = 0; i < codes.length; i++) {
     step && step(i, codes.length, codes[i]);
     await maybeYield(true);
     const F = FMT[codes[i]];
-    if (serverFiles[codes[i]]) out.put(`${stem}.${F.ext}`, serverFiles[codes[i]], 0);
-    else if (F.kind === 'file') { const h = out.begin(`${stem}.${F.ext}`, F.level); await F.run(ctx, (u) => h.push(u)); h.end(); }
+    if (F.kind === 'file') { const h = out.begin(`${stem}.${F.ext}`, F.level); await F.run(ctx, (u) => h.push(u)); h.end(); }
     else await F.run(ctx, prefixed(out, `${stem}_${F.dir}/`));
   }
   out.end();
@@ -2279,15 +2311,7 @@ async function downloadOne(code) {
     S.fst[code] = { state: 'busy' }; renderPhoneBtns();
     await maybeYield(true);
     const t0 = performance.now();
-    // lib3mf is strict about streaming ZIP data descriptors. 3MF downloads therefore use the
-    // server's zipfile writer (also used by the CLI), while the preview and other formats stay local.
-    let built;
-    if (code === '3mf' || code === '3mftex') {
-      showLoading(true);
-      try { const r = await requestModel({ format: code }); built = { blob: new Blob([r.buf], { type: MIME['3mf'] }), name: r.filename }; }
-      finally { showLoading(false); }
-    } else built = await buildSingle(S.dl.mesh, code, S.dl.adj);
-    const { blob, name } = built;
+    const { blob, name } = await buildSingle(S.dl.mesh, code, S.dl.adj);
     const size = blob.size;
     saveBlobFile(blob, name);
     S.fst[code] = { state: 'done', size, ms: Math.round(performance.now() - t0), name };
@@ -2305,13 +2329,7 @@ $('downloadBtn').onclick = async () => {
   try {
     await ensureExact();
     const t0 = performance.now();
-    const serverFiles = {};
-    for (const code of list.filter((c) => c === '3mf' || c === '3mftex')) {
-      S.dlStep = { i: 0, n: list.length, code }; updateDownloadBtn(); showLoading(true);
-      try { serverFiles[code] = new Uint8Array((await requestModel({ format: code })).buf); }
-      finally { showLoading(false); }
-    }
-    const { blob, name } = await buildBundle(S.dl.mesh, list, (i, n, code) => { S.dlStep = { i, n, code }; updateDownloadBtn(); }, S.dl.adj, serverFiles);
+    const { blob, name } = await buildBundle(S.dl.mesh, list, (i, n, code) => { S.dlStep = { i, n, code }; updateDownloadBtn(); }, S.dl.adj);
     const size = blob.size;
     saveBlobFile(blob, name);
     S.lastZip = { ms: Math.round(performance.now() - t0), size, name };
