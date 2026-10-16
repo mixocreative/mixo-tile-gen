@@ -947,11 +947,21 @@ function drawOverlay() {
     circleRing = [];
     for (let i = 0; i <= 72; i++) { const a = 2 * Math.PI * i / 72; circleRing.push(circleProject(N / 2 + N / 2 * Math.cos(a), N / 2 + N / 2 * Math.sin(a))); }
   }
-  const shade = document.createElementNS(NS, 'path');
   const q = S.corners.map((p) => p.join(',')).join(' L ');
-  const active = circleRing ? circleRing.map((p) => p.join(',')).join(' L ') : q;
-  shade.setAttribute('d', `M0,0 H${S.W} V${S.H} H0 Z M ${active} Z`);
-  shade.setAttribute('fill', 'rgba(20,18,15,.55)'); shade.setAttribute('fill-rule', 'evenodd');
+  const shade = document.createElementNS(NS, circleRing ? 'rect' : 'path');
+  if (circleRing) {
+    // Explicit mask is more reliable than an even-odd compound path across SVG implementations:
+    // grey covers the entire photo, then this projective circle is the only punched-out active area.
+    const defs = document.createElementNS(NS, 'defs');
+    const mask = document.createElementNS(NS, 'mask'); mask.setAttribute('id', 'roundActiveMask'); mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    const white = document.createElementNS(NS, 'rect'); white.setAttribute('x', 0); white.setAttribute('y', 0); white.setAttribute('width', S.W); white.setAttribute('height', S.H); white.setAttribute('fill', '#fff');
+    const hole = document.createElementNS(NS, 'path'); hole.setAttribute('d', 'M' + circleRing.map(([x, y]) => `${x},${y}`).join(' L ') + ' Z'); hole.setAttribute('fill', '#000');
+    mask.append(white, hole); defs.appendChild(mask); svg.appendChild(defs);
+    shade.setAttribute('x', 0); shade.setAttribute('y', 0); shade.setAttribute('width', S.W); shade.setAttribute('height', S.H); shade.setAttribute('mask', 'url(#roundActiveMask)');
+  } else {
+    shade.setAttribute('d', `M0,0 H${S.W} V${S.H} H0 Z M ${q} Z`); shade.setAttribute('fill-rule', 'evenodd');
+  }
+  shade.setAttribute('fill', 'rgba(20,18,15,.55)');
   svg.appendChild(shade);
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', S.corners.map((p) => p.join(',')).join(' '));
