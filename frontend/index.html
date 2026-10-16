@@ -370,6 +370,15 @@
       </button>
     </div>
     <p id="modeInfo" class="hint mt-2.5 max-w-2xl" role="status"></p>
+    <div class="card p-3 mt-3 max-w-xl" aria-labelledby="padColourLabel">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <label id="padColourLabel" for="padColour" class="mono text-[11px] uppercase tracking-wider text-mute" data-i18n="pad.label">Pad colour</label>
+        <input id="padColour" type="color" value="#ffffff" class="w-9 h-8 p-0 rounded border border-line2 cursor-pointer" data-i18n-aria="pad.picker" aria-label="Choose pad colour">
+        <output id="padColourHex" class="mono text-[11px] text-ink2"></output>
+        <span class="hint text-[11px]" data-i18n="pad.hint">Pick a palette colour or any solid colour.</span>
+      </div>
+      <div id="padColourSwatches" class="flex flex-wrap gap-1.5 mt-2" role="group" data-i18n-aria="pad.palette" aria-label="Use a glaze palette colour for the pad"></div>
+    </div>
       <div class="grid lg:grid-cols-[minmax(0,480px)_1fr] gap-5 mt-3">
         <div class="relative">
           <p id="flatCaption" class="mono text-[11px] uppercase tracking-wider text-mute mb-2"></p>
@@ -516,7 +525,7 @@
         </button>
         <div id="ftBody">
           <div id="ftList" class="grid gap-x-6 gap-y-2.5 mt-2.5 sm:grid-cols-2 lg:grid-cols-3"></div>
-          <p id="ftStatus" class="hint text-[11px] mt-2" role="status" aria-live="polite"></p>
+          <p id="ftStatus" class="hint text-[11px] mt-2 min-h-[3.9em]" role="status" aria-live="polite"></p>
           <div class="flex items-center gap-2 mt-2">
             <button id="ftReset" type="button" class="btn btn-ghost" data-i18n="ft.resetAll">Reset all</button>
             <button id="ftConfirm" type="button" class="btn btn-primary flex-1" disabled>Confirm</button>
@@ -587,6 +596,7 @@ const D = {
     'm.infoPhoto': 'Photo skin wraps your real photo onto the relief, like the real tile. It is for viewing and renders; a printer still prints the glaze colours. The colours below only decide where the bumps and valleys go.',
     's3.shapes': 'Shapes (colours still decide where the bumps and valleys go)', 's3.viewAria': 'Tile view', 's3.viewPhoto': 'Tile photo', 's3.viewMapped': 'In your colours', 'f.capMapped': 'Your tile in the palette colours · what prints', 'f.capPhoto': 'Real photo · tap it to pick a colour', 'f.capSkin': 'Your photo · used as the model’s skin',
     's3.palette': 'Glaze palette', 's3.edit': 'Tap swatch to edit', 's3.max': 'Colours', 's3.fewer': 'Fewer colours', 's3.more': 'More colours', 's3.clear': 'Clear',
+    'pad.label': 'Pad colour', 'pad.picker': 'Choose pad colour', 'pad.palette': 'Use a glaze palette colour for the pad', 'pad.hint': 'Pick a palette colour or any solid colour.',
     's3.pick': 'Pick from photo', 's3.custom': 'Custom colour', 's3.restore': 'Restore suggested', 's3.pickNow': 'Tap the tile photo to pick a colour.',
     's3.addHint': 'Pick from photo: tap the tile to add a colour the split missed; it stays pinned 📌 when you change the number of colours. Tap a swatch to change its colour (its area stays the same). − merges that colour’s area into the closest colour. Restore suggested: splits the tile again and drops picks and colour changes.',
     'sw.pinned': 'Picked from the photo (pinned)',
@@ -665,6 +675,7 @@ const D = {
     'm.infoPhoto': '照片貼面會把你的真實照片貼在浮雕上，就像真正的花磚，適合檢視與渲染；列印機仍會印出釉色。下方的顏色只決定凹凸的位置。',
     's3.shapes': '形狀（顏色仍決定凹凸的位置）', 's3.viewAria': '磚面檢視', 's3.viewPhoto': '磚面照片', 's3.viewMapped': '套用色盤', 'f.capMapped': '套用色盤後的磚 · 實際列印效果', 'f.capPhoto': '實際照片 · 點一下即可挑選顏色', 'f.capSkin': '你的照片 · 直接當作模型的表面',
     's3.palette': '釉色色盤', 's3.edit': '點色票可編輯', 's3.max': '顏色數', 's3.fewer': '減少顏色', 's3.more': '增加顏色', 's3.clear': '清除',
+    'pad.label': '底座顏色', 'pad.picker': '選擇底座顏色', 'pad.palette': '使用一種釉色色盤作為底座顏色', 'pad.hint': '可挑選色盤顏色，或使用任何純色。',
     's3.pick': '從照片挑色', 's3.custom': '自選顏色', 's3.restore': '還原建議色', 's3.pickNow': '請點一下磚面照片來挑色。',
     's3.addHint': '從照片挑色：點磚面，加入自動分色漏掉的顏色；改變顏色數時它會固定保留 📌。點色票可更換它的顏色（區域不變）。− 會把該顏色的區域併入最接近的顏色。還原建議色：重新分色，並放棄挑選的顏色與顏色修改。',
     'sw.pinned': '從照片挑選（已固定）',
@@ -762,13 +773,18 @@ function applyLang() {
 function setLang(l) { LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch {} applyLang(); }
 const COLMODE_KEY = 'mixotile.colMode';
 const loadColMode = () => { try { return localStorage.getItem(COLMODE_KEY) === 'photo' ? 'photo' : 'glaze'; } catch { return 'glaze'; } };
+const PAD_COLOUR_KEY = 'mixotile.padColour';
+const loadPadColour = () => {
+  try { const c = localStorage.getItem(PAD_COLOUR_KEY); return /^#[0-9a-f]{6}$/i.test(c || '') ? c.toLowerCase() : '#ffffff'; }
+  catch { return '#ffffff'; }
+};
 const S = {
   src: null, srcData: null, W: 0, H: 0, blob: null,
   corners: null, shape: 'square', alignment: 'perspective', cropper: null,
   flat: null, view: 'photo', swatches: [],
   segmenter: null, aiState: 'loading', tapMode: false,
   model: null, stats: null, abort: null, lastPayloadKey: null, cornerEdits: 0, cropReady: false,
-  manualPalette: false, colMode: loadColMode(), fst: {}, dlBusy: false, texState: 'idle', dl: { state: 'idle' }, aiMsg: null, aiPillState: 'loading', engine: { state: 'checking' },
+  manualPalette: false, colMode: loadColMode(), padColour: loadPadColour(), fst: {}, dlBusy: false, texState: 'idle', dl: { state: 'idle' }, aiMsg: null, aiPillState: 'loading', engine: { state: 'checking' },
 };
 
 // --------------------------------------------------------------------- backend URL + health
@@ -1212,6 +1228,38 @@ async function autoDetect(points, auto = false) {
 // --------------------------------------------------------------------- 3. eyedropper + palette
 const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
 const fromHex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function padRgb() { return fromHex(S.padColour); }
+function paintMaterial(mat, colour) {
+  for (const m of (Array.isArray(mat) ? mat : [mat])) m?.color?.set(colour);
+}
+function applyPadColour() {
+  if (!V.obj) return;
+  V.obj.traverse((o) => {
+    if (!o.isMesh || !isPadName(o.name)) return;
+    paintMaterial(o.userData.colourMat, S.padColour);
+    if (Array.isArray(o.userData.photoMat)) paintMaterial(o.userData.photoMat[1], S.padColour);
+  });
+}
+function renderPadColour() {
+  const inp = $('padColour'), hex = $('padColourHex'), box = $('padColourSwatches');
+  if (!inp || !hex || !box) return;
+  inp.value = S.padColour; hex.textContent = S.padColour;
+  box.innerHTML = '';
+  for (let i = 0; i < S.swatches.length; i++) {
+    const colour = toHex(paintOf(i)), b = document.createElement('button');
+    b.type = 'button'; b.className = 'w-7 h-7 rounded border border-line2'; b.style.background = colour;
+    b.title = `${t('pad.label')}: ${colour}`; b.setAttribute('aria-label', `${t('pad.label')}: ${colour}`);
+    b.setAttribute('aria-pressed', String(colour.toLowerCase() === S.padColour));
+    b.onclick = () => setPadColour(colour); box.appendChild(b);
+  }
+}
+function setPadColour(colour) {
+  if (!/^#[0-9a-f]{6}$/i.test(colour || '')) return;
+  S.padColour = colour.toLowerCase();
+  try { localStorage.setItem(PAD_COLOUR_KEY, S.padColour); } catch {}
+  renderPadColour(); applyPadColour();
+}
+$('padColour').addEventListener('input', () => setPadColour($('padColour').value));
 function srgbToLab([r, g, b]) {
   const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
   const R = f(r), G = f(g), B = f(b);
@@ -1289,6 +1337,7 @@ function renderSwatches() {
   });
   $('swatchEmpty').classList.toggle('hidden', S.swatches.length > 0);
   renderEmpty();
+  renderPadColour();
   renderTiers();
 }
 function renderTiers() {   // palette summary — every colour is an equal cushion, no height order
@@ -1890,6 +1939,7 @@ async function loadMeshCtx(zipBytes, adj) {
     const idx = new Uint32Array(bin.buffer, off, m.nt * 3); off += m.nt * 12;
     parts.push({ ...m, pos, idx, hv: H ? H.subarray(voff * 5, (voff + m.nv) * 5) : null }); voff += m.nv;
   }
+  for (const p of parts) if (isPadName(p.name)) { p.rgb = padRgb(); p.hex = S.padColour; }
   if (adj && H && meta.params) applyHeights(parts, meta.params, adj);
   return { FF, size: meta.size_mm, parts, tex: files['texture.jpg'] || null };
 }
@@ -1940,6 +1990,7 @@ const L_T0 = B8('<triangle v1="'), L_T1 = B8('" v2="'), L_T2 = B8('" v3="'), L_T
 
 async function write3mf(ctx, push, textured) {
   const { parts, size } = ctx, T = textured && ctx.tex, z = zipOutKnown(ctx.FF, push);
+  const undersideRgb = parts.find((p) => isPadName(p.name))?.rgb || [255, 255, 255];
   z.put('[Content_Types].xml', B8(T ? CT3.replace('</Types>', '<Default Extension="jpg" ContentType="image/jpeg"/></Types>') : CT3));
   z.put('_rels/.rels', B8(RELS3));
   const f = z.begin('3D/3dmodel.model', 6), w = new BW((u) => f.push(u));
@@ -1949,7 +2000,7 @@ async function write3mf(ctx, push, textured) {
     + '<metadata name="slic3rpe:Version3mf">1</metadata>\n<metadata name="Title">MixoTile relief</metadata>\n<metadata name="Application">MixoTile 3D Relief Generator</metadata>\n'
     + '<resources>\n<basematerials id="2">\n');
   for (const p of parts) w.s(`<base name="${xe(p.name)}" displaycolor="#${HEX2(p.rgb)}FF"/>\n`);
-  if (T) w.s('<base name="underside" displaycolor="#FFFFFFFF"/>\n');
+  if (T) w.s(`<base name="underside" displaycolor="#${HEX2(undersideRgb)}FF"/>\n`);
   w.s('</basematerials>\n');
   const whiteIdx = parts.length;
   if (T) {
@@ -2044,7 +2095,8 @@ async function writeGlb(ctx, push, textured) {
   const acc = (bv, componentType, count, type, extra) => { accessors.push({ bufferView: bv, componentType, count, type, ...extra }); return accessors.length - 1; };
   if (T) {
     materials.push({ name: 'photo', pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.5 } });
-    materials.push({ name: 'underside', pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 0.5 } });
+    const c = parts.find((p) => isPadName(p.name))?.rgb || [255, 255, 255], lin = c.map(srgb2lin);
+    materials.push({ name: 'underside', pbrMetallicRoughness: { baseColorFactor: [lin[0], lin[1], lin[2], 1], metallicFactor: 0, roughnessFactor: 0.5 } });
   }
   parts.forEach((p, i) => {
     const a = p.pos, n = p.nv; let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
@@ -2174,7 +2226,8 @@ async function writeObj(ctx, files, textured) {
   w.s('mtllib model.mtl\no MixoTile relief\n');
   if (T) {
     mtl.push('newmtl photo\nKa 1 1 1\nKd 1 1 1\nKs 0.08 0.08 0.08\nNs 40\nillum 2\nmap_Kd texture.jpg\n');
-    mtl.push('newmtl underside\nKa 1 1 1\nKd 1 1 1\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n');
+    const c = parts.find((p) => isPadName(p.name))?.rgb || [255, 255, 255], [r, g, b] = c.map((v) => v / 255);
+    mtl.push(`newmtl underside\nKa ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKd ${r.toFixed(4)} ${g.toFixed(4)} ${b.toFixed(4)}\nKs 0.02 0.02 0.02\nNs 10\nillum 2\n`);
   }
   let base = 1, vtBase = 1;
   for (let i = 0; i < parts.length; i++) {
@@ -2595,6 +2648,7 @@ async function openPreview() {
   group.position.x -= c.x; group.position.z -= c.z; group.position.y -= box.min.y;
   group.userData.mid = S.model.id;
   scene.add(group); V.obj = group;
+  applyPadColour();
   applyPhotoTexture();
   const size = Math.max(box.max.x - box.min.x, box.max.z - box.min.z); V.size = size; V.height = box.max.y - box.min.y;
   V.ground.scale.set(size * 4, size * 4, 1);
@@ -2607,7 +2661,7 @@ async function openPreview() {
   if (!keepCam) $('downloadBtn').focus();
 }
 // "Photo" view: the engine's top-down photo (u = x/size, v = y/size) on every body. The pad is textured too, so its four
-// sides continue the border colours; only its underside (normal pointing down) stays plain white.
+// sides continue the border colours; only its underside (normal pointing down) uses the chosen pure pad colour.
 function applyPhotoTexture() {
   if (!V.ready || !V.obj || !S.photoTex) return;
   const { THREE } = V;
@@ -2618,11 +2672,11 @@ function applyPhotoTexture() {
     (V.photoMats || []).forEach((m) => m.dispose());
     const map = new THREE.Texture(img); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8; map.needsUpdate = true;
     const shared = { roughness: 0.55, metalness: 0, clearcoat: 0.8, clearcoatRoughness: 0.15 };
-    const photo = new THREE.MeshPhysicalMaterial({ map, ...shared }), white = new THREE.MeshPhysicalMaterial({ color: 0xffffff, ...shared });
-    V.photoMap = map; V.photoMats = [photo, white];
+    const photo = new THREE.MeshPhysicalMaterial({ map, ...shared }), underside = new THREE.MeshPhysicalMaterial({ color: S.padColour, ...shared });
+    V.photoMap = map; V.photoMats = [photo, underside];
     V.obj.traverse((o) => {
       if (!o.isMesh) return;
-      o.userData.photoMat = !o.geometry.attributes.uv ? null : Array.isArray(o.userData.colourMat) ? [photo, white] : photo;
+      o.userData.photoMat = !o.geometry.attributes.uv ? null : Array.isArray(o.userData.colourMat) ? [photo, underside] : photo;
     });
     S.texState = 'ready'; renderLookState();
     setLook(V.look || 'colour');
@@ -2693,9 +2747,9 @@ function ftBuild() {
     const row = document.createElement('div');
     row.innerHTML = `<div class="flex items-center gap-1.5"><label for="ftS_${it.k}" class="flex-1 min-w-0 truncate mono text-[11.5px] text-mute"></label>`
       + `<output class="ft-val mono text-[12px] font-medium text-ink whitespace-nowrap"></output><span class="ft-pct mono text-[10.5px] text-mute whitespace-nowrap text-right" style="min-width:3.4em"></span>`
-      + `<button type="button" class="rs"></button></div><input id="ftS_${it.k}" type="range" class="ft-range" step="any" min="0" max="1" value="0"><p class="ft-note hidden hint text-[10.5px] leading-snug"></p>`;
+      + `<button type="button" class="rs"></button></div><input id="ftS_${it.k}" type="range" class="ft-range" step="any" min="0" max="1" value="0">`;
     list.appendChild(row);
-    const r = FT.rows[it.k] = { row, lab: row.querySelector('label'), val: row.querySelector('output'), pct: row.querySelector('.ft-pct'), rs: row.querySelector('.rs'), sl: row.querySelector('input'), note: row.querySelector('.ft-note'), capped: false, last: null };
+    const r = FT.rows[it.k] = { row, lab: row.querySelector('label'), val: row.querySelector('output'), pct: row.querySelector('.ft-pct'), rs: row.querySelector('.rs'), sl: row.querySelector('input'), capped: false, last: null };
     r.rs.textContent = '↺';
     r.sl.addEventListener('input', () => { FT.dragging = true; ftOnInput(it); });
     r.sl.addEventListener('change', () => { FT.dragging = false; ftSettle(true); });
@@ -2734,8 +2788,6 @@ function ftRenderRow(it) {
   if (ftIsPct(it)) { const p = Math.round(ftPctOf(it, c)); r.pct.textContent = (p > 0 ? '+' : p < 0 ? '−' : '±') + Math.abs(p) + '%'; }
   else r.pct.textContent = c > 0 ? t('ft.mm0') : '';
   r.rs.disabled = Math.abs(c - g) < 1e-9;
-  const m = parseFloat($('maxH').value);
-  r.note.classList.toggle('hidden', !r.capped); if (r.capped) r.note.textContent = t('ft.cap', { m: Number.isFinite(m) ? +m.toFixed(1) : '' });
 }
 function ftRenderAll() { if (!FT.on) return; for (const it of FT_KEYS) { ftSetSlider(it); ftRenderRow(it); } }
 function ftOnInput(it) {
@@ -2755,7 +2807,7 @@ function ftOnInput(it) {
     }
   }
   r.capped = capped; FT.cur[it.k] = mm;
-  ftRenderRow(it); ftSchedule();
+  ftRenderRow(it); ftUpdateUI(); ftSchedule();
 }
 function ftResetOne(it) { FT.cur[it.k] = FT.gen[it.k]; FT.rows[it.k].capped = false; ftSetSlider(it); ftRenderRow(it); ftSchedule(); }
 const ftFmt = (it, v) => (Math.abs(v - FT.gen[it.k]) < 1e-9 ? String(FT.gen[it.k]) : v.toFixed(it.dec));
@@ -2847,8 +2899,10 @@ function ftUpdateUI() {
   btn.disabled = S.busy || (apply ? !x.dirty : !(x.live || x.stale));
   ex.classList.toggle('hidden', !(apply && (x.live || x.adj))); ex.disabled = !!S.busy;
   $('ftReset').disabled = !x.live || S.busy;
-  $('ftStatus').textContent = x.stale ? t('ft.stale') + ' ' + t('ft.shapeNote')
-    : x.adj && !x.dirty ? t('ft.adjusted') : x.dirty ? (apply ? t('ft.applyHint') : t('ft.approx')) : t('ft.same');
+  const cap = FT_KEYS.find((it) => FT.rows[it.k]?.capped);
+  const capText = cap ? t('ft.cap', { m: +(parseFloat($('maxH').value) || 0).toFixed(1) }) + ' ' : '';
+  $('ftStatus').textContent = capText + (x.stale ? t('ft.stale') + ' ' + t('ft.shapeNote')
+    : x.adj && !x.dirty ? t('ft.adjusted') : x.dirty ? (apply ? t('ft.applyHint') : t('ft.approx')) : t('ft.same'));
   $('ftStatus').style.fontWeight = x.stale ? '600' : '';
   $('ftStatus').style.color = x.stale ? 'var(--ink)' : '';
   updateDownloadBtn();

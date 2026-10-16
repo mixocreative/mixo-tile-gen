@@ -2,7 +2,7 @@
 
 > Living handoff for any agent (Claude Code, Codex, human) picking this up mid-stream.
 > **Update the "Status log" and "Next steps" sections at every key step.**
-> Last updated: 2026-10-16, after the round-tile implementation and verification pass (see Status log).
+> Last updated: 2026-10-16, after the browser pad-colour and stable fine-tune-warning update (see Status log).
 
 ## 1. What this is
 
@@ -105,6 +105,8 @@ Total height is about 19-20 mm at 150 mm (15 mm base plus about 4-5 mm relief). 
 The owner doesn't care about slicer testing. Visual realism is the goal.
 
 ## 4. Status log (newest first)
+
+- **2026-10-16, browser pad colour + stable fine-tune warning:** Step 03 now has a persistent **Pad colour** control: choose any native colour-picker value or reuse a glaze-palette swatch, before or after generation. It recolours the pad immediately in the browser’s Colours preview and in local 3MF/GLB/OBJ exports. In Photo skin, the top and visible vertical sides retain their photo projection, while the downward-facing pad underside uses that selected pure colour; STL remains material-free. This is browser-only and requires no Cloud Run rebuild. The fine-tune cap warning moved from individual slider rows into a permanently reserved status area, so reaching the height limit no longer shifts controls or buttons. Added `backend/tests/check_frontend_pad_ui.py`; it passes. `tests/check_formats.py IMG_9255` passed (`ALL OK`, one-model 3MF, textured 3MF/GLB/OBJ materials/UVs) and `tests/run_real.py` passed all 18 owner fixtures, every body watertight.
 
 - **2026-10-16, single-model exports + 3MF material repair:** Every download now represents the complete tile as one model/root without boolean-fusing the independently watertight colour shells. STL is one binary `mixotile.stl` (STL has no colour/material channel); OBJ has one `o MixoTile relief` plus material groups; GLB has exactly one node and mesh with material primitives (a separate white pad-underside primitive when photo-textured). 3MF remains one core mesh/build object with per-triangle base-material regions and Prusa/Orca/Bambu volume/extruder ranges. Removed the non-standard 3MF `object name` attribute that lib3mf diagnosed, and textured 3MF now declares the Materials extension as required while retaining its JPEG, texture relationship, UVs, and base material table. A fresh server-generated 3MF imports in strict lib3mf without diagnostics. Browser 3MF downloads remain local: a purpose-built descriptor-free ZIP wrapper buffers only compressed chunks and writes known local-header sizes/CRCs (fflate round-trip verified; no ZIP bit-3 data descriptors), avoiding the lib3mf warning without a second Cloud Run build. Its GLB/STL/OBJ writers match the server's one-root structure. `tests/check_formats.py IMG_9255` passed: 9 base materials, one textured GLB mesh with 10 primitives (9 photo + white underside), one complete STL (1,637,272 triangles), and aligned OBJ/3MF UVs (0.00001). `tests/run_real.py` passed on all 18 owner fixtures: every body watertight. Ran and visually inspected `tests/lines_sheet.py`; it wrote `docs/research/lines_final.jpg`. User-facing format wording now explains the material limits of STL.
 
@@ -244,6 +246,7 @@ The owner doesn't care about slicer testing. Visual realism is the goal.
 
 1. **Re-render the photo-vs-render table** `docs/results/all_tiles.jpg` from the 18 current photos (Playwright: load each photo, drag corners from `corners.json`, generate, screenshot `#viewer` to `previews/user_<name>.png`, then `python backend/tests/make_table.py previews docs/results/all_tiles.jpg`).
 2. **Outlines, known limits to improve:** (a) glossy modelled glaze still yields highlight streaks (candidates: both-flank symmetry test, structure-tensor orientation coherence); (b) a tube-line that coincides with a colour seam is drawn only by the groove (ridge faded within 1.6 mm of seams), so a dedicated line body would be needed to raise it; (c) 0.3-0.5 mm hair lines are below the 0.4 mm width gate by design.
+3. **Optional base construction:** if the owner confirms it, add a separately sized patterned skirt over the selected-colour foundation; keep it independent of the existing Pad colour control and require an exact rebuild when the skirt depth changes.
 3. **A better framed-tile auto-outline:** detect the inner glaze rectangle with OpenCV, or tap-to-detect with a larger mask target (the AI sometimes grabs a sliver of the frame on IMG_9255 and IMG_9343).
 4. **Pale glaze inside a shiny motif** can still quantise to cream and split a colour; the highlight-absorb step doesn't cover it.
 5. **Round-tile follow-up:** collect owner feedback on the guide wording and whether the circular rim should receive a separately tunable edge roll-off. The current circular rim uses the same 35% outer edge drop as square tiles.
