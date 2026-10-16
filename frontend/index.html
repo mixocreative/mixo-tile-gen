@@ -966,11 +966,12 @@ function drawOverlay() {
   const poly = document.createElementNS(NS, 'polygon');
   poly.setAttribute('points', S.corners.map((p) => p.join(',')).join(' '));
   poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#ffffff'); poly.setAttribute('stroke-width', sw);
+  if (S.shape === 'circle') poly.setAttribute('stroke-dasharray', `${sw * 2} ${sw * 1.5}`);
   svg.appendChild(poly);
   if (S.shape === 'circle') {
     const p = document.createElementNS(NS, 'path');
     p.setAttribute('d', 'M' + circleRing.map(([x, y]) => `${x},${y}`).join(' L '));
-    p.setAttribute('fill', 'rgba(255,255,255,.05)'); p.setAttribute('stroke', '#ffffff'); p.setAttribute('stroke-width', sw * .85); p.setAttribute('stroke-dasharray', `${sw * 2} ${sw * 1.5}`);
+    p.setAttribute('fill', 'rgba(255,255,255,.05)'); p.setAttribute('stroke', '#ffffff'); p.setAttribute('stroke-width', sw * .85);
     svg.appendChild(p);
     const [cx, cy] = circleProject(50, 50);
     for (const [[x1, y1], [x2, y2]] of [[circleProject(0, 50), circleProject(100, 50)], [circleProject(50, 0), circleProject(50, 100)]]) {
