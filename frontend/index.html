@@ -938,9 +938,19 @@ function drawOverlay() {
   const scale = S.W / Math.max(1, $('cornerStage').clientWidth);
   const r = 13 * scale, sw = 2.5 * scale;
   svg.innerHTML = '';
+  let circleRing = null, circleProject = null;
+  if (S.shape === 'circle') {
+    // Use the same destination-square -> source-photo homography as the engine.  This is a
+    // projective circle, not a screen-space ellipse, so the mask stays true while the user moves corners.
+    const N = 100, hm = homography([[0, 0], [N, 0], [N, N], [0, N]], S.corners);
+    circleProject = (u, v) => applyH(hm, u, v);
+    circleRing = [];
+    for (let i = 0; i <= 72; i++) { const a = 2 * Math.PI * i / 72; circleRing.push(circleProject(N / 2 + N / 2 * Math.cos(a), N / 2 + N / 2 * Math.sin(a))); }
+  }
   const shade = document.createElementNS(NS, 'path');
   const q = S.corners.map((p) => p.join(',')).join(' L ');
-  shade.setAttribute('d', `M0,0 H${S.W} V${S.H} H0 Z M ${q} Z`);
+  const active = circleRing ? circleRing.map((p) => p.join(',')).join(' L ') : q;
+  shade.setAttribute('d', `M0,0 H${S.W} V${S.H} H0 Z M ${active} Z`);
   shade.setAttribute('fill', 'rgba(20,18,15,.55)'); shade.setAttribute('fill-rule', 'evenodd');
   svg.appendChild(shade);
   const poly = document.createElementNS(NS, 'polygon');
@@ -948,18 +958,12 @@ function drawOverlay() {
   poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#ffffff'); poly.setAttribute('stroke-width', sw);
   svg.appendChild(poly);
   if (S.shape === 'circle') {
-    // A photographed circle projects to an ellipse-like conic. Sample the circle through the same
-    // homography as the backend, rather than drawing a misleading screen-space SVG ellipse.
-    const N = 100, hm = homography([[0, 0], [N, 0], [N, N], [0, N]], S.corners);
-    const project = (u, v) => applyH(hm, u, v);
-    const ring = [];
-    for (let i = 0; i <= 72; i++) { const a = 2 * Math.PI * i / 72; ring.push(project(N / 2 + N / 2 * Math.cos(a), N / 2 + N / 2 * Math.sin(a))); }
     const p = document.createElementNS(NS, 'path');
-    p.setAttribute('d', 'M' + ring.map(([x, y]) => `${x},${y}`).join(' L '));
+    p.setAttribute('d', 'M' + circleRing.map(([x, y]) => `${x},${y}`).join(' L '));
     p.setAttribute('fill', 'rgba(255,255,255,.05)'); p.setAttribute('stroke', '#ffffff'); p.setAttribute('stroke-width', sw * .85); p.setAttribute('stroke-dasharray', `${sw * 2} ${sw * 1.5}`);
     svg.appendChild(p);
-    const [cx, cy] = project(N / 2, N / 2);
-    for (const [[x1, y1], [x2, y2]] of [[project(0, N / 2), project(N, N / 2)], [project(N / 2, 0), project(N / 2, N)]]) {
+    const [cx, cy] = circleProject(50, 50);
+    for (const [[x1, y1], [x2, y2]] of [[circleProject(0, 50), circleProject(100, 50)], [circleProject(50, 0), circleProject(50, 100)]]) {
       const line = document.createElementNS(NS, 'line'); line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
       line.setAttribute('stroke', '#ffffff'); line.setAttribute('stroke-width', sw * .55); line.setAttribute('stroke-dasharray', `${sw * 1.5} ${sw * 1.5}`); line.setAttribute('opacity', '.85'); svg.appendChild(line);
     }
